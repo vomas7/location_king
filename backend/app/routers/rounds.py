@@ -25,15 +25,7 @@ router = APIRouter(prefix="/api/rounds", tags=["rounds"])
 logger = logging.getLogger(__name__)
 
 
-# TODO: Реализовать аутентификацию через Keycloak
-async def get_current_user() -> User:
-    """
-    Заглушка для аутентификации.
-    В реальности должна проверять JWT токен от Keycloak.
-    """
-    # TODO: Заменить на реальную аутентификацию
-    from app.models.user import User
-    return User(id=1, keycloak_id="test-user", username="test_user", total_score=0)
+from app.auth import get_current_user
 
 
 @router.get(
@@ -86,7 +78,9 @@ async def get_round(
         
         # Если раунд завершён, добавляем результат
         if round_obj.guess_point:
-            response.guess_point = (round_obj.guess_point.x, round_obj.guess_point.y)
+            from geoalchemy2.shape import to_shape
+            guess_point = to_shape(round_obj.guess_point)
+            response.guess_point = (guess_point.x, guess_point.y)
             response.distance_km = round_obj.distance_km
             response.score = round_obj.score
             response.guessed_at = round_obj.guessed_at
@@ -150,7 +144,8 @@ async def submit_guess(
         session = round_obj.session
         
         # 1. Вычисляем расстояние между догадкой и правильным ответом
-        target_point = round_obj.target_point
+        from geoalchemy2.shape import to_shape
+        target_point = to_shape(round_obj.target_point)
         distance_km = GeometryUtils.calculate_distance(
             point1_lng=request.longitude,
             point1_lat=request.latitude,

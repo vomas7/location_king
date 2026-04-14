@@ -1,0 +1,87 @@
+Проверил всё. Молодец — сделал очень много, но есть конкретные баги и проблемы. Разобью по приоритетам:
+
+🔴 Критические — приложение не заработает
+1. Auth — заглушка везде
+В sessions.py и rounds.py одинаковая фейковая функция:
+pythonasync def get_current_user() -> User:
+    return User(id=1, keycloak_id="test-user", ...)  # TODO везде
+Это надо вынести в app/auth.py и реализовать проверку JWT через JWKS Keycloak. Сделаем следующим шагом.
+2. Сломанный запрос в get_session
+python# ❌ Так не работает — нельзя делать select от relationship
+round_stmt = select(session.rounds).where(
+    session.rounds.guess_point.is_(None)
+)
+
+# ✅ Правильно
+from app.models.round import Round
+round_stmt = select(Round).where(
+    Round.session_id == session_id,
+    Round.guess_point.is_(None)
+).order_by(Round.created_at.desc()).limit(1)
+3. GeoAlchemy2 объект ≠ Shapely — .x / .y не работают
+В rounds.py и sessions.py есть такие места:
+python# ❌ GeoAlchemy2 WKBElement не имеет .x и .y напрямую
+response.guess_point = (round_obj.guess_point.x, round_obj.guess_point.y)
+distance_km = GeometryUtils.calculate_distance(
+    ...
+    point2_lng=target_point.x,
+    point2_lat=target_point.y,
+)
+
+# ✅ Нужен to_shape() из shapely
+from geoalchemy2.shape import to_shape
+point = to_shape(round_obj.guess_point)
+response.guess_point = (point.x, point.y)
+4. is_finished() / is_completed() не определены
+В user.py вызываются методы которых нет:
+pythoncompleted_sessions = [s for s in self.sessions if s.is_finished()]  # ❌ нет такого метода
+completed_rounds = [r for r in session.rounds if r.is_completed()]  # ❌ нет такого метода
+Методы надо либо добавить в модели, либо заменить на прямое сравнение со статусом.
+5. Keycloak без отдельной БД
+В docker-compose.yml у Keycloak нет KC_DB* переменных — он будет использовать встроенный H2. Это значит данные пользователей хранятся в H2 файле, который непредсказуемо себя ведёт при рестарте контейнера. Нужна отдельная PostgreSQL как мы обсуждали.
+6. Несуществующий файл в compose
+yaml# ❌ Такого файла нет, есть init_prod.sql
+- ./backend/scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+
+🟡 Важные — работает, но неправильно
+7. Одна сеть — нет изоляции
+Все сервисы в одной location_king_net. Это значит фронтенд, БД, Redis — всё на одном уровне. Надо как мы делали: public_net (только nginx) + internal_net (все остальные, internal: true).
+8. finish_session — битый re-query
+После update() делается повторный select с теми же условиями включая status == ACTIVE — а статус уже поменяли на FINISHED, поэтому updated_session вернёт None и упадёт с ошибкой.
+9. view_extent_km захардкожен
+python# ❌ В sessions.py
+round_obj = await generator.generate_round(
+    session_id=session.id,
+    zone_id=zone_id,
+    view_extent_km=5,  # всегда 5, игнорирует всё
+)
+Здесь нет параметра в StartSessionRequest. Надо добавить view_extent_km в запрос.
+10. Type mismatch в GameSession.average_score
+python# ❌ Mapped[Optional[float]] но mapped_column(Integer)
+average_score: Mapped[Optional[float]] = mapped_column(Integer, default=0)
+Должен быть Float.
+11. Difficulty расходится в enums и БД
+DifficultyLevel в enums.py идёт до 7 (MASTER), но в миграции 001:
+sqlCHECK (difficulty BETWEEN 1 AND 5)
+Надо привести к единому виду — либо расширить constraint до 7, либо убрать лишние уровни из enum.
+12. nginx/conf.d/default.conf vs locationking.ru.conf
+Оба файла монтируются (./nginx/conf.d:/etc/nginx/conf.d). default.conf — старый, его надо удалить, иначе nginx будет читать оба и может конфликтовать.
+13. Frontend монтируется как исходники
+yaml# ❌ монтирует всё дерево frontend/ включая исходники
+- ./frontend:/usr/share/nginx/html:ro
+Для продакшна нужно собрать dist/ и монтировать именно его, или использовать multi-stage build (как в frontend/Dockerfile который там есть, но не используется compose).
+
+🟢 Хорошо сделано
+
+Структура проекта — чистая, логичная
+Миграции 001 + 002 — правильный подход
+Enums в отдельном файле — правильно
+ChallengeGenerator + LocationZoneUtils — хорошая архитектура
+Pydantic схемы — аккуратно сделаны
+Nginx SSL конфиг — полноценный, с gzip, заголовками безопасности
+satellite_provider.py с базовым классом и провайдерами — хорошо заложена расширяемость
+Health checks на всех сервисах — молодец
+
+
+📋 Итоговый план
+#ЧтоПриоритет1Реализовать app/auth.py — JWT от Keycloak🔴2Починить запрос в get_session🔴3Заменить .x/.y на to_shape() везде🔴4Добавить is_finished()/is_completed() в модели🔴5Добавить Keycloak отдельную БД в compose🔴6Исправить имя файла init_db.sql🔴7Разделить сети в compose🟡8Починить finish_session re-query🟡9Добавить view_extent_km в StartSessionRequest🟡10average_score Float в модели🟡11Согласовать difficulty 1-5 или 1-7🟡12Убрать default.conf, оставить locationking.ru.conf🟡13Frontend — монтировать dist/ а не исходники🟡

@@ -33,6 +33,12 @@ class StartSessionRequest(BaseModel):
         le=20,
         description="Общее количество раундов в сессии (1-20)."
     )
+    view_extent_km: int = Field(
+        5,
+        ge=1,
+        le=50,
+        description="Размер видимой области в километрах (1-50)."
+    )
 
 
 class SubmitGuessRequest(BaseModel):

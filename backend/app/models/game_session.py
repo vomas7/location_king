@@ -38,7 +38,7 @@ class GameSession(Base):
     rounds_done: Mapped[int] = mapped_column(SmallInteger, default=0)
     total_score: Mapped[int] = mapped_column(Integer, default=0)
     average_score: Mapped[Optional[float]] = mapped_column(
-        Integer, default=0
+        Float, default=0.0
     )
     best_round_score: Mapped[int] = mapped_column(Integer, default=0)
     worst_round_score: Mapped[int] = mapped_column(Integer, default=0)

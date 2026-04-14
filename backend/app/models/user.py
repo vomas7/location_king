@@ -68,10 +68,17 @@ class User(Base):
     
     def update_statistics(self) -> None:
         """Обновить статистику пользователя на основе завершённых сессий"""
-        completed_sessions = [s for s in self.sessions if s.is_finished()]
-        completed_rounds = []
+        from app.models.enums import SessionStatus
         
+        # Используем прямое сравнение со статусом
+        completed_sessions = [
+            s for s in self.sessions 
+            if s.status in [SessionStatus.FINISHED, SessionStatus.ABANDONED]
+        ]
+        
+        completed_rounds = []
         for session in completed_sessions:
+            # Используем метод is_completed() из модели Round
             completed_rounds.extend([r for r in session.rounds if r.is_completed()])
         
         if not completed_sessions:

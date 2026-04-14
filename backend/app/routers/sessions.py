@@ -24,16 +24,7 @@ router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 logger = logging.getLogger(__name__)
 
 
-# TODO: Реализовать аутентификацию через Keycloak
-# Сейчас используем заглушку для тестирования
-async def get_current_user() -> User:
-    """
-    Заглушка для аутентификации.
-    В реальности должна проверять JWT токен от Keycloak.
-    """
-    # TODO: Заменить на реальную аутентификацию
-    from app.models.user import User
-    return User(id=1, keycloak_id="test-user", username="test_user", total_score=0)
+from app.auth import get_current_user
 
 
 @router.post(
@@ -88,7 +79,7 @@ async def start_session(
         round_obj = await generator.generate_round(
             session_id=session.id,
             zone_id=zone_id,
-            view_extent_km=5,  # По умолчанию 5км
+            view_extent_km=request.view_extent_km,
         )
         
         if not round_obj:
@@ -172,10 +163,12 @@ async def get_session(
         
         # Получаем активный раунд (последний не завершённый)
         from sqlalchemy import desc
+        from app.models.round import Round
         
-        round_stmt = select(session.rounds).where(
-            session.rounds.guess_point.is_(None)
-        ).order_by(desc(session.rounds.created_at)).limit(1)
+        round_stmt = select(Round).where(
+            Round.session_id == session_id,
+            Round.guess_point.is_(None)
+        ).order_by(desc(Round.created_at)).limit(1)
         
         round_result = await db.execute(round_stmt)
         current_round = round_result.scalar_one_or_none()
@@ -254,9 +247,11 @@ async def get_session_history(
             )
         
         # Получаем завершённые раунды (с догадками)
+        from geoalchemy2.shape import to_shape
         rounds = []
         for round_obj in session.rounds:
             if round_obj.guess_point:  # Только завершённые раунды
+                guess_point = to_shape(round_obj.guess_point)
                 rounds.append(RoundResponse(
                     id=round_obj.id,
                     zone=ZoneResponse(
@@ -269,7 +264,7 @@ async def get_session_history(
                     satellite_image_url="",  # TODO: Получить URL снимка
                     view_extent_km=round_obj.view_extent_km,
                     created_at=round_obj.created_at,
-                    guess_point=(round_obj.guess_point.x, round_obj.guess_point.y),
+                    guess_point=(guess_point.x, guess_point.y),
                     distance_km=round_obj.distance_km,
                     score=round_obj.score,
                     guessed_at=round_obj.guessed_at,
@@ -333,9 +328,13 @@ async def finish_session(
         await db.execute(update_stmt)
         await db.commit()
         
-        # Получаем обновлённую сессию
-        result = await db.execute(stmt)
-        updated_session = result.scalar_one_or_none()
+        # Получаем обновлённую сессию (без условия status == ACTIVE)
+        updated_stmt = select(GameSession).where(
+            GameSession.id == session_id,
+            GameSession.user_id == current_user.id
+        )
+        updated_result = await db.execute(updated_stmt)
+        updated_session = updated_result.scalar_one_or_none()
         
         return SessionResponse(
             id=updated_session.id,
