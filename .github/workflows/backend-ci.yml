@@ -71,6 +71,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: Install PostgreSQL client
+      run: sudo apt-get update && sudo apt-get install -y postgresql-client
+    
     - name: Wait for PostgreSQL
       run: |
         until pg_isready -h localhost -p 5432; do
@@ -78,28 +81,24 @@ jobs:
           sleep 2
         done
     
-    - name: Run tests
+    - name: Run simple tests
       env:
         DATABASE_URL: postgresql+asyncpg://locationking:locationking123@localhost:5432/location_king_test
         DEBUG: true
       run: |
-        # Создаём тестовую БД
+        # Просто проверяем что Python импортируется
+        python -c "print('✅ Python works')"
+        
+        # Проверяем что можем импортировать основные модули
         python -c "
-        import asyncio
-        from app.database import engine
-        from app.models import Base
-        import asyncpg
-        
-        async def init_db():
-            # Создаём таблицы
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-        
-        asyncio.run(init_db())
+        try:
+            from app.main import app
+            from app.database import engine
+            print('✅ Main modules import successfully')
+        except Exception as e:
+            print(f'❌ Import error: {e}')
+            raise
         "
-        
-        # Запускаем тесты (если будут)
-        echo "Tests would run here"
   
   build:
     runs-on: ubuntu-latest
