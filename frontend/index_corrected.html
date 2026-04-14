@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location King - Геогейссер с космическими снимками</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .game-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+            margin-top: 20px;
+        }
+        .map-container {
+            width: 100%;
+            height: 500px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .btn-game {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        .btn-game:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .log-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        .log-entry {
+            padding: 5px 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+        .log-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .log-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .log-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+    
+    <!-- OpenLayers -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v8.2.0/ol.css">
+    <script src="https://cdn.jsdelivr.net/npm/ol@v8.2.0/dist/ol.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="game-container">
+                    <h1 class="text-center mb-4">
+                        <i class="bi bi-globe-europe-africa"></i> Location King
+                    </h1>
+                    <p class="text-center text-muted mb-4">
+                        Геогейссер с космическими снимками ESRI World Imagery
+                    </p>
+                    
+                    <div class="row">
+                        <!-- Левая колонка: Карта и управление -->
+                        <div class="col-md-8">
+                            <div class="map-container" id="map"></div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="status-card">
+                                        <h5><i class="bi bi-trophy"></i> Статистика</h5>
+                                        <p>Общий счёт: <span id="total-score" class="fw-bold">0</span></p>
+                                        <p>Раунд: <span id="current-round">0</span>/<span id="total-rounds">0</span></p>
+                                        <p>Расстояние: <span id="last-distance">-</span> км</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="status-card">
+                                        <h5><i class="bi bi-geo-alt"></i> Координаты</h5>
+                                        <div class="mb-2">
+                                            <label class="form-label">Долгота</label>
+                                            <input type="number" step="0.0001" class="form-control" id="longitude" placeholder="37.617">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Широта</label>
+                                            <input type="number" step="0.0001" class="form-control" id="latitude" placeholder="55.755">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-center mb-4">
+                                <button class="btn btn-primary btn-game me-md-2" onclick="startGame()">
+                                    <i class="bi bi-play-fill"></i> Начать игру
+                                </button>
+                                <button class="btn btn-success btn-game me-md-2" onclick="submitGuess()" disabled id="submit-guess-btn">
+                                    <i class="bi bi-check-circle"></i> Отправить догадку
+                                </button>
+                                <button class="btn btn-warning btn-game me-md-2" onclick="getHint()" disabled id="hint-btn">
+                                    <i class="bi bi-lightbulb"></i> Подсказка
+                                </button>
+                                <button class="btn btn-danger btn-game" onclick="finishGame()">
+                                    <i class="bi bi-stop-fill"></i> Завершить
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Правая колонка: Логи и зоны -->
+                        <div class="col-md-4">
+                            <div class="mb-4">
+                                <div class="status-card">
+                                    <h5><i class="bi bi-map"></i> Игровые зоны</h5>
+                                    <select class="form-select mb-2" id="zone-select">
+                                        <option value="">Случайная зона</option>
+                                    </select>
+                                    <button class="btn btn-outline-primary w-100" onclick="loadZones()">
+                                        <i class="bi bi-arrow-clockwise"></i> Обновить зоны
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h5><i class="bi bi-terminal"></i> Лог действий</h5>
+                                <div class="log-container" id="action-log">
+                                    <div class="log-entry log-info">Готов к игре!</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_BASE_URL = isLocalhost ? 'http://localhost:8000/api' : 'https://api.locationking.ru';
+        
+        let currentSessionId = null;
+        let currentRoundId = null;
+        let map = null;
+        let marker = null;
+
+        // Инициализация карты OpenLayers
+        function initMap() {
+            map = new ol.Map({
+                target: 'map',
+                layers: [
+                    // OpenStreetMap как базовая карта
+                    new ol.layer.Tile({
+                        source: new ol.source.OSM()
+                    }),
+                    // ESRI World Imagery как спутниковый слой
+                    new ol.layer.Tile({
+                        source: new ol.source.XYZ({
+                            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                            attributions: '© Esri, Maxar, Earthstar Geographics'
+                        }),
+                        visible: true
+                    })
+                ],
+                view: new ol.View({
+                    center: ol.proj.fromLonLat([37.617, 55.755]), // Москва
+                    zoom: 5
+                })
+            });
+            
+            // Добавляем обработчик клика по карте
+            map.on('click', function(event) {
+                const coordinates = ol.proj.toLonLat(event.coordinate);
+                document.getElementById('longitude').value = coordinates[0].toFixed(4);
+                document.getElementById('latitude').value = coordinates[1].toFixed(4);
+                
+                // Обновляем маркер
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+                
+                marker = new ol.layer.Vector({
+                    source: new ol.source.Vector({
+                        features: [
+                            new ol.Feature({
+                                geometry: new ol.geom.Point(event.coordinate)
+                            })
+                        ]
+                    }),
+                    style: new ol.style.Style({
+                        image: new ol.style.Circle({
+                            radius: 7,
+                            fill: new ol.style.Fill({color: 'red'}),
+                            stroke: new ol.style.Stroke({
+                                color: 'white', width: 2
+                            })
+                        })
+                    })
+                });
+                
+                map.addLayer(marker);
+                logAction(`Установлена точка: ${coordinates[0].toFixed(4)}, ${coordinates[1].toFixed(4)}`, 'info');
+            });
+            
+            logAction('Карта инициализирована', 'success');
+        }
+
+        // Логирование действий
+        function logAction(message, type = 'info') {
+            const logContainer = document.getElementById('action-log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Проверить доступность API
+        async function checkApiHealth() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    logAction(`API доступен: ${data.service} v${data.version}`, 'success');
+                    return true;
+                }
+            } catch (error) {
+                logAction(`API недоступен: ${error.message}`, 'error');
+            }
+            return false;
+        }
+
+        // Загрузить игровые зоны
+        async function loadZones() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/zones/`);
+                if (response.ok) {
+                    const zones = await response.json();
+                    const select = document.getElementById('zone-select');
+                    
+                    // Очищаем все опции кроме первой
+                    while (select.options.length > 1) {
+                        select.remove(1);
+                    }
+                    
+                    // Добавляем зоны
+                    zones.forEach(zone => {
+                        const option = document.createElement('option');
+                        option.value = zone.id;
+                        option.textContent = `${zone.name} (Сложность: ${zone.difficulty}/7)`;
+                        select.appendChild(option);
+                    });
+                    logAction(`Загружено ${zones.length} игровых зон`, 'success');
+                }
+            } catch (error) {
+                logAction(`Ошибка загрузки зон: ${error.message}`, 'error');
+            }
+        }
+
+        // Начать игру
+        async function startGame() {
+            const zoneSelect = document.getElementById('zone-select');
+            const zoneId = zoneSelect.value || null;
+            
+            const requestData = {
+                zone_id: zoneId ? parseInt(zoneId) : null,
+                rounds_total: 5
+            };
+            
+            try {
+                logAction('Начинаем новую игровую сессию...', 'info');
+                const response = await fetch(`${API_BASE_URL}/sessions/start`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (response.ok) {
+                    const session = await response.json();
+                    currentSessionId = session.id;
+                    currentRoundId = session.current_round?.id;
+                    
+                    // Обновляем UI
+                    document.getElementById('submit-guess-btn').disabled = false;
+                    document.getElementById('hint-btn').disabled = false;
+                    
+                    // Обновляем статистику
+                    document.getElementById('total-score').textContent = session.total_score;
+                    document.getElementById('current-round').textContent = session.rounds_done;
+                    document.getElementById('total-rounds').textContent = session.rounds_total;
+                    
+                    logAction(`Сессия начата: ${session.id}`, 'success');
+                    
+                    // Загружаем первый раунд если есть
+                    if (currentRoundId) {
+                        await loadRound(currentRoundId);
+                    }
+                } else {
+                    const error = await response.json();
+                    logAction(`Ошибка: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                logAction(`Ошибка сети: ${error.message}`, 'error');
+            }
+        }
+
+        // Загрузить раунд
+        async function loadRound(roundId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/rounds/${roundId}`);
+                if (response.ok) {
+                    const round = await response.json();
+                    
+                    // Обновляем статистику
+                    document.getElementById('current-round').textContent = round.round_number;
+                    
+                    logAction(`Раунд ${round.round_number} загружен`, 'info');
+                } else {
+                    const error = await response.json();
+                    logAction(`Ошибка: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                logAction(`Ошибка сети: ${error.message}`, 'error');
+            }
+        }
+
+        // Отправить догадку
+        async function submitGuess() {
+            const longitude = document.getElementById('longitude').value;
+            const latitude = document.getElementById('latitude').value;
+            
+            if (!longitude || !latitude) {
+                logAction('Введите координаты!', 'error');
+                return;
+            }
+            
+            if (!currentRoundId) {
+                logAction('Нет активного раунда!', 'error');
+                return;
+            }
+            
+            const requestData = {
+                longitude: parseFloat(longitude),
+                latitude: parseFloat(latitude)
+            };
+            
+            try {
+                logAction('Отправляем догадку...', 'info');
+                const response = await fetch(`${API_BASE_URL}/rounds/${currentRoundId}/guess`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Обновляем статистику
+                    document.getElementById('total-score').textContent = result.total_session_score;
+                    document.getElementById('current-round').textContent = result.rounds_done;
+                    document.getElementById('last-distance').textContent = result.distance_km.toFixed(2);
+                    
+                    logAction(
+                        `Догадка принята! Расстояние: ${result.distance_km.toFixed(2)} км, Очки: ${result.score}`,
+                        'success'
+                    );
+                    
+                    // Если есть следующий раунд
+                    if (result.next_round) {
+                        currentRoundId = result.next_round.id;
+                        await loadRound(currentRoundId);
+                    } else if (result.is_session_finished) {
+                        logAction('Игра завершена!', 'success');
+                        document.getElementById('submit-guess-btn').disabled = true;
+                        document.getElementById('hint-btn').disabled = true;
+                    }
+                } else {
+                    const error = await response.json();
+                    logAction(`Ошибка: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                logAction(`Ошибка сети: ${error.message}`, 'error');
+            }
+        }
+
+        // Получить подсказку
+        async function getHint() {
+            if (!currentRoundId) {
+                logAction('Нет активного раунда!', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/rounds/${currentRoundId}/hint`);
+                if (response.ok) {
+                    const hint = await response.json();
+                    logAction(`Подсказка: ${hint.hint}`, 'info');
+                } else {
+                    const error = await response.json();
+                    logAction(`Ошибка: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                logAction(`Ошибка сети: ${error.message}`, 'error');
+            }
+        }
+
+        // Завершить игру
+        async function finishGame() {
+            if (!currentSessionId) {
+                logAction('Нет активной сессии!', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/sessions/${currentSessionId}/finish`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    logAction(`Игра завершена! Итоговый счёт: ${result.total_score}`, 'success');
+                    
+                    // Сбрасываем UI
+                    document.getElementById('submit-guess-btn').disabled = true;
+                    document.getElementById('hint-btn').disabled = true;
+                    currentSessionId = null;
+                    currentRoundId = null;
+                } else {
+                    const error = await response.json();
+                    logAction(`Ошибка: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                logAction(`Ошибка сети: ${error.message}`,

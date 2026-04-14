@@ -181,7 +181,7 @@ class Round(Base):
         return EnumUtils.get_score_tier(self.score)
     
     def get_duration_seconds(self) -> Optional[float]:
-        """Получить продолжительность раунда в секундах""""
+        """Получить продолжительность раунда в секундах"""
         if not self.started_at:
             return None
         

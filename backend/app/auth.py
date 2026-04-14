@@ -3,10 +3,11 @@ Authentication module for Location King.
 Handles JWT validation with Keycloak.
 """
 
-import jwt
+from jose import jwt
+from jose.exceptions import JWTError, ExpiredSignatureError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jwt.algorithms import RSAAlgorithm
+from jose.backends.rsa_backend import RSAKey
 import httpx
 from typing import Optional
 
@@ -50,7 +51,14 @@ def get_public_key(jwks: dict, kid: str) -> Optional[str]:
     """Get public key from JWKS by kid."""
     for key in jwks.get("keys", []):
         if key.get("kid") == kid:
-            return RSAAlgorithm.from_jwk(key)
+            # python-jose uses different approach
+            import json
+            from jose.constants import ALGORITHMS
+            from jose.backends.rsa_backend import RSAKey
+            
+            # Convert JWK to PEM format
+            rsa_key = RSAKey(key, ALGORITHMS.RS256)
+            return rsa_key.to_pem().decode('utf-8')
     return None
 
 
@@ -88,12 +96,12 @@ async def validate_token(token: str) -> dict:
         
         return payload
         
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired"
         )
-    except jwt.InvalidTokenError as e:
+    except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid token: {str(e)}"
