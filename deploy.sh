@@ -31,23 +31,14 @@ fi
 
 echo "✅ Docker and Docker Compose ready"
 
-# Check SSL certificates
+# Check SSL certificates (optional)
 echo "🔐 Checking SSL certificates..."
-if [ ! -d "ssl" ] || [ ! -f "ssl/fullchain.pem" ] || [ ! -f "ssl/privkey.pem" ]; then
-    echo "⚠️  SSL certificates not found in ssl/ folder"
-    echo ""
-    echo "You need SSL certificates for locationking.ru:"
-    echo "1. Get certificates from your hosting provider"
-    echo "2. Place them in ssl/ folder:"
-    echo "   - ssl/fullchain.pem"
-    echo "   - ssl/privkey.pem"
-    echo ""
-    echo "For testing without SSL, edit nginx/conf.d/locationking.ru.conf"
-    echo "and remove SSL configuration (not recommended for production)"
-    exit 1
+if [ -d "ssl" ] && [ -f "ssl/fullchain.pem" ] && [ -f "ssl/privkey.pem" ]; then
+    echo "✅ SSL certificates found (will use HTTPS)"
+else
+    echo "⚠️  SSL certificates not found - using HTTP only"
+    echo "   (SSL will be handled by hosting provider)"
 fi
-
-echo "✅ SSL certificates found"
 
 # Stop existing services
 echo "🛑 Stopping existing services..."
