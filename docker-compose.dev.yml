@@ -1,0 +1,41 @@
+# Этот файл переопределяет docker-compose.yml для разработки
+# Запуск: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+
+  nginx:
+    ports:
+      - "80:80"  # только HTTP в dev, без SSL
+
+  backend:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend/app:/app/app  # hot reload
+    environment:
+      - DEBUG=true
+    ports:
+      - "8000:8000"  # прямой доступ к API в dev
+
+  frontend:
+    # В dev — node dev server вместо nginx
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"  # прямой доступ в dev
+
+  db:
+    ports:
+      - "5432:5432"  # прямой доступ к БД в dev (для DBeaver и т.д.)
+
+  redis:
+    ports:
+      - "6379:6379"  # прямой доступ к Redis в dev
+
+  keycloak:
+    ports:
+      - "8080:8080"  # прямой доступ к Keycloak admin console в dev

@@ -1,0 +1,10 @@
+.env
+*.pyc
+__pycache__/
+.pytest_cache/
+node_modules/
+dist/
+.vite/
+*.log
+pgdata/
+redisdata/
