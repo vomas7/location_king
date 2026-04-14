@@ -1,6 +1,6 @@
 """
 Сервис для работы с космическими снимками.
-Поддерживает разные провайдеры (Mapbox, Sentinel-2, etc.)
+Поддерживает разные провайдеры (ESRI World Imagery, Mapbox, Sentinel-2, etc.)
 """
 import asyncio
 import logging
@@ -77,8 +77,84 @@ class BaseSatelliteProvider(ABC):
         return west, south, east, north
 
 
+class ESRISatelliteProvider(BaseSatelliteProvider):
+    """Провайдер космических снимков ESRI World Imagery"""
+    
+    def __init__(self):
+        self.base_url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+        self.client = httpx.AsyncClient(timeout=30.0)
+    
+    async def get_satellite_image(
+        self,
+        center_lng: float,
+        center_lat: float,
+        width_km: int = 5,
+        height_km: int = 5,
+    ) -> Optional[SatelliteImage]:
+        """
+        Получить статичное изображение со спутника от ESRI World Imagery.
+        
+        ESRI World Imagery: https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer
+        """
+        try:
+            # Рассчитываем границы области
+            bounds = self._calculate_bounds(center_lng, center_lat, width_km, height_km)
+            west, south, east, north = bounds
+            
+            # Для ESRI нам нужно рассчитать зум и координаты тайла
+            # Используем приблизительный расчёт для зума 15 (хорошая детализация)
+            zoom = 15
+            
+            # Конвертируем координаты в тайлы
+            tile_x, tile_y = self._lnglat_to_tile(center_lng, center_lat, zoom)
+            
+            # Формируем URL тайла
+            tile_url = self.base_url.format(z=zoom, y=tile_y, x=tile_x)
+            
+            # Для фронтенда создаём URL шаблон
+            tile_template = self.base_url
+            
+            return SatelliteImage(
+                image_url=tile_template,  # Шаблон URL для фронтенда
+                bounds=bounds,
+                center=(center_lng, center_lat),
+                provider="esri",
+                metadata={
+                    "tile_url": tile_url,
+                    "zoom": zoom,
+                    "tile_x": tile_x,
+                    "tile_y": tile_y,
+                    "width_km": width_km,
+                    "height_km": height_km,
+                    "bounds": bounds,
+                    "attribution": "© Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"ESRI provider error: {e}")
+            return None
+    
+    @staticmethod
+    def _lnglat_to_tile(lng: float, lat: float, zoom: int) -> tuple[int, int]:
+        """Конвертировать координаты в номер тайла"""
+        import math
+        
+        # Формула конвертации координат в тайлы
+        n = 2.0 ** zoom
+        lat_rad = math.radians(lat)
+        x = int((lng + 180.0) / 360.0 * n)
+        y = int((1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n)
+        
+        return x, y
+    
+    async def close(self):
+        """Закрыть HTTP-клиент"""
+        await self.client.aclose()
+
+
 class MapboxSatelliteProvider(BaseSatelliteProvider):
-    """Провайдер космических снимков Mapbox"""
+    """Провайдер космических снимков Mapbox (запасной вариант)"""
     
     def __init__(self, access_token: Optional[str] = None):
         self.access_token = access_token or settings.mapbox_access_token
@@ -196,6 +272,7 @@ class SatelliteProviderFactory:
             Экземпляр провайдера
         """
         providers = {
+            "esri": ESRISatelliteProvider,
             "mapbox": MapboxSatelliteProvider,
             "sentinel": SentinelSatelliteProvider,
         }
@@ -219,8 +296,8 @@ async def get_satellite_provider() -> BaseSatelliteProvider:
     global _satellite_provider
     
     if _satellite_provider is None:
-        # Пока используем Mapbox как провайдер по умолчанию
-        _satellite_provider = SatelliteProviderFactory.create_provider("mapbox")
+        # Используем ESRI World Imagery как провайдер по умолчанию (бесплатный)
+        _satellite_provider = SatelliteProviderFactory.create_provider("esri")
     
     return _satellite_provider
 
