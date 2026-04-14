@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import sessions, rounds, zones
+from app.routers import sessions, rounds, zones, test
 from app.services.satellite_provider import close_satellite_provider
 
 # Настройка логирования
@@ -47,6 +47,8 @@ app.add_middleware(
 app.include_router(sessions.router)
 app.include_router(rounds.router)
 app.include_router(zones.router)
+if settings.debug:
+    app.include_router(test.router)
 
 
 @app.get("/api/health")

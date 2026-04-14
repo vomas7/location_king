@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 logger = logging.getLogger(__name__)
 
 
-from app.auth import get_current_user
+from app.auth_selector import get_current_user
 
 
 @router.post(

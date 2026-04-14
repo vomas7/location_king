@@ -64,10 +64,7 @@
     </div>
 
     <script>
-        // Автоматическое определение API URL
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const API_URL = isLocalhost ? '/api' : 'http://api.locationking.ru';
-        const TEST_MODE = true;  // Использовать тестовые эндпоинты
+        const API_URL = 'http://localhost:8000/api';
         let sessionId = null;
         let roundId = null;
         let targetCenter = null;
@@ -172,9 +169,7 @@
             
             try {
                 log('Начинаем игру...');
-                // Используем тестовый эндпоинт если в тестовом режиме
-                const endpoint = TEST_MODE ? '/api/test/session/start' : '/api/sessions/start';
-                const res = await fetch(API_URL + endpoint, {
+                const res = await fetch(API_URL + '/sessions/start', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ rounds_total: 5, view_extent_km: extentKm })

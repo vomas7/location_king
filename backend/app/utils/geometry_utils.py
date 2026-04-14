@@ -51,11 +51,12 @@ class LocationZoneUtils:
                 return None
             
             # Генерируем случайную точку внутри полигона зоны
-            # Используем PostGIS функцию ST_GeneratePoints
+            # Используем PostGIS функцию ST_GeneratePoints (возвращает MULTIPOINT)
             for attempt in range(max_attempts):
+                # ST_GeneratePoints возвращает MULTIPOINT, извлекаем первую точку с ST_PointN
                 point_stmt = select(
-                    func.ST_X(func.ST_GeneratePoints(zone.polygon, 1)),
-                    func.ST_Y(func.ST_GeneratePoints(zone.polygon, 1))
+                    func.ST_X(func.ST_PointN(func.ST_GeneratePoints(zone.polygon, 1), 1)),
+                    func.ST_Y(func.ST_PointN(func.ST_GeneratePoints(zone.polygon, 1), 1))
                 )
                 point_result = await session.execute(point_stmt)
                 point = point_result.first()
@@ -65,6 +66,22 @@ class LocationZoneUtils:
                     return float(lng), float(lat)
                 
                 logger.warning(f"Attempt {attempt + 1} failed to generate point in zone {zone_id}")
+                
+                # Альтернативный метод: используем ST_GeneratePoints с другим подходом
+                if attempt == max_attempts // 2:
+                    try:
+                        # Попробуем другой метод: генерируем точку в bounding box
+                        bbox_stmt = select(
+                            func.ST_X(func.ST_Centroid(zone.polygon)),
+                            func.ST_Y(func.ST_Centroid(zone.polygon))
+                        )
+                        bbox_result = await session.execute(bbox_stmt)
+                        centroid = bbox_result.first()
+                        if centroid and centroid[0] is not None and centroid[1] is not None:
+                            # Возвращаем центр зоны как fallback
+                            return float(centroid[0]), float(centroid[1])
+                    except Exception as e:
+                        logger.warning(f"Centroid fallback failed: {e}")
             
             logger.error(f"Failed to generate point in zone {zone_id} after {max_attempts} attempts")
             return None

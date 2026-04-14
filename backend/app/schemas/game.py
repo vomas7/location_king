@@ -67,7 +67,7 @@ class ZoneResponse(BaseModel):
     name: str
     description: Optional[str]
     difficulty: int
-    category: Optional[str]
+    category: Optional[str] = None
     
     class Config:
         from_attributes = True
