@@ -37,7 +37,9 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8000/api';
+        // Автоматическое определение протокола (HTTP для localhost, HTTPS для production)
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_URL = isLocalhost ? 'http://localhost:8000/api' : 'https://api.locationking.ru';
         let sessionId = null;
         let roundId = null;
         let map = null;
