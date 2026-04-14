@@ -1,10 +1,14 @@
-services:
+version: '3.8'
 
+# Location King Production
+# Чистая конфигурация для locationking.ru
+
+services:
   # ─────────────────────────────────────────
-  # NGINX — единственная точка входа
+  # NGINX — фронтенд и прокси
   # ─────────────────────────────────────────
   nginx:
-    image: nginx:1.25-alpine
+    image: nginx:alpine
     container_name: location_king_nginx
     restart: unless-stopped
     ports:
@@ -12,93 +16,71 @@ services:
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - nginx_logs:/var/log/nginx
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./ssl:/etc/nginx/ssl:ro
     depends_on:
       - backend
-      - frontend
       - keycloak
     networks:
-      - public_net
-      - internal_net
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      - location_king_net
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # ─────────────────────────────────────────
-  # FRONTEND — OpenLayers (собранная статика)
-  # ─────────────────────────────────────────
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: location_king_frontend
-    restart: unless-stopped
-    networks:
-      - internal_net
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # ─────────────────────────────────────────
-  # BACKEND — FastAPI
+  # BACKEND — FastAPI приложение
   # ─────────────────────────────────────────
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend
     container_name: location_king_backend
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-      - KEYCLOAK_URL=http://keycloak:8080
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
       - KEYCLOAK_REALM=${KEYCLOAK_REALM}
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
+      - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN}
+      - DEBUG=false
     depends_on:
-      db:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - internal_net
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      - location_king_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # ─────────────────────────────────────────
-  # PostgreSQL + PostGIS — игровая БД
+  # POSTGRESQL + POSTGIS — основная БД
   # ─────────────────────────────────────────
-  db:
-    image: postgis/postgis:17-3.4
-    container_name: location_king_db
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: location_king_postgres
     restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+    networks:
+      - location_king_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - internal_net
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
   # ─────────────────────────────────────────
-  # REDIS — игровые сессии и кэш
+  # REDIS — кэш и сессии
   # ─────────────────────────────────────────
   redis:
     image: redis:7-alpine
@@ -106,107 +88,46 @@ services:
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
-      - redisdata:/data
+      - redis_data:/data
+    networks:
+      - location_king_net
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - internal_net
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
   # ─────────────────────────────────────────
-  # KEYCLOAK — авторизация
+  # KEYCLOAK — аутентификация
   # ─────────────────────────────────────────
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
     container_name: location_king_keycloak
     restart: unless-stopped
-    command: start-dev --import-realm
+    command: start-dev
     environment:
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      - KC_DB=postgres
-      - KC_DB_URL=jdbc:postgresql://keycloak_db:5432/${KEYCLOAK_DB}
-      - KC_DB_USERNAME=${KEYCLOAK_DB_USER}
-      - KC_DB_PASSWORD=${KEYCLOAK_DB_PASSWORD}
       - KC_HOSTNAME_STRICT=false
       - KC_HTTP_ENABLED=true
       - KC_PROXY=edge
     volumes:
-      - ./keycloak:/opt/keycloak/data/import:ro
+      - keycloak_data:/opt/keycloak/data
     depends_on:
-      keycloak_db:
-        condition: service_healthy
+      - postgres
     networks:
-      - internal_net
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # ─────────────────────────────────────────
-  # PostgreSQL — отдельно для Keycloak
-  # ─────────────────────────────────────────
-  keycloak_db:
-    image: postgres:17
-    container_name: location_king_keycloak_db
-    restart: unless-stopped
-    environment:
-      - POSTGRES_USER=${KEYCLOAK_DB_USER}
-      - POSTGRES_PASSWORD=${KEYCLOAK_DB_PASSWORD}
-      - POSTGRES_DB=${KEYCLOAK_DB}
-    volumes:
-      - keycloak_pgdata:/var/lib/postgresql/data
+      - location_king_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${KEYCLOAK_DB_USER} -d ${KEYCLOAK_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - internal_net
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
-    networks:
-      - backend
-    volumes:
-      - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/letsencrypt
-    entrypoint: >
-      sh -c "trap exit TERM;
-      while :; do
-        certbot renew;
-        sleep 12h & wait $${!};
-      done"
-    restart: always
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-volumes:
-  pgdata:
-  redisdata:
-  keycloak_pgdata:
-  nginx_logs:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
-  public_net:
+  location_king_net:
     driver: bridge
-  internal_net:
-    driver: bridge
-    internal: true
+
+volumes:
+  postgres_data:
+  redis_data:
+  keycloak_data:

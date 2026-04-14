@@ -1,259 +1,154 @@
-# 🦁 Location King - Геогейссер с космическими снимками
+# 🦁 Location King
 
-**Профессиональная игровая платформа для любителей географии и карт**
-
-## 🎯 О проекте
-
-Location King - это современный геогейссер, где игроки:
-1. **Видят** квадрат космического снимка (ограниченный экстент)
-2. **Ищут** это место на карте OpenStreetMap
-3. **Отмечают** предполагаемый центр снимка
-4. **Получают** очки на основе точности
-
-## 🏆 Ключевые особенности
-
-### 🎮 Игровой процесс
-- **Разные режимы:** Solo, Multiplayer, Challenge, Practice
-- **Система рейтингов:** ELO рейтинг (как в шахматах)
-- **Уровни и опыт:** Прогрессия игроков
-- **Ежедневные челленджи:** Уникальные задания каждый день
-- **Таблицы лидеров:** Рейтинги по ELO, общему счёту, среднему счёту
-
-### 🗺️ Игровые зоны
-- **12 категорий:** Города, природа, побережья, горы, пустыни и др.
-- **7 уровней сложности:** От "Очень легко" до "Мастер"
-- **Автостатистика:** Популярность, средний счёт, среднее расстояние
-- **Географическая привязка:** Страны, регионы, теги
-
-### 📊 Аналитика
-- **Детальная статистика** для каждого игрока
-- **Глобальная статистика** игры
-- **Анализ популярности** зон
-- **Временная статистика** (последние 30 дней)
-
-## 🏗️ Технологический стек
-
-### Бэкенд
-- **Python 3.10+** с **FastAPI** (асинхронный)
-- **PostgreSQL 15+** с **PostGIS** (геоданные)
-- **SQLAlchemy 2.0** (async/await)
-- **Alembic** (миграции)
-- **Redis** (кэширование и сессии)
-
-### Фронтенд
-- **OpenLayers** (интерактивные карты)
-- **Bootstrap 5** (адаптивный дизайн)
-- **Vanilla JavaScript** (чистый JS)
-
-### Инфраструктура
-- **Docker** + **Docker Compose**
-- **Nginx** (reverse proxy)
-- **Keycloak** (аутентификация)
-- **Mapbox Satellite API** (космические снимки)
+Профессиональный геогейссер с космическими снимками. Игроки видят квадрат спутникового снимка и должны найти его центр на карте.
 
 ## 🚀 Быстрый старт
 
-### Вариант 1: Docker Compose (рекомендуется)
+### Требования
+- Docker & Docker Compose
+- SSL сертификаты для вашего домена
+- Домен (например, locationking.ru)
 
-```bash
-# 1. Клонируйте репозиторий
-git clone <repository-url>
-cd location_king
+### Установка
 
-# 2. Настройте окружение
-cp .env.example .env
-# Отредактируйте .env, добавьте MAPBOX_ACCESS_TOKEN
-
-# 3. Запустите все сервисы
-docker-compose up --build
-
-# 4. Откройте в браузере
-# - Фронтенд: http://localhost
-# - Бэкенд API: http://localhost:8000
-# - Swagger UI: http://localhost:8000/api/docs
-```
-
-### Вариант 2: Локальная разработка
-
-```bash
-# 1. Установите PostgreSQL с PostGIS
-# Ubuntu/Debian:
-sudo apt-get install postgresql postgresql-contrib postgis
-
-# 2. Запустите скрипт настройки
-./setup_local_dev.sh
-
-# 3. Запустите бэкенд
-cd backend
-source venv/bin/activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# 4. Запустите фронтенд (в другом терминале)
-cd frontend
-python3 -m http.server 8080
-
-# 5. Откройте: http://localhost:8080
-```
-
-## 🔑 Получение Mapbox токена
-
-1. Зарегистрируйтесь на [Mapbox](https://www.mapbox.com/)
-2. Перейдите в [Dashboard](https://account.mapbox.com/)
-3. Скопируйте **Default public token**
-4. Добавьте в `.env` файл:
+1. **Клонируйте репозиторий**
+   ```bash
+   git clone <repository-url>
+   cd location_king
    ```
-   MAPBOX_ACCESS_TOKEN=ваш_токен_здесь
+
+2. **Настройте окружение**
+   ```bash
+   cp .env.example .env
+   # Отредактируйте .env файл
    ```
+
+3. **Добавьте SSL сертификаты**
+   ```bash
+   mkdir -p ssl
+   # Поместите ваши сертификаты:
+   # - ssl/fullchain.pem
+   # - ssl/privkey.pem
+   ```
+
+4. **Запустите приложение**
+   ```bash
+   ./deploy.sh
+   ```
+
+## 🏗️ Архитектура
+
+### Технологии
+- **Backend:** Python + FastAPI (асинхронный)
+- **Frontend:** OpenLayers + Bootstrap 5
+- **База данных:** PostgreSQL + PostGIS
+- **Аутентификация:** Keycloak
+- **Спутниковые снимки:** ESRI World Imagery (бесплатно)
+- **Инфраструктура:** Docker + Nginx
+
+### Сервисы
+- `nginx` - Веб-сервер и прокси
+- `backend` - FastAPI приложение
+- `postgres` - База данных с PostGIS
+- `redis` - Кэш и сессии
+- `keycloak` - Аутентификация
 
 ## 📁 Структура проекта
 
 ```
 location_king/
-├── backend/                 # FastAPI бэкенд
-│   ├── app/
-│   │   ├── models/         # SQLAlchemy модели
-│   │   │   ├── user.py     # Пользователи с рейтингами
-│   │   │   ├── game_session.py  # Игровые сессии
-│   │   │   ├── round.py    # Раунды с геоданными
-│   │   │   ├── location_zone.py  # Игровые зоны
-│   │   │   └── enums.py    # Enum'ы игры
-│   │   ├── routers/        # API эндпоинты
-│   │   ├── services/       # Бизнес-логика
-│   │   ├── schemas/        # Pydantic схемы
-│   │   ├── utils/          # Утилиты
-│   │   ├── main.py         # Точка входа
-│   │   └── config.py       # Конфигурация
-│   ├── alembic/           # Миграции
-│   ├── scripts/           # Вспомогательные скрипты
-│   └── requirements.txt   # Зависимости Python
-├── frontend/              # Веб-интерфейс
-│   ├── index.html         # Основной HTML
-│   ├── nginx.conf         # Конфигурация Nginx
-│   └── Dockerfile
-├── nginx/                 # Конфигурация основного Nginx
-├── docker-compose.yml     # Docker Compose
-└── docker-compose.dev.yml # Docker Compose для разработки
+├── backend/                 # FastAPI приложение
+│   ├── app/                # Исходный код
+│   ├── alembic/            # Миграции базы данных
+│   ├── scripts/            # Вспомогательные скрипты
+│   └── requirements.txt    # Зависимости Python
+├── frontend/               # Веб-интерфейс
+│   └── index.html          # Основная страница
+├── nginx/                  # Конфигурация Nginx
+│   └── conf.d/
+│       └── locationking.ru.conf
+├── ssl/                    # SSL сертификаты
+├── .env                    # Конфигурация (не в репозитории)
+├── .env.example            # Пример конфигурации
+├── docker-compose.yml      # Docker Compose
+├── deploy.sh               # Скрипт деплоя
+└── README.md               # Эта документация
 ```
 
-## 📡 API Документация
+## 🔧 Конфигурация
 
-После запуска доступны:
-
-- **Swagger UI:** http://localhost:8000/api/docs
-- **ReDoc:** http://localhost:8000/redoc  
-- **OpenAPI схема:** http://localhost:8000/api/openapi.json
-
-### Основные эндпоинты
-
-#### Игровые сессии
-- `POST /api/sessions/start` - Начать новую сессию
-- `GET /api/sessions/{session_id}` - Получить информацию о сессии
-- `POST /api/sessions/{session_id}/finish` - Завершить сессию
-
-#### Раунды
-- `GET /api/rounds/{round_id}` - Получить информацию о раунде
-- `POST /api/rounds/{round_id}/guess` - Отправить догадку
-- `GET /api/rounds/{round_id}/hint` - Получить подсказку
-
-#### Игровые зоны
-- `GET /api/zones/` - Список доступных зон
-- `GET /api/zones/random` - Случайная зона
-- `GET /api/zones/{zone_id}` - Информация о зоне
-
-#### Статистика
-- `GET /api/stats/user/{user_id}` - Статистика пользователя
-- `GET /api/stats/global` - Глобальная статистика
-- `GET /api/stats/leaderboard` - Таблица лидеров
-
-## 🎮 Как играть
-
-1. **Запустите** проект
-2. **Откройте** http://localhost (или http://localhost:8080)
-3. **Нажмите** "Начать игру"
-4. **Посмотрите** на космический снимок
-5. **Найдите** это место на карте ниже
-6. **Кликните** на карте или введите координаты
-7. **Нажмите** "Отправить догадку"
-8. **Получите** результат: расстояние и очки
-
-## 🔧 Разработка
-
-### Миграции базы данных
+### .env файл
+Создайте `.env` файл на основе `.env.example`:
 
 ```bash
-cd backend
+# База данных
+POSTGRES_USER=locationking
+POSTGRES_PASSWORD=your_password
+POSTGRES_DB=location_king
 
-# Создать новую миграцию
-alembic revision --autogenerate -m "описание изменений"
+# Redis
+REDIS_PASSWORD=your_redis_password
 
-# Применить миграции
-alembic upgrade head
+# Keycloak
+KEYCLOAK_ADMIN=admin
+KEYCLOAK_ADMIN_PASSWORD=admin_password
+KEYCLOAK_URL=https://your-domain.ru/auth
+KEYCLOAK_REALM=location-king
+KEYCLOAK_CLIENT_ID=location-king-client
 
-# Откатить миграцию
-alembic downgrade -1
+# Приложение
+DATABASE_URL=postgresql+asyncpg://user:password@postgres:5432/location_king
+REDIS_URL=redis://:password@redis:6379/0
+MAPBOX_ACCESS_TOKEN=  # Опционально, по умолчанию используется ESRI
 ```
 
-### Тестирование
+### SSL сертификаты
+Поместите ваши SSL сертификаты в папку `ssl/`:
+- `ssl/fullchain.pem` - Публичный сертификат
+- `ssl/privkey.pem` - Приватный ключ
 
-```bash
-cd backend
-source venv/bin/activate
+## 🎮 Игровой процесс
 
-# Запуск тестов
-pytest tests/
+1. **Начало игры:** Игрок начинает новую сессию
+2. **Показ снимка:** Отображается квадрат спутникового снимка
+3. **Поиск на карте:** Игрок ищет это место на карте OpenStreetMap
+4. **Отметка точки:** Игрок отмечает предполагаемый центр снимка
+5. **Результат:** Система вычисляет расстояние и начисляет очки
 
-# Запуск с покрытием кода
-pytest --cov=app tests/
-```
+## 📊 Особенности
 
-### Добавление новых зон
+### Для игроков
+- Система рейтингов ELO
+- Уровни и опыт
+- Ежедневные челленджи
+- Таблицы лидеров
+- Детальная статистика
 
-```bash
-cd backend
-python3 scripts/add_more_zones.py
-```
+### Для разработчиков
+- Профессиональная архитектура
+- Полная документация API
+- Автоматические миграции БД
+- Готовность к продакшену
+- Масштабируемость
 
-## 📊 Модели данных
+## 🔐 Безопасность
 
-### User (игрок)
-- **Рейтинги:** ELO, уровень, опыт, ранг
-- **Статистика:** игры, раунды, счёт, расстояние
-- **Профиль:** аватар, био, страна, язык
+- HTTPS с правильными security headers
+- Аутентификация через Keycloak
+- Валидация всех входных данных
+- Защита от распространенных атак
 
-### GameSession (игровая сессия)
-- **Режимы:** solo, multiplayer, challenge, practice
-- **Статусы:** active, finished, abandoned, paused
-- **Статистика:** счёт, время, раунды
+## 📞 Поддержка
 
-### Round (раунд)
-- **Геоданные:** цель, догадка, расстояние
-- **Результаты:** очки, точность, уровень очков
-- **Время:** начало, завершение, длительность
-
-### LocationZone (игровая зона)
-- **География:** полигон, центр, площадь, страна, регион
-- **Категории:** city, nature, coast, mountains, desert, etc.
-- **Сложность:** 1-7 (очень легко - мастер)
-- **Статистика:** популярность, средний счёт, среднее расстояние
-
-## 🤝 Вклад в проект
-
-1. Форкните репозиторий
-2. Создайте ветку для новой функциональности
-3. Внесите изменения
-4. Напишите тесты
-5. Создайте Pull Request
+Если возникли проблемы:
+1. Проверьте логи: `docker-compose logs -f`
+2. Убедитесь в наличии SSL сертификатов
+3. Проверьте конфигурацию в `.env` файле
 
 ## 📄 Лицензия
 
-MIT License - смотрите файл [LICENSE](LICENSE)
-
-## 📞 Контакты
-
-- **Разработчик:** Илья
-- **Ассистент:** Лев 🦁
-- **Проект:** Location King - геогейссер с космическими снимками
+MIT License
 
 ---
 
-**Удачи в игре и разработке! Если что-то не работает - создавайте issue!** 🦁
+**Удачи с Location King!** 🦁
