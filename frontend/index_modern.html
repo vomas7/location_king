@@ -416,6 +416,87 @@
         </div>
     </div>
 
-    <script src="index.js"></script>
-</body>
-</html>
+    <script>
+        // Глобальные переменные
+        let satelliteMap, guessMap;
+        let currentSession = null;
+        let currentRound = null;
+        let selectedPoint = null;
+        let marker = null;
+        
+        // Базовый URL API
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost/api' 
+            : 'https://api.locationking.ru/api';
+        
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            initMaps();
+            updateStats();
+        });
+        
+        // Инициализация карт
+        function initMaps() {
+            // Карта со спутниковым снимком (верхняя, большая)
+            satelliteMap = new ol.Map({
+                target: 'satelliteMap',
+                layers: [
+                    new ol.layer.Tile({
+                        source: new ol.source.XYZ({
+                            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                            attributions: '© Esri, Maxar, Earthstar Geographics, USDA FSA, USGS, Aerogrid, IGN, IGP, and the GIS User Community'
+                        })
+                    })
+                ],
+                view: new ol.View({
+                    center: ol.proj.fromLonLat([37.6173, 55.7558]), // Москва
+                    zoom: 10,
+                    minZoom: 1,
+                    maxZoom: 19
+                }),
+                controls: ol.control.defaults({
+                    zoom: false,
+                    rotate: false
+                })
+            });
+            
+            // Карта для выбора точки (нижняя, маленькая)
+            guessMap = new ol.Map({
+                target: 'guessMap',
+                layers: [
+                    new ol.layer.Tile({
+                        source: new ol.source.OSM()
+                    })
+                ],
+                view: new ol.View({
+                    center: ol.proj.fromLonLat([37.6173, 55.7558]), // Москва
+                    zoom: 3,
+                    minZoom: 1,
+                    maxZoom: 19
+                })
+            });
+            
+            // Обработчик клика на карте для выбора
+            guessMap.on('click', function(event) {
+                if (!currentSession) {
+                    addLog('Сначала начните игру!', 'error');
+                    return;
+                }
+                
+                const coords = ol.proj.toLonLat(event.coordinate);
+                selectedPoint = {
+                    type: 'Point',
+                    coordinates: coords
+                };
+                
+                // Удаляем старый маркер
+                if (marker) {
+                    guessMap.removeLayer(marker);
+                }
+                
+                // Добавляем новый маркер
+                marker = new ol.layer.Vector({
+                    source: new ol.source.Vector({
+                        features: [
+                            new ol.Feature({
+                                geometry: new ol
