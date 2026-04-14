@@ -1,24 +1,21 @@
-.PHONY: dev prod down logs ps shell-backend shell-db
+.PHONY: dev dev-d prod down down-v logs logs-backend ps \
+        shell-backend shell-db shell-redis migrate migration
 
-# ─── Разработка ───────────────────────────────────────────────
 dev:
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 dev-d:
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 
-# ─── Продакшн ─────────────────────────────────────────────────
 prod:
 	docker compose up --build -d
 
-# ─── Остановка ────────────────────────────────────────────────
 down:
 	docker compose down
 
 down-v:
-	docker compose down -v  # + удалить volumes (осторожно!)
+	docker compose down -v
 
-# ─── Логи ─────────────────────────────────────────────────────
 logs:
 	docker compose logs -f
 
@@ -28,11 +25,10 @@ logs-backend:
 logs-db:
 	docker compose logs -f db
 
-# ─── Статус ───────────────────────────────────────────────────
 ps:
 	docker compose ps
 
-# ─── Shells ───────────────────────────────────────────────────
+# ─── Shells (доступны после: ssh -L порт:localhost:порт user@server) ───
 shell-backend:
 	docker compose exec backend bash
 
@@ -42,9 +38,13 @@ shell-db:
 shell-redis:
 	docker compose exec redis redis-cli -a $${REDIS_PASSWORD}
 
-# ─── Миграции ─────────────────────────────────────────────────
+# ─── Миграции ─────────────────────────────────────────────────────────
 migrate:
 	docker compose exec backend alembic upgrade head
 
+# Использование: make migration msg="add leaderboard table"
 migration:
 	docker compose exec backend alembic revision --autogenerate -m "$(msg)"
+
+rollback:
+	docker compose exec backend alembic downgrade -1

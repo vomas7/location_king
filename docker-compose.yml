@@ -1,11 +1,11 @@
 services:
 
   # ─────────────────────────────────────────
-  # NGINX — точка входа
+  # NGINX — единственная точка входа
   # ─────────────────────────────────────────
   nginx:
     image: nginx:1.25-alpine
-    container_name: geogame_nginx
+    container_name: location_king_nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -20,6 +20,11 @@ services:
     networks:
       - public_net
       - internal_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ─────────────────────────────────────────
   # FRONTEND — OpenLayers (собранная статика)
@@ -28,10 +33,15 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: geogame_frontend
+    container_name: location_king_frontend
     restart: unless-stopped
     networks:
       - internal_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ─────────────────────────────────────────
   # BACKEND — FastAPI
@@ -40,15 +50,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: geogame_backend
+    container_name: location_king_backend
     restart: unless-stopped
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - KEYCLOAK_URL=http://keycloak:8080
       - KEYCLOAK_REALM=${KEYCLOAK_REALM}
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
-      - SECRET_KEY=${SECRET_KEY}
     depends_on:
       db:
         condition: service_healthy
@@ -56,15 +65,18 @@ services:
         condition: service_healthy
     networks:
       - internal_net
-    volumes:
-      - ./backend/app:/app/app  # hot reload в dev режиме
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ─────────────────────────────────────────
   # PostgreSQL + PostGIS — игровая БД
   # ─────────────────────────────────────────
   db:
-    image: postgis/postgis:16-3.4
-    container_name: geogame_db
+    image: postgis/postgis:17-3.4
+    container_name: location_king_db
     restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
@@ -72,7 +84,6 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -80,13 +91,18 @@ services:
       retries: 5
     networks:
       - internal_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ─────────────────────────────────────────
   # REDIS — игровые сессии и кэш
   # ─────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: geogame_redis
+    container_name: location_king_redis
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
@@ -98,15 +114,20 @@ services:
       retries: 5
     networks:
       - internal_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ─────────────────────────────────────────
   # KEYCLOAK — авторизация
   # ─────────────────────────────────────────
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
-    container_name: geogame_keycloak
+    container_name: location_king_keycloak
     restart: unless-stopped
-    command: start-dev --import-realm  # в prod заменить на start
+    command: start-dev --import-realm
     environment:
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
@@ -116,7 +137,7 @@ services:
       - KC_DB_PASSWORD=${KEYCLOAK_DB_PASSWORD}
       - KC_HOSTNAME_STRICT=false
       - KC_HTTP_ENABLED=true
-      - KC_PROXY=edge  # nginx стоит перед ним
+      - KC_PROXY=edge
     volumes:
       - ./keycloak:/opt/keycloak/data/import:ro
     depends_on:
@@ -124,13 +145,18 @@ services:
         condition: service_healthy
     networks:
       - internal_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ─────────────────────────────────────────
   # PostgreSQL — отдельно для Keycloak
   # ─────────────────────────────────────────
   keycloak_db:
-    image: postgres:16-alpine
-    container_name: geogame_keycloak_db
+    image: postgres:17
+    container_name: location_king_keycloak_db
     restart: unless-stopped
     environment:
       - POSTGRES_USER=${KEYCLOAK_DB_USER}
@@ -145,22 +171,42 @@ services:
       retries: 5
     networks:
       - internal_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-# ─────────────────────────────────────────
-# VOLUMES
-# ─────────────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    networks:
+      - backend
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    entrypoint: >
+      sh -c "trap exit TERM;
+      while :; do
+        certbot renew;
+        sleep 12h & wait $${!};
+      done"
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   pgdata:
   redisdata:
   keycloak_pgdata:
   nginx_logs:
 
-# ─────────────────────────────────────────
-# NETWORKS
-# ─────────────────────────────────────────
 networks:
-  public_net:       # nginx смотрит наружу
+  public_net:
     driver: bridge
-  internal_net:     # все сервисы общаются только внутри
+  internal_net:
     driver: bridge
     internal: true

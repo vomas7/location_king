@@ -2,18 +2,19 @@
 fastapi==0.111.0
 uvicorn[standard]==0.30.1
 
-# БД
+# БД — async driver для приложения, sync driver для Alembic
 asyncpg==0.29.0
+psycopg2-binary==2.9.9
 sqlalchemy[asyncio]==2.0.30
 alembic==1.13.1
-geoalchemy2==0.15.1  # PostGIS типы в SQLAlchemy
+geoalchemy2==0.15.1
 
 # Redis
 redis[hiredis]==5.0.4
 
-# Auth (JWT от Keycloak)
+# Auth — проверка JWT от Keycloak через JWKS
 python-jose[cryptography]==3.3.0
-httpx==0.27.0  # для запросов к Keycloak JWKS
+httpx==0.27.0
 
 # Геометрия
 shapely==2.0.4
@@ -21,4 +22,3 @@ shapely==2.0.4
 # Утилиты
 pydantic==2.7.1
 pydantic-settings==2.3.0
-python-dotenv==1.0.1
