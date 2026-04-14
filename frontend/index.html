@@ -134,6 +134,19 @@
                                 </select>
                                 <div class="form-text">Выберите зону для игры или оставьте для случайного выбора</div>
                             </div>
+
+                            <div class="mt-4">
+                                <h6><i class="bi bi-layers"></i> Слои карты</h6>
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-outline-primary active" onclick="switchLayer('esri')" id="esri-layer-btn">
+                                        <i class="bi bi-satellite"></i> Спутник
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="switchLayer('osm')" id="osm-layer-btn">
+                                        <i class="bi bi-map"></i> Карта
+                                    </button>
+                                </div>
+                                <div class="form-text">Переключитесь между спутниковыми снимками и обычной картой</div>
+                            </div>
                         </div>
 
                         <!-- Центральная колонка: Игровое поле -->
@@ -197,8 +210,19 @@
             map = new ol.Map({
                 target: 'map',
                 layers: [
+                    // ESRI World Imagery - космические снимки
                     new ol.layer.Tile({
-                        source: new ol.source.OSM()
+                        source: new ol.source.XYZ({
+                            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                            attributions: '© Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+                            maxZoom: 19
+                        }),
+                        visible: true
+                    }),
+                    // OpenStreetMap как подложка (опционально)
+                    new ol.layer.Tile({
+                        source: new ol.source.OSM(),
+                        visible: false
                     })
                 ],
                 view: new ol.View({
@@ -240,6 +264,36 @@
                 map.addLayer(marker);
                 logAction('Выбрана точка на карте: ' + coordinates[0].toFixed(4) + ', ' + coordinates[1].toFixed(4));
             });
+        }
+
+        // Переключение слоёв карты
+        function switchLayer(layerType) {
+            const esriLayer = map.getLayers().item(0);
+            const osmLayer = map.getLayers().item(1);
+            const esriBtn = document.getElementById('esri-layer-btn');
+            const osmBtn = document.getElementById('osm-layer-btn');
+            
+            if (layerType === 'esri') {
+                esriLayer.setVisible(true);
+                osmLayer.setVisible(false);
+                esriBtn.classList.add('active');
+                esriBtn.classList.remove('btn-outline-primary');
+                esriBtn.classList.add('btn-primary');
+                osmBtn.classList.remove('active');
+                osmBtn.classList.remove('btn-secondary');
+                osmBtn.classList.add('btn-outline-secondary');
+                logAction('Переключено на спутниковые снимки (ESRI World Imagery)');
+            } else {
+                esriLayer.setVisible(false);
+                osmLayer.setVisible(true);
+                osmBtn.classList.add('active');
+                osmBtn.classList.remove('btn-outline-secondary');
+                osmBtn.classList.add('btn-secondary');
+                esriBtn.classList.remove('active');
+                esriBtn.classList.remove('btn-primary');
+                esriBtn.classList.add('btn-outline-primary');
+                logAction('Переключено на обычную карту (OpenStreetMap)');
+            }
         }
 
         // Логирование

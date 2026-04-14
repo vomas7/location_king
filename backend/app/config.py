@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     keycloak_realm: str
     keycloak_client_id: str
 
-    # Mapbox (для космических снимков)
+    # Mapbox (запасной вариант для космических снимков)
     mapbox_access_token: str = ""
 
     # Приложение
