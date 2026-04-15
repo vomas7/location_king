@@ -76,6 +76,9 @@ out/
 # Docker
 docker-data/
 
+# SSL certificates
+ssl/
+
 # Database
 *.db
 *.sqlite
