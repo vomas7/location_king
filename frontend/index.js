@@ -11,6 +11,8 @@ let totalRounds = 0;
 let correctAnswer = null; // Правильный ответ для текущего раунда
 let satelliteCenterMarker = null; // Маркер центра спутниковой карты
 let guessClickMarker = null; // Маркер клика на карте выбора
+let distanceHistory = []; // История расстояний для статистики
+let accuracyHistory = []; // История точности для статистики
 
 // Базовый URL API
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -162,14 +164,17 @@ async function startGame() {
         totalRounds = data.rounds_total;
         
         // Сбрасываем состояние
+        score = 0;
         selectedPoint = null;
         correctAnswer = null;
         clearMapMarkers();
+        distanceHistory = [];
+        accuracyHistory = [];
         
         // UI
         document.getElementById('startBtn').disabled = true;
         document.getElementById('submitBtn').disabled = false;
-        document.getElementById('hintBtn').disabled = false;
+        document.getElementById('centerBtn').disabled = false;
         
         updateStats();
         
@@ -262,10 +267,22 @@ async function submitGuess() {
         
         // Статистика
         score += result.score;
+        
+        // Сохраняем расстояние и вычисляем точность
+        const distanceKm = result.distance_meters / 1000;
+        distanceHistory.push(distanceKm);
+        
+        // Вычисляем точность (чем меньше расстояние, тем выше точность)
+        // Максимальное расстояние для 0% точности - 100 км
+        const maxDistance = 100;
+        const accuracy = Math.max(0, 100 - (distanceKm / maxDistance) * 100);
+        accuracyHistory.push(accuracy);
+        
         updateStats();
         
         // Показываем результат
-        addLog(`Расстояние: ${(result.distance_meters / 1000).toFixed(1)} км`, 'info');
+        addLog(`Расстояние: ${distanceKm.toFixed(1)} км`, 'info');
+        addLog(`Точность: ${accuracy.toFixed(0)}%`, 'info');
         addLog(`Очки: ${result.score}`, 'success');
         addLog(`Всего: ${score}`, 'success');
         
@@ -308,7 +325,7 @@ async function submitGuess() {
         } else if (result.session_completed) {
             addLog('Игра завершена! 🎉', 'success');
             document.getElementById('submitBtn').disabled = true;
-            document.getElementById('hintBtn').disabled = true;
+            document.getElementById('centerBtn').disabled = true;
             document.getElementById('startBtn').disabled = false;
             
             // Сбрасываем ограничения карты
@@ -347,6 +364,22 @@ function updateStats() {
     document.getElementById('scoreValue').textContent = score;
     document.getElementById('roundValue').textContent = currentSession ? 
         `${currentSession.rounds_done}/${totalRounds}` : '0/0';
+    
+    // Обновляем расстояние (среднее за все раунды)
+    if (distanceHistory.length > 0) {
+        const avgDistance = distanceHistory.reduce((a, b) => a + b, 0) / distanceHistory.length;
+        document.getElementById('distanceValue').textContent = `${avgDistance.toFixed(1)} км`;
+    } else {
+        document.getElementById('distanceValue').textContent = '-';
+    }
+    
+    // Обновляем точность (средняя точность в процентах)
+    if (accuracyHistory.length > 0) {
+        const avgAccuracy = accuracyHistory.reduce((a, b) => a + b, 0) / accuracyHistory.length;
+        document.getElementById('accuracyValue').textContent = `${avgAccuracy.toFixed(0)}%`;
+    } else {
+        document.getElementById('accuracyValue').textContent = '-';
+    }
 }
 
 function showLoading(show) {
@@ -402,8 +435,18 @@ function resetMapConstraints() {
     }
 }
 
-function getHint() {
-    addLog('Подсказка: обратите внимание на особенности ландшафта.', 'info');
+function centerSatelliteMap() {
+    if (!currentRound || !correctAnswer) {
+        addLog('Нет активного раунда для центрирования', 'error');
+        return;
+    }
+    
+    // Центрируем спутниковую карту на правильный ответ
+    const center = ol.proj.fromLonLat([correctAnswer.lon, correctAnswer.lat]);
+    satelliteMap.getView().setCenter(center);
+    satelliteMap.getView().setZoom(10);
+    
+    addLog('Карта отцентрирована на правильный ответ', 'info');
 }
 
 // Показать правильный ответ на карте
@@ -744,6 +787,33 @@ document.addEventListener('DOMContentLoaded', function() {
 // Глобальные функции
 window.startGame = startGame;
 window.submitGuess = submitGuess;
-window.getHint = getHint;
+window.centerSatelliteMap = centerSatelliteMap;
+
+// Переключение карты OSM
+function toggleOSMMap() {
+    const guessMap = document.getElementById('guessMap');
+    const toggleBtn = document.getElementById('toggleMinimapBtn');
+    
+    if (guessMap.classList.contains('expanded')) {
+        // Сворачиваем карту
+        guessMap.classList.remove('expanded');
+        toggleBtn.innerHTML = '<i class="fas fa-map"></i>';
+        toggleBtn.classList.remove('active');
+        addLog('Карта OSM свернута', 'info');
+    } else if (guessMap.classList.contains('hidden')) {
+        // Показываем карту
+        guessMap.classList.remove('hidden');
+        toggleBtn.innerHTML = '<i class="fas fa-map"></i>';
+        addLog('Карта OSM показана', 'info');
+    } else {
+        // Разворачиваем карту
+        guessMap.classList.add('expanded');
+        toggleBtn.innerHTML = '<i class="fas fa-compress"></i>';
+        toggleBtn.classList.add('active');
+        addLog('Карта OSM развернута', 'info');
+    }
+}
+
+window.toggleOSMMap = toggleOSMMap;
 window.toggleMinimap = toggleMinimap;
 window.showAnswerOnSatelliteMap = showAnswerOnSatelliteMap;
