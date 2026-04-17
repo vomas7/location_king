@@ -48,3 +48,19 @@ migration:
 
 rollback:
 	docker compose exec backend alembic downgrade -1
+
+# ─── Линтинг и форматирование ────────────────────────────────────────
+lint:
+	cd backend && ruff check .
+
+format:
+	cd backend && ruff format .
+
+fix:
+	cd backend && ruff check --fix .
+
+lint-all: lint format fix
+
+# Запуск линтинга локально (без Docker)
+lint-local:
+	./lint_and_fix.sh
