@@ -516,6 +516,29 @@
             transition: all 0.3s ease;
         }
         
+        /* Подсказка для кнопки карты */
+        .toggle-minimap-btn::after {
+            content: 'Отметить точку на карте';
+            position: absolute;
+            left: 60px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+        }
+        
+        .toggle-minimap-btn:hover::after {
+            opacity: 1;
+        }
+        
         .toggle-minimap-btn:hover {
             background: var(--secondary);
             transform: scale(1.1);
@@ -705,15 +728,7 @@
                         <option value="7">⚫ Эксперт</option>
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Размер квадрата:</label>
-                    <select class="form-select" id="extentSelect">
-                        <option value="1">1 км</option>
-                        <option value="3" selected>3 км</option>
-                        <option value="5">5 км</option>
-                        <option value="10">10 км</option>
-                    </select>
-                </div>
+
                 <div class="mb-3">
                     <label class="form-label">Количество раундов:</label>
                     <select class="form-select" id="roundsSelect">
