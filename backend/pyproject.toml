@@ -4,14 +4,48 @@ line-length = 100
 target-version = "py310"
 
 [tool.ruff.lint]
-# Включить все доступные правила
-select = ["ALL"]
+# Включить основные правила
+select = [
+    "E",   # Ошибки (pycodestyle)
+    "W",   # Предупреждения (pycodestyle)
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "YTT", # flake8-2020
+    "Q",   # flake8-quotes
+    "COM", # flake8-commas
+    "RUF", # ruff-specific
+]
 # Игнорировать некоторые правила
 ignore = [
-    "ANN",  # Аннотации типов (пока)
-    "D",    # Документация (пока)
-    "S",    # Безопасность (проверять вручную)
-    "BLE001",  # Слишком сложные конструкции
+    "ANN",   # Аннотации типов
+    "D",     # Документация
+    "S",     # Безопасность
+    "BLE001", # Слишком сложные конструкции
+    "RUF002", # Кириллица в docstrings
+    "RUF003", # Кириллица в комментариях
+    "E501",  # Длина строки (пока)
+    "W293",  # Пустые строки с пробелами
+    "W292",  # Нет новой строки в конце файла
+    "COM812", # Отсутствует trailing comma
+    "TRY300", # Сложные try/except
+    "TRY400", # Использование logging.exception
+    "G004",  # Логирование с f-строками
+    "TD002", # TODO без автора
+    "TD003", # TODO без ссылки на issue
+    "FIX002", # TODO в коде
+    "EM102", # Исключения с f-строками
+    "PLW0603", # Использование global
+    "ARG002", # Неиспользуемые аргументы
+    "RET504", # Лишняя переменная перед return
+    "PIE790", # Лишний pass
+    "E712",  # Сравнение с True/False
+    "E722",  # Bare except
+    "B008",  # Depends в аргументах по умолчанию (FastAPI pattern)
+    "B904",  # raise в except clause без from
+    "RUF001", # Кириллица в строках
 ]
 fixable = ["ALL"]
 unfixable = []

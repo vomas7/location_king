@@ -32,10 +32,10 @@ jobs:
         pip install ruff
     
     - name: Run ruff lint
-      run: ruff check app/
+      run: ruff check --config=backend/pyproject.toml app/
     
     - name: Run ruff format check
-      run: ruff format --check app/
+      run: ruff format --check --config=backend/pyproject.toml app/
   
   test:
     runs-on: ubuntu-latest
@@ -84,6 +84,10 @@ jobs:
     - name: Run simple tests
       env:
         DATABASE_URL: postgresql+asyncpg://locationking:locationking123@localhost:5432/location_king_test
+        REDIS_URL: redis://localhost:6379
+        KEYCLOAK_URL: https://keycloak.example.com
+        KEYCLOAK_REALM: location-king
+        KEYCLOAK_CLIENT_ID: location-king-backend
         DEBUG: true
       run: |
         # Просто проверяем что Python импортируется
@@ -97,6 +101,16 @@ jobs:
             print('✅ Main modules import successfully')
         except Exception as e:
             print(f'❌ Import error: {e}')
+            raise
+        "
+        
+        # Проверяем что можем импортировать game_mock.py
+        python -c "
+        try:
+            from app.game_mock import router
+            print('✅ Game mock module imports successfully')
+        except Exception as e:
+            print(f'❌ Game mock import error: {e}')
             raise
         "
   
