@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Быстрый тест</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Быстрый тест исправлений</h1>
+    
+    <div class="test" id="test1">1. Проверка синтаксиса файла...</div>
+    <div class="test" id="test2">2. Проверка функций...</div>
+    <div class="test" id="test3">3. Проверка API...</div>
+    
+    <script>
+        // Тест 1: Синтаксис
+        fetch('index.js')
+            .then(response => response.text())
+            .then(code => {
+                try {
+                    // Простая проверка - попробуем создать функцию из кода
+                    new Function(code);
+                    document.getElementById('test1').className = 'test success';
+                    document.getElementById('test1').innerHTML = '✅ 1. Синтаксис файла правильный';
+                } catch (e) {
+                    document.getElementById('test1').className = 'test error';
+                    document.getElementById('test1').innerHTML = `❌ 1. Ошибка синтаксиса: ${e.message}`;
+                }
+            })
+            .catch(() => {
+                document.getElementById('test1').className = 'test error';
+                document.getElementById('test1').innerHTML = '❌ 1. Не удалось загрузить файл';
+            });
+        
+        // Тест 2: Функции
+        setTimeout(() => {
+            const required = ['startGame', 'submitGuess', 'centerSatelliteMap', 'toggleOSMMap'];
+            const missing = required.filter(f => typeof window[f] !== 'function');
+            
+            if (missing.length === 0) {
+                document.getElementById('test2').className = 'test success';
+                document.getElementById('test2').innerHTML = '✅ 2. Все функции доступны';
+            } else {
+                document.getElementById('test2').className = 'test error';
+                document.getElementById('test2').innerHTML = `❌ 2. Отсутствуют: ${missing.join(', ')}`;
+            }
+        }, 100);
+        
+        // Тест 3: API
+        fetch('http://localhost:8000/api/mock/sessions/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rounds_total: 1 })
+        })
+        .then(response => {
+            if (response.ok) {
+                document.getElementById('test3').className = 'test success';
+                document.getElementById('test3').innerHTML = '✅ 3. API работает';
+            } else {
+                document.getElementById('test3').className = 'test error';
+                document.getElementById('test3').innerHTML = `❌ 3. API ошибка: ${response.status}`;
+            }
+        })
+        .catch(() => {
+            document.getElementById('test3').className = 'test error';
+            document.getElementById('test3').innerHTML = '❌ 3. API недоступен';
+        });
+    </script>
+</body>
+</html>
