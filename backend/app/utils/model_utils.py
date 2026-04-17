@@ -1,6 +1,7 @@
 """
 Утилиты для работы с моделями.
 """
+
 import logging
 from datetime import datetime, timedelta
 from typing import Any
@@ -27,11 +28,11 @@ class ModelUtils:
     ) -> dict[str, Any]:
         """
         Получить расширенную статистику пользователя.
-        
+
         Args:
             session: Асинхронная сессия БД
             user_id: ID пользователя
-            
+
         Returns:
             Словарь со статистикой
         """
@@ -53,9 +54,13 @@ class ModelUtils:
             sessions = sessions_result.scalars().all()
 
             # Получаем все раунды пользователя
-            rounds_stmt = select(Round).join(GameSession).where(
-                GameSession.user_id == user_id,
-                Round.status == RoundStatus.GUESSED,
+            rounds_stmt = (
+                select(Round)
+                .join(GameSession)
+                .where(
+                    GameSession.user_id == user_id,
+                    Round.status == RoundStatus.GUESSED,
+                )
             )
             rounds_result = await session.execute(rounds_stmt)
             rounds = rounds_result.scalars().all()
@@ -86,7 +91,8 @@ class ModelUtils:
                     game_modes[mode.value] = {
                         "games_played": len(mode_sessions),
                         "total_score": sum(s.total_score for s in mode_sessions),
-                        "average_score": sum(s.total_score for s in mode_sessions) / len(mode_sessions),
+                        "average_score": sum(s.total_score for s in mode_sessions)
+                        / len(mode_sessions),
                         "best_score": max(s.total_score for s in mode_sessions),
                         "worst_score": min(s.total_score for s in mode_sessions),
                     }
@@ -144,7 +150,9 @@ class ModelUtils:
                 "games_played": len(recent_sessions),
                 "rounds_played": len(recent_rounds),
                 "total_score": sum(s.total_score for s in recent_sessions),
-                "average_score": sum(s.total_score for s in recent_sessions) / len(recent_sessions) if recent_sessions else 0,
+                "average_score": sum(s.total_score for s in recent_sessions) / len(recent_sessions)
+                if recent_sessions
+                else 0,
             }
 
             # Прогресс по дням (последние 7 дней)
@@ -160,7 +168,9 @@ class ModelUtils:
                     "games_played": len(day_sessions),
                     "rounds_played": len(day_rounds),
                     "total_score": sum(s.total_score for s in day_sessions),
-                    "average_score": sum(s.total_score for s in day_sessions) / len(day_sessions) if day_sessions else 0,
+                    "average_score": sum(s.total_score for s in day_sessions) / len(day_sessions)
+                    if day_sessions
+                    else 0,
                 }
 
             stats["daily_progress"] = daily_progress
@@ -177,10 +187,10 @@ class ModelUtils:
     ) -> dict[str, Any]:
         """
         Получить глобальную статистику игры.
-        
+
         Args:
             session: Асинхронная сессия БД
-            
+
         Returns:
             Словарь со статистикой
         """
@@ -206,77 +216,102 @@ class ModelUtils:
             global_total_score = total_score_result.scalar() or 0
 
             # Самые популярные зоны
-            popular_zones_stmt = select(
-                LocationZone.id,
-                LocationZone.name,
-                LocationZone.category,
-                LocationZone.difficulty,
-                func.count(Round.id).label("rounds_count"),
-                func.avg(Round.score).label("average_score"),
-            ).join(
-                Round, LocationZone.id == Round.zone_id,
-            ).where(
-                Round.status == RoundStatus.GUESSED,
-            ).group_by(
-                LocationZone.id,
-            ).order_by(
-                func.count(Round.id).desc(),
-            ).limit(10)
+            popular_zones_stmt = (
+                select(
+                    LocationZone.id,
+                    LocationZone.name,
+                    LocationZone.category,
+                    LocationZone.difficulty,
+                    func.count(Round.id).label("rounds_count"),
+                    func.avg(Round.score).label("average_score"),
+                )
+                .join(
+                    Round,
+                    LocationZone.id == Round.zone_id,
+                )
+                .where(
+                    Round.status == RoundStatus.GUESSED,
+                )
+                .group_by(
+                    LocationZone.id,
+                )
+                .order_by(
+                    func.count(Round.id).desc(),
+                )
+                .limit(10)
+            )
 
             popular_zones_result = await session.execute(popular_zones_stmt)
             popular_zones = []
 
             for row in popular_zones_result:
-                popular_zones.append({
-                    "id": row.id,
-                    "name": row.name,
-                    "category": row.category,
-                    "difficulty": row.difficulty,
-                    "rounds_count": row.rounds_count,
-                    "average_score": float(row.average_score) if row.average_score else 0,
-                })
+                popular_zones.append(
+                    {
+                        "id": row.id,
+                        "name": row.name,
+                        "category": row.category,
+                        "difficulty": row.difficulty,
+                        "rounds_count": row.rounds_count,
+                        "average_score": float(row.average_score) if row.average_score else 0,
+                    }
+                )
 
             # Лучшие игроки
-            top_players_stmt = select(
-                User.id,
-                User.username,
-                User.total_score,
-                User.games_played,
-                User.average_score,
-                User.elo_rating,
-            ).where(
-                User.is_active == True,
-            ).order_by(
-                User.elo_rating.desc(),
-            ).limit(10)
+            top_players_stmt = (
+                select(
+                    User.id,
+                    User.username,
+                    User.total_score,
+                    User.games_played,
+                    User.average_score,
+                    User.elo_rating,
+                )
+                .where(
+                    User.is_active == True,
+                )
+                .order_by(
+                    User.elo_rating.desc(),
+                )
+                .limit(10)
+            )
 
             top_players_result = await session.execute(top_players_stmt)
             top_players = []
 
             for row in top_players_result:
-                top_players.append({
-                    "id": row.id,
-                    "username": row.username,
-                    "total_score": row.total_score,
-                    "games_played": row.games_played,
-                    "average_score": float(row.average_score) if row.average_score else 0,
-                    "elo_rating": row.elo_rating,
-                    "rank": User.get_rank(User(elo_rating=row.elo_rating)),  # Создаём временный объект
-                })
+                top_players.append(
+                    {
+                        "id": row.id,
+                        "username": row.username,
+                        "total_score": row.total_score,
+                        "games_played": row.games_played,
+                        "average_score": float(row.average_score) if row.average_score else 0,
+                        "elo_rating": row.elo_rating,
+                        "rank": User.get_rank(
+                            User(elo_rating=row.elo_rating)
+                        ),  # Создаём временный объект
+                    }
+                )
 
             # Статистика по категориям
-            category_stats_stmt = select(
-                LocationZone.category,
-                func.count(Round.id).label("rounds_count"),
-                func.avg(Round.score).label("average_score"),
-                func.avg(Round.distance_km).label("average_distance"),
-            ).join(
-                Round, LocationZone.id == Round.zone_id,
-            ).where(
-                Round.status == RoundStatus.GUESSED,
-                LocationZone.category.is_not(None),
-            ).group_by(
-                LocationZone.category,
+            category_stats_stmt = (
+                select(
+                    LocationZone.category,
+                    func.count(Round.id).label("rounds_count"),
+                    func.avg(Round.score).label("average_score"),
+                    func.avg(Round.distance_km).label("average_distance"),
+                )
+                .join(
+                    Round,
+                    LocationZone.id == Round.zone_id,
+                )
+                .where(
+                    Round.status == RoundStatus.GUESSED,
+                    LocationZone.category.is_not(None),
+                )
+                .group_by(
+                    LocationZone.category,
+                )
             )
 
             category_stats_result = await session.execute(category_stats_stmt)
@@ -336,11 +371,11 @@ class ModelUtils:
     ) -> dict[str, Any]:
         """
         Получить статистику по конкретной зоне.
-        
+
         Args:
             session: Асинхронная сессия БД
             zone_id: ID зоны
-            
+
         Returns:
             Словарь со статистикой
         """
@@ -459,11 +494,11 @@ class ModelUtils:
     ) -> dict[str, int]:
         """
         Очистить старые сессии.
-        
+
         Args:
             session: Асинхронная сессия БД
             days_old: Удалять сессии старше этого количества дней
-            
+
         Returns:
             Словарь с количеством удалённых сессий и раундов
         """
@@ -515,11 +550,11 @@ class ModelUtils:
     ) -> dict[str, Any] | None:
         """
         Сгенерировать ежедневный челлендж.
-        
+
         Args:
             session: Асинхронная сессия БД
             date: Дата челленджа (по умолчанию сегодня)
-            
+
         Returns:
             Информация о челлендже или None
         """
@@ -532,6 +567,7 @@ class ModelUtils:
             # Используем seed на основе даты для детерминированного выбора
             seed = date.strftime("%Y%m%d")
             import random
+
             random.seed(seed)
 
             # Выбираем случайную зону
@@ -574,102 +610,126 @@ class ModelUtils:
     ) -> dict[str, Any]:
         """
         Получить таблицу лидеров.
-        
+
         Args:
             session: Асинхронная сессия БД
             limit: Максимальное количество записей
             offset: Смещение
-            
+
         Returns:
             Таблица лидеров
         """
         try:
             # Общий рейтинг (по ELO)
-            elo_leaderboard_stmt = select(
-                User.id,
-                User.username,
-                User.elo_rating,
-                User.total_score,
-                User.games_played,
-                User.average_score,
-                User.level,
-            ).where(
-                User.is_active == True,
-            ).order_by(
-                User.elo_rating.desc(),
-            ).limit(limit).offset(offset)
+            elo_leaderboard_stmt = (
+                select(
+                    User.id,
+                    User.username,
+                    User.elo_rating,
+                    User.total_score,
+                    User.games_played,
+                    User.average_score,
+                    User.level,
+                )
+                .where(
+                    User.is_active == True,
+                )
+                .order_by(
+                    User.elo_rating.desc(),
+                )
+                .limit(limit)
+                .offset(offset)
+            )
 
             elo_result = await session.execute(elo_leaderboard_stmt)
             elo_leaderboard = []
 
             for i, row in enumerate(elo_result, start=offset + 1):
-                elo_leaderboard.append({
-                    "rank": i,
-                    "user_id": row.id,
-                    "username": row.username,
-                    "elo_rating": row.elo_rating,
-                    "total_score": row.total_score,
-                    "games_played": row.games_played,
-                    "average_score": float(row.average_score) if row.average_score else 0,
-                    "level": row.level,
-                })
+                elo_leaderboard.append(
+                    {
+                        "rank": i,
+                        "user_id": row.id,
+                        "username": row.username,
+                        "elo_rating": row.elo_rating,
+                        "total_score": row.total_score,
+                        "games_played": row.games_played,
+                        "average_score": float(row.average_score) if row.average_score else 0,
+                        "level": row.level,
+                    }
+                )
 
             # Рейтинг по общему счёту
-            score_leaderboard_stmt = select(
-                User.id,
-                User.username,
-                User.total_score,
-                User.games_played,
-                User.average_score,
-                User.level,
-            ).where(
-                User.is_active == True,
-            ).order_by(
-                User.total_score.desc(),
-            ).limit(limit).offset(offset)
+            score_leaderboard_stmt = (
+                select(
+                    User.id,
+                    User.username,
+                    User.total_score,
+                    User.games_played,
+                    User.average_score,
+                    User.level,
+                )
+                .where(
+                    User.is_active == True,
+                )
+                .order_by(
+                    User.total_score.desc(),
+                )
+                .limit(limit)
+                .offset(offset)
+            )
 
             score_result = await session.execute(score_leaderboard_stmt)
             score_leaderboard = []
 
             for i, row in enumerate(score_result, start=offset + 1):
-                score_leaderboard.append({
-                    "rank": i,
-                    "user_id": row.id,
-                    "username": row.username,
-                    "total_score": row.total_score,
-                    "games_played": row.games_played,
-                    "average_score": float(row.average_score) if row.average_score else 0,
-                    "level": row.level,
-                })
+                score_leaderboard.append(
+                    {
+                        "rank": i,
+                        "user_id": row.id,
+                        "username": row.username,
+                        "total_score": row.total_score,
+                        "games_played": row.games_played,
+                        "average_score": float(row.average_score) if row.average_score else 0,
+                        "level": row.level,
+                    }
+                )
 
             # Рейтинг по среднему счёту (минимум 10 игр)
-            avg_score_leaderboard_stmt = select(
-                User.id,
-                User.username,
-                User.average_score,
-                User.games_played,
-                User.total_score,
-                User.level,
-            ).where(
-                User.is_active == True,
-                User.games_played >= 10,
-            ).order_by(
-                User.average_score.desc(),
-            ).limit(limit).offset(offset)
+            avg_score_leaderboard_stmt = (
+                select(
+                    User.id,
+                    User.username,
+                    User.average_score,
+                    User.games_played,
+                    User.total_score,
+                    User.level,
+                )
+                .where(
+                    User.is_active == True,
+                    User.games_played >= 10,
+                )
+                .order_by(
+                    User.average_score.desc(),
+                )
+                .limit(limit)
+                .offset(offset)
+            )
 
             avg_score_result = await session.execute(avg_score_leaderboard_stmt)
             avg_score_leaderboard = []
 
             for i, row in enumerate(avg_score_result, start=offset + 1):
-                avg_score_leaderboard.append({
-                    "rank": i,
-                    "user_id": row.id,
-                    "username": row.username,
-                    "average_score": float(row.average_score) if row.average_score else 0,
-                    "games_played": row.games_played,
-                    "total_score": row.total_score,
-                    "level": row.level,
-                })
+                avg_score_leaderboard.append(
+                    {
+                        "rank": i,
+                        "user_id": row.id,
+                        "username": row.username,
+                        "average_score": float(row.average_score) if row.average_score else 0,
+                        "games_played": row.games_played,
+                        "total_score": row.total_score,
+                        "level": row.level,
+                    }
+                )
 
             return {
                 "elo_leaderboard": elo_leaderboard,

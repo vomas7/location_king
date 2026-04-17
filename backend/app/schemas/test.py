@@ -3,28 +3,29 @@ Test schemas for debugging.
 """
 
 from datetime import datetime
-from decimal import Decimal
-from typing import Optional
+
 from pydantic import BaseModel
 
 
 class TestRoundResponse(BaseModel):
     """Упрощённая информация о раунде для тестирования"""
+
     id: int
     session_id: str
     target_point: dict  # GeoJSON Point
     status: str
     max_score: int
-    time_limit_seconds: Optional[int]
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
-    
+    time_limit_seconds: int | None
+    started_at: datetime | None
+    completed_at: datetime | None
+
     class Config:
         from_attributes = True
 
 
 class TestSessionResponse(BaseModel):
     """Упрощённая информация о сессии для тестирования"""
+
     id: str
     user_id: int
     rounds_total: int
@@ -32,9 +33,9 @@ class TestSessionResponse(BaseModel):
     total_score: int
     status: str
     game_mode: str
-    time_control: Optional[str]
+    time_control: str | None
     view_extent_km: int
-    current_round: Optional[TestRoundResponse]
-    
+    current_round: TestRoundResponse | None
+
     class Config:
         from_attributes = True

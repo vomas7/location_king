@@ -1,6 +1,7 @@
 """
 Утилиты для работы с геоданными и LocationZone.
 """
+
 import logging
 import random
 from math import asin, atan2, cos, degrees, radians, sin
@@ -25,15 +26,15 @@ class LocationZoneUtils:
     ) -> tuple[float, float] | None:
         """
         Получить случайную точку внутри указанной зоны.
-        
+
         Использует PostGIS функцию ST_GeneratePoints для генерации случайной точки
         внутри полигона зоны.
-        
+
         Args:
             session: Асинхронная сессия БД
             zone_id: ID зоны LocationZone
             max_attempts: Максимальное количество попыток генерации
-            
+
         Returns:
             Кортеж (longitude, latitude) или None если зона не найдена
         """
@@ -83,7 +84,9 @@ class LocationZoneUtils:
                     except Exception as e:
                         logger.warning(f"Centroid fallback failed: {e}")
 
-            logger.error(f"Failed to generate point in zone {zone_id} after {max_attempts} attempts")
+            logger.error(
+                f"Failed to generate point in zone {zone_id} after {max_attempts} attempts"
+            )
             return None
 
         except Exception as e:
@@ -97,11 +100,11 @@ class LocationZoneUtils:
     ) -> float | None:
         """
         Получить площадь зоны в квадратных километрах.
-        
+
         Args:
             session: Асинхронная сессия БД
             zone_id: ID зоны LocationZone
-            
+
         Returns:
             Площадь в км² или None
         """
@@ -109,8 +112,11 @@ class LocationZoneUtils:
             # Используем PostGIS функцию ST_Area с преобразованием в проекцию для метров
             area_stmt = select(
                 func.ST_Area(
-                    func.ST_Transform(LocationZone.polygon, 3857),  # Web Mercator для расчёта в метрах
-                ) / 1000000,  # Конвертируем м² в км²
+                    func.ST_Transform(
+                        LocationZone.polygon, 3857
+                    ),  # Web Mercator для расчёта в метрах
+                )
+                / 1000000,  # Конвертируем м² в км²
             ).where(
                 LocationZone.id == zone_id,
             )
@@ -133,13 +139,13 @@ class LocationZoneUtils:
     ) -> bool:
         """
         Проверить, находится ли точка внутри зоны.
-        
+
         Args:
             session: Асинхронная сессия БД
             zone_id: ID зоны LocationZone
             longitude: Долгота точки
             latitude: Широта точки
-            
+
         Returns:
             True если точка внутри зоны, иначе False
         """
@@ -173,11 +179,11 @@ class LocationZoneUtils:
     ) -> tuple[float, float, float, float] | None:
         """
         Получить границы (bounding box) зоны.
-        
+
         Args:
             session: Асинхронная сессия БД
             zone_id: ID зоны LocationZone
-            
+
         Returns:
             Кортеж (min_lng, min_lat, max_lng, max_lat) или None
         """
@@ -217,26 +223,30 @@ class LocationZoneUtils:
     ) -> list[LocationZone]:
         """
         Получить зоны, содержащие указанную точку.
-        
+
         Args:
             session: Асинхронная сессия БД
             longitude: Долгота точки
             latitude: Широта точки
             limit: Максимальное количество зон
-            
+
         Returns:
             Список зон LocationZone
         """
         try:
             point_wkt = f"POINT({longitude} {latitude})"
 
-            zones_stmt = select(LocationZone).where(
-                func.ST_Contains(
-                    LocationZone.polygon,
-                    func.ST_GeomFromText(point_wkt, 4326),
-                ),
-                LocationZone.is_active == True,
-            ).limit(limit)
+            zones_stmt = (
+                select(LocationZone)
+                .where(
+                    func.ST_Contains(
+                        LocationZone.polygon,
+                        func.ST_GeomFromText(point_wkt, 4326),
+                    ),
+                    LocationZone.is_active == True,
+                )
+                .limit(limit)
+            )
 
             zones_result = await session.execute(zones_stmt)
             zones = zones_result.scalars().all()
@@ -261,7 +271,7 @@ class LocationZoneUtils:
     ) -> LocationZone | None:
         """
         Создать новую зону из bounding box.
-        
+
         Args:
             session: Асинхронная сессия БД
             name: Название зоны
@@ -272,7 +282,7 @@ class LocationZoneUtils:
             difficulty: Сложность (1-5)
             category: Категория зоны
             description: Описание зоны
-            
+
         Returns:
             Созданная зона или None в случае ошибки
         """
@@ -298,7 +308,9 @@ class LocationZoneUtils:
             session.add(zone)
             await session.flush()
 
-            logger.info(f"Created zone '{name}' with bbox ({min_lng},{min_lat},{max_lng},{max_lat})")
+            logger.info(
+                f"Created zone '{name}' with bbox ({min_lng},{min_lat},{max_lng},{max_lat})"
+            )
             return zone
 
         except Exception as e:
@@ -313,16 +325,18 @@ class CoordinateUtils:
 
     @staticmethod
     def calculate_distance_haversine(
-        lon1: float, lat1: float,
-        lon2: float, lat2: float,
+        lon1: float,
+        lat1: float,
+        lon2: float,
+        lat2: float,
     ) -> float:
         """
         Рассчитать расстояние между двумя точками по формуле гаверсинусов.
-        
+
         Args:
             lon1, lat1: Координаты первой точки
             lon2, lat2: Координаты второй точки
-            
+
         Returns:
             Расстояние в километрах
         """
@@ -342,7 +356,7 @@ class CoordinateUtils:
         dlat = lat2_rad - lat1_rad
 
         # Формула гаверсинусов
-        a = sin(dlat / 2)**2 + cos(lat1_rad) * cos(lat2_rad) * sin(dlon / 2)**2
+        a = sin(dlat / 2) ** 2 + cos(lat1_rad) * cos(lat2_rad) * sin(dlon / 2) ** 2
         c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
         distance = R * c
@@ -350,16 +364,18 @@ class CoordinateUtils:
 
     @staticmethod
     def calculate_bearing(
-        lon1: float, lat1: float,
-        lon2: float, lat2: float,
+        lon1: float,
+        lat1: float,
+        lon2: float,
+        lat2: float,
     ) -> float:
         """
         Рассчитать азимут (направление) от первой точки ко второй.
-        
+
         Args:
             lon1, lat1: Координаты начальной точки
             lon2, lat2: Координаты конечной точки
-            
+
         Returns:
             Азимут в градусах (0-360)
         """
@@ -386,11 +402,11 @@ class CoordinateUtils:
     ) -> tuple[float, float]:
         """
         Получить случайную точку в радиусе от центра.
-        
+
         Args:
             center_lon, center_lat: Координаты центра
             max_distance_km: Максимальное расстояние в км
-            
+
         Returns:
             Кортеж (longitude, latitude)
         """
@@ -414,8 +430,8 @@ class CoordinateUtils:
 
         # Вычисляем новые координаты
         new_lat_rad = asin(
-            sin(lat_rad) * cos(angular_distance) +
-            cos(lat_rad) * sin(angular_distance) * cos(bearing_rad),
+            sin(lat_rad) * cos(angular_distance)
+            + cos(lat_rad) * sin(angular_distance) * cos(bearing_rad),
         )
 
         new_lon_rad = lon_rad + atan2(
@@ -440,12 +456,12 @@ class CoordinateUtils:
     ) -> str:
         """
         Форматировать координаты в различных форматах.
-        
+
         Args:
             longitude: Долгота
             latitude: Широта
             format: Формат ("decimal", "dms", "verbose")
-            
+
         Returns:
             Отформатированная строка
         """
@@ -453,6 +469,7 @@ class CoordinateUtils:
             return f"{latitude:.6f}, {longitude:.6f}"
 
         if format == "dms":
+
             def to_dms(coord: float, is_lat: bool) -> str:
                 degrees = int(abs(coord))
                 minutes_full = (abs(coord) - degrees) * 60

@@ -134,6 +134,7 @@ async def get_round(round_id: str):
     """Get round information (mock version)."""
     if round_id not in rounds:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=404, detail="Round not found")
 
     round_obj = rounds[round_id]
@@ -165,6 +166,7 @@ async def submit_guess(round_id: str, guess: GuessRequest):
     """Submit a guess for a round (mock version)."""
     if round_id not in rounds:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=404, detail="Round not found")
 
     round_obj = rounds[round_id]

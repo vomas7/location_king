@@ -1,6 +1,7 @@
 """
 Роутер для работы с игровыми зонами.
 """
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -73,7 +74,7 @@ async def list_zones(
 ):
     """
     Получить список доступных игровых зон.
-    
+
     Возвращает зоны, отсортированные по сложности.
     """
     try:
@@ -127,7 +128,7 @@ async def get_random_zone(
 ):
     """
     Получить случайную игровую зону.
-    
+
     Полезно для быстрого начала игры без выбора конкретной зоны.
     """
     try:
@@ -226,7 +227,7 @@ async def get_zone_preview(
 ):
     """
     Получить превью зоны.
-    
+
     Возвращает пример космического снимка из этой зоны
     и статистику по сложности.
     """
@@ -278,7 +279,9 @@ async def get_zone_preview(
             "statistics": {
                 "total_rounds": stats.total_rounds if stats else 0,
                 "average_score": float(stats.average_score) if stats and stats.average_score else 0,
-                "average_distance_km": float(stats.average_distance) if stats and stats.average_distance else 0,
+                "average_distance_km": float(stats.average_distance)
+                if stats and stats.average_distance
+                else 0,
             },
             "example_point": example_point,
             "preview_note": "Для получения реального превью-снимка требуется интеграция с провайдером карт.",
@@ -288,6 +291,7 @@ async def get_zone_preview(
         if example_point:
             try:
                 from app.services.satellite_provider import get_satellite_provider
+
                 satellite_provider = await get_satellite_provider()
                 preview_image = await satellite_provider.get_satellite_image(
                     center_lng=example_point[0],
