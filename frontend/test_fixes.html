@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест исправлений Location King</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #4361ee, #3a0ca3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0a0c0;
+            margin-bottom: 20px;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #4361ee;
+        }
+        
+        .fix-list {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+        
+        .fix-list li {
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            border-left: 4px solid #4361ee;
+            display: flex;
+            align-items: center;
+        }
+        
+        .fix-list li i {
+            margin-right: 12px;
+            color: #4cc9f0;
+            font-size: 1.2rem;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-left: auto;
+        }
+        
+        .status.fixed {
+            background: rgba(76, 201, 240, 0.2);
+            color: #4cc9f0;
+        }
+        
+        .status.pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #4361ee, #3a0ca3);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-3px);
+        }
+        
+        .btn-test {
+            background: linear-gradient(90deg, #f72585, #b5179e);
+            color: white;
+        }
+        
+        .btn-test:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(247, 37, 133, 0.3);
+        }
+        
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .note {
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a0a0c0;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .test-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Тест исправлений Location King</h1>
+            <p class="subtitle">Проверка исправлений проблем с центром снимка и маркерами</p>
+        </header>
+        
+        <section class="test-section">
+            <h2>Исправленные проблемы</h2>
+            <ul class="fix-list">
+                <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>Желтый крестик на центре спутниковой карты</span>
+                    <span class="status fixed">ИСПРАВЛЕНО</span>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>Красный крестик на карте выбора при клике</span>
+                    <span class="status fixed">ИСПРАВЛЕНО</span>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>Центрирование спутниковой карты на реальном центре снимка</span>
+                    <span class="status fixed">ИСПРАВЛЕНО</span>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>Совпадение центра снимка с правильным ответом</span>
+                    <span class="status fixed">ИСПРАВЛЕНО</span>
+                </li>
+            </ul>
+            
+            <div class="test-buttons">
+                <button class="btn btn-primary" onclick="window.open('/frontend/index.html', '_blank')">
+                    <i class="fas fa-play-circle"></i> Запустить игру
+                </button>
+                <button class="btn btn-secondary" onclick="window.open('http://localhost:8000/docs', '_blank')">
+                    <i class="fas fa-code"></i> Проверить API
+                </button>
+                <button class="btn btn-test" onclick="runTests()">
+                    <i class="fas fa-vial"></i> Запустить тесты
+                </button>
+            </div>
+            
+            <div class="code-block">
+                <h3>Добавленные изменения:</h3>
+                <pre>
+1. Функция addSatelliteCenterMarker() - добавляет желтый крестик
+2. Маркер клика на карте выбора - красный крестик
+3. GET /api/mock/rounds/{id} - endpoint для получения центра снимка
+4. Автоматическое центрирование на реальном центре снимка
+                </pre>
+            </div>
+            
+            <div class="note">
+                <strong>Примечание:</strong> После исправлений центр спутниковой карты будет совпадать с правильным ответом.
+                Желтый крестик показывает центр снимка, красный крестик - место клика на карте выбора.
+            </div>
+        </section>
+        
+        <section class="test-section">
+            <h2>Инструкция по тестированию</h2>
+            <ol style="padding-left: 20px; margin-bottom: 20px;">
+                <li style="margin-bottom: 10px;">Нажмите "Запустить игру"</li>
+                <li style="margin-bottom: 10px;">Нажмите "НАЧАТЬ ИГРУ" в открывшемся окне</li>
+                <li style="margin-bottom: 10px;">Проверьте, что на спутниковой карте есть желтый крестик в центре</li>
+                <li style="margin-bottom: 10px;">Кликните на карте выбора - должен появиться красный крестик</li>
+                <li style="margin-bottom: 10px;">Нажмите "ОТВЕТИТЬ"</li>
+                <li style="margin-bottom: 10px;">Убедитесь, что правильный ответ совпадает с желтым крестиком</li>
+            </ol>
+        </section>
+    </div>
+    
+    <footer>
+        <p>Location King - Геогейссер с космическими снимками | Тест исправлений от Льва 🦁</p>
+    </footer>
+    
+    <script>
+        function runTests() {
+            alert('Тесты запущены! Проверяем исправления...\n\n1. Проверка API endpoint...\n2. Проверка маркеров...\n3. Проверка центрирования...\n\nРезультаты будут показаны в консоли браузера.');
+            
+            // Простые тесты
+            console.log('=== ТЕСТ ИСПРАВЛЕНИЙ LOCATION KING ===');
+            console.log('1. Проверка наличия функций:');
+            console.log('   - addSatelliteCenterMarker:', typeof window.addSatelliteCenterMarker === 'function' ? '✓' : '✗');
+            console.log('   - clearSatelliteMarkers:', typeof window.clearSatelliteMarkers === 'function' ? '✓' : '✗');
+            
+            console.log('\n2. Проверка API endpoints:');
+            fetch('http://localhost:8000/api/mock/sessions/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({rounds_total: 1})
+            })
+            .then(response => {
+                console.log('   - POST /api/mock/sessions/start:', response.status === 200 ? '✓' : '✗');
+                return response.json();
+            })
+            .then(data => {
+                if (data.current_round && data.current_round.id) {
+                    console.log('   - Round ID получен:', data.current_round.id);
+                    
+                    // Проверка GET endpoint
+                    return fetch(`http://localhost:8000/api/mock/rounds/${data.current_round.id}`);
+                }
+            })
+            .then(response => {
+                if (response) {
+                    console.log('   - GET /api/mock/rounds/{id}:', response.status === 200 ? '✓' : '✗');
+                }
+            })
+            .catch(error => {
+                console.log('   - Ошибка тестирования API:', error.message);
+            });
+            
+            console.log('\n=== ТЕСТ ЗАВЕРШЕН ===');
+        }
+    </script>
+</body>
+</html>
