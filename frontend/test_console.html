@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест консольных ошибок</title>
+    <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css">
+</head>
+<body>
+    <h1>Тест консольных ошибок</h1>
+    <button onclick="loadGameScript()">Загрузить index.js</button>
+    <button onclick="callStartGame()">Вызвать startGame()</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        function log(msg) {
+            const output = document.getElementById('output');
+            output.innerHTML += `<div>${msg}</div>`;
+            console.log(msg);
+        }
+        
+        function loadGameScript() {
+            log('Загружаем index.js...');
+            
+            const script = document.createElement('script');
+            script.src = 'index.js';
+            script.onload = function() {
+                log('✅ index.js загружен успешно');
+                log(`startGame определен: ${typeof window.startGame === 'function'}`);
+                log(`submitGuess определен: ${typeof window.submitGuess === 'function'}`);
+            };
+            script.onerror = function() {
+                log('❌ Ошибка загрузки index.js');
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        async function callStartGame() {
+            log('Вызываем startGame()...');
+            
+            if (typeof window.startGame !== 'function') {
+                log('❌ startGame не определена');
+                return;
+            }
+            
+            try {
+                await window.startGame();
+                log('✅ startGame() выполнилась без ошибок');
+            } catch (error) {
+                log(`❌ Ошибка в startGame(): ${error.message}`);
+                console.error('Full error:', error);
+            }
+        }
+        
+        // Автозагрузка
+        setTimeout(loadGameScript, 500);
+    </script>
+</body>
+</html>

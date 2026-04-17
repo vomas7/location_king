@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Отладка кнопки Старт</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; max-height: 300px; overflow-y: auto; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🦁 Отладка кнопки "Старт"</h1>
+    
+    <button onclick="testStartGame()">Тест startGame()</button>
+    <button onclick="testAPI()">Тест API</button>
+    <button onclick="testFunctions()">Тест функций</button>
+    <button onclick="clearLog()">Очистить лог</button>
+    
+    <div id="log" class="log"></div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = type;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        async function testStartGame() {
+            addLog('Тестируем startGame()...', 'info');
+            
+            try {
+                // Проверяем, определена ли функция
+                if (typeof window.startGame !== 'function') {
+                    addLog('❌ Функция startGame не определена!', 'error');
+                    return;
+                }
+                
+                addLog('✅ Функция startGame определена', 'success');
+                
+                // Вызываем функцию
+                addLog('Вызываем startGame()...', 'info');
+                await window.startGame();
+                addLog('✅ startGame() выполнилась без ошибок', 'success');
+                
+            } catch (error) {
+                addLog(`❌ Ошибка в startGame(): ${error.message}`, 'error');
+                console.error('Start game error:', error);
+            }
+        }
+        
+        async function testAPI() {
+            addLog('Тестируем API...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/mock/sessions/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rounds_total: 1 })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog(`✅ API работает! ID сессии: ${data.id}`, 'success');
+                } else {
+                    addLog(`❌ API ошибка: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ API недоступен: ${error.message}`, 'error');
+            }
+        }
+        
+        function testFunctions() {
+            addLog('Проверяем все функции...', 'info');
+            
+            const functions = [
+                'startGame',
+                'submitGuess', 
+                'centerSatelliteMap',
+                'toggleOSMMap',
+                'addLog',
+                'updateStats',
+                'showLoading'
+            ];
+            
+            let allOk = true;
+            
+            functions.forEach(funcName => {
+                if (typeof window[funcName] === 'function') {
+                    addLog(`✅ ${funcName}() определена`, 'success');
+                } else {
+                    addLog(`❌ ${funcName}() не определена`, 'error');
+                    allOk = false;
+                }
+            });
+            
+            if (allOk) {
+                addLog('✅ Все функции определены!', 'success');
+            } else {
+                addLog('❌ Некоторые функции отсутствуют', 'error');
+            }
+        }
+        
+        // Автотест при загрузке
+        setTimeout(() => {
+            addLog('=== АВТОТЕСТ ПРИ ЗАГРУЗКЕ ===', 'info');
+            testFunctions();
+            setTimeout(testAPI, 500);
+        }, 1000);
+    </script>
+</body>
+</html>

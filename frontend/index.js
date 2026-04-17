@@ -62,19 +62,36 @@ function initMaps() {
 
 // Начать игру
 async function startGame() {
+    console.log('startGame вызвана');
+    
     try {
+        console.log('Показываем загрузку...');
         showLoading(true);
+        
+        console.log('Добавляем лог...');
         addLog('Начинаем игру...', 'info');
         
+        console.log('Отправляем запрос к API:', `${API_BASE}/mock/sessions/start`);
         const response = await fetch(`${API_BASE}/mock/sessions/start`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rounds_total: 3, view_extent_km: 5, difficulty: 3 })
+            body: JSON.stringify({ 
+                rounds_total: parseInt(document.getElementById('roundsSelect').value) || 3,
+                view_extent_km: 5,
+                difficulty: parseInt(document.getElementById('difficultySelect').value) || 3
+            })
         });
         
-        if (!response.ok) throw new Error(`API: ${response.status}`);
+        console.log('Ответ API:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API: ${response.status} - ${errorText}`);
+        }
         
         const data = await response.json();
+        console.log('Данные API:', data);
+        
         currentSession = data;
         currentRound = data.current_round;
         totalRounds = data.rounds_total;
@@ -83,6 +100,7 @@ async function startGame() {
         selectedPoint = null;
         correctAnswer = null;
         
+        console.log('Обновляем UI...');
         document.getElementById('startBtn').disabled = true;
         document.getElementById('submitBtn').disabled = false;
         document.getElementById('centerBtn').disabled = false;
@@ -90,9 +108,14 @@ async function startGame() {
         updateStats();
         addLog(`Игра начата! Раунд 1/${totalRounds}`, 'success');
         
+        console.log('Игра успешно начата');
+        
     } catch (error) {
+        console.error('Ошибка в startGame:', error);
         addLog(`Ошибка: ${error.message}`, 'error');
+        alert(`Ошибка при запуске игры: ${error.message}`);
     } finally {
+        console.log('Скрываем загрузку...');
         showLoading(false);
     }
 }
@@ -177,15 +200,26 @@ function toggleOSMMap() {
 
 // Вспомогательные функции
 function addLog(message, type = 'info') {
-    const log = document.getElementById('gameLog');
-    const entry = document.createElement('div');
-    entry.className = `log-entry ${type}`;
-    let icon = 'fa-info-circle';
-    if (type === 'success') icon = 'fa-check-circle';
-    if (type === 'error') icon = 'fa-exclamation-circle';
-    entry.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
-    log.appendChild(entry);
-    log.scrollTop = log.scrollHeight;
+    console.log(`[${type}] ${message}`);
+    
+    try {
+        const log = document.getElementById('gameLog');
+        if (!log) {
+            console.error('Элемент gameLog не найден!');
+            return;
+        }
+        
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type}`;
+        let icon = 'fa-info-circle';
+        if (type === 'success') icon = 'fa-check-circle';
+        if (type === 'error') icon = 'fa-exclamation-circle';
+        entry.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+        log.appendChild(entry);
+        log.scrollTop = log.scrollHeight;
+    } catch (error) {
+        console.error('Ошибка в addLog:', error);
+    }
 }
 
 function updateStats() {
@@ -195,7 +229,18 @@ function updateStats() {
 }
 
 function showLoading(show) {
-    document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+    console.log(`showLoading: ${show}`);
+    
+    try {
+        const overlay = document.getElementById('loadingOverlay');
+        if (!overlay) {
+            console.error('Элемент loadingOverlay не найден!');
+            return;
+        }
+        overlay.style.display = show ? 'flex' : 'none';
+    } catch (error) {
+        console.error('Ошибка в showLoading:', error);
+    }
 }
 
 // Загрузка
