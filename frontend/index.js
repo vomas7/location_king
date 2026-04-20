@@ -9,12 +9,14 @@ let score = 0;
 let totalRounds = 0;
 let correctAnswer = null;
 
-// Базовый URL API - ИСПРАВЛЕНО!
-const API_BASE = 'http://localhost:8000/api';
+// Базовый URL API - для production
+const API_BASE = 'http://api.locationking.ru';
 
 // Инициализация карт
 function initMaps() {
+    console.log('initMaps: начал выполнение');
     try {
+        console.log('initMaps: создаю satelliteMap');
         satelliteMap = new ol.Map({
             target: 'satelliteMap',
             layers: [
@@ -30,6 +32,9 @@ function initMaps() {
             })
         });
         
+        console.log('initMaps: satelliteMap создан');
+        
+        console.log('initMaps: создаю guessMap');
         guessMap = new ol.Map({
             target: 'guessMap',
             layers: [
@@ -42,6 +47,9 @@ function initMaps() {
                 zoom: 3
             })
         });
+        
+        console.log('initMaps: guessMap создан');
+        console.log('initMaps: успешно завершено');
         
         guessMap.on('click', function(event) {
             if (!currentSession) {
@@ -71,8 +79,8 @@ async function startGame() {
         console.log('Добавляем лог...');
         addLog('Начинаем игру...', 'info');
         
-        console.log('Отправляем запрос к API:', `${API_BASE}/mock/sessions/start`);
-        const response = await fetch(`${API_BASE}/mock/sessions/start`, {
+        console.log('Отправляем запрос к API:', `${API_BASE}/api/mock/sessions/start`);
+        const response = await fetch(`${API_BASE}/api/mock/sessions/start`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -95,6 +103,9 @@ async function startGame() {
         currentSession = data;
         currentRound = data.current_round;
         totalRounds = data.rounds_total;
+        
+        console.log('startGame: currentRound =', currentRound);
+        console.log('startGame: totalRounds =', totalRounds);
         
         score = 0;
         selectedPoint = null;
@@ -131,7 +142,7 @@ async function submitGuess() {
         showLoading(true);
         addLog('Отправляю догадку...', 'info');
         
-        const response = await fetch(`${API_BASE}/mock/rounds/${currentRound.id}/guess`, {
+        const response = await fetch(`${API_BASE}/api/mock/rounds/${currentRound.id}/guess`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ lat: selectedPoint.lat, lon: selectedPoint.lon })
@@ -255,3 +266,17 @@ window.startGame = startGame;
 window.submitGuess = submitGuess;
 window.centerSatelliteMap = centerSatelliteMap;
 window.toggleOSMMap = toggleOSMMap;
+
+// Глобальная обработка ошибок
+window.onerror = function(message, source, lineno, colno, error) {
+    console.error('Глобальная ошибка:', message, 'в', source, 'строка', lineno);
+    alert('Произошла ошибка: ' + message);
+    return true;
+};
+
+// Обработка необработанных промисов
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Необработанный промис:', event.reason);
+    alert('Ошибка промиса: ' + event.reason);
+    event.preventDefault();
+});
