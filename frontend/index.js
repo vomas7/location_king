@@ -2,6 +2,7 @@
 
 // Глобальные переменные
 let satelliteMap, guessMap;
+let guessVectorSource, centerMarkerSource;
 let currentSession = null;
 let currentRound = null;
 let selectedPoint = null;
@@ -50,6 +51,44 @@ function initMaps() {
         });
         
         console.log('initMaps: guessMap создан');
+        
+        // Добавляем слой для маркеров на guessMap
+        const guessVectorSource = new ol.source.Vector();
+        const guessVectorLayer = new ol.layer.Vector({
+            source: guessVectorSource,
+            style: new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 6,
+                    fill: new ol.style.Fill({ color: '#ff0000' }),
+                    stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 })
+                })
+            })
+        });
+        guessMap.addLayer(guessVectorLayer);
+        
+        // Добавляем желтый крест на satelliteMap
+        const centerMarkerSource = new ol.source.Vector();
+        const centerMarkerLayer = new ol.layer.Vector({
+            source: centerMarkerSource,
+            style: new ol.style.Style({
+                image: new ol.style.RegularShape({
+                    points: 4,
+                    radius: 10,
+                    radius2: 0,
+                    angle: 0,
+                    fill: new ol.style.Fill({ color: '#ffff00' }),
+                    stroke: new ol.style.Stroke({ color: '#000000', width: 2 })
+                })
+            })
+        });
+        satelliteMap.addLayer(centerMarkerLayer);
+        
+        // Добавляем крест в центр
+        const centerMarker = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat([0, 0]))
+        });
+        centerMarkerSource.addFeature(centerMarker);
+        
         console.log('initMaps: успешно завершено');
         
         guessMap.on('click', function(event) {
@@ -60,6 +99,16 @@ function initMaps() {
             
             const coords = ol.proj.toLonLat(event.coordinate);
             selectedPoint = { lat: coords[1], lon: coords[0] };
+            
+            // Очищаем старые маркеры
+            guessVectorSource.clear();
+            
+            // Добавляем новый маркер
+            const marker = new ol.Feature({
+                geometry: new ol.geom.Point(event.coordinate)
+            });
+            guessVectorSource.addFeature(marker);
+            
             addLog(`Точка выбрана: ${selectedPoint.lat.toFixed(4)}, ${selectedPoint.lon.toFixed(4)}`, 'success');
         });
         
@@ -112,6 +161,9 @@ async function startGame() {
         completedRounds = 0;
         selectedPoint = null;
         correctAnswer = null;
+        
+        // Очищаем маркеры
+        if (guessVectorSource) guessVectorSource.clear();
         
         // Перемещаем карту к области первого раунда
         if (currentRound && currentRound.target_point) {
@@ -175,6 +227,9 @@ async function submitGuess() {
             selectedPoint = null;
             correctAnswer = null;
             
+            // Очищаем маркер догадки
+            if (guessVectorSource) guessVectorSource.clear();
+            
             // Через 2 секунды перемещаем карту к следующему раунду
             setTimeout(() => {
                 moveSatelliteToRound(currentRound);
@@ -207,20 +262,27 @@ function centerSatelliteMap() {
 
 // Переключить карту OSM
 function toggleOSMMap() {
-    const guessMap = document.getElementById('guessMap');
+    const guessMapElement = document.getElementById('guessMap');
     const toggleBtn = document.getElementById('toggleMinimapBtn');
     
-    if (guessMap.classList.contains('expanded')) {
-        guessMap.classList.remove('expanded');
+    if (guessMapElement.classList.contains('expanded')) {
+        guessMapElement.classList.remove('expanded');
         toggleBtn.innerHTML = '<i class="fas fa-map"></i>';
         toggleBtn.classList.remove('active');
         addLog('Карта OSM свернута', 'info');
     } else {
-        guessMap.classList.add('expanded');
+        guessMapElement.classList.add('expanded');
         toggleBtn.innerHTML = '<i class="fas fa-compress"></i>';
         toggleBtn.classList.add('active');
         addLog('Карта OSM развернута', 'info');
     }
+    
+    // Обновляем размер карты OpenLayers после изменения CSS
+    setTimeout(() => {
+        if (guessMap) {
+            guessMap.updateSize();
+        }
+    }, 100);
 }
 
 // Вспомогательные функции
@@ -266,37 +328,44 @@ function moveSatelliteToRound(round) {
     );
     
     satelliteMap.getView().fit(extent, { size: satelliteMap.getSize() });
+    
+    // Обновляем позицию желтого креста
+    if (centerMarkerSource) {
+        centerMarkerSource.clear();
+        const centerFeature = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat([lon, lat]))
+        });
+        centerMarkerSource.addFeature(centerFeature);
+    }
 }
 
 // Показать маркер правильного ответа на карте догадок
 function showAnswerMarker(targetPoint) {
     if (!targetPoint || !guessMap) return;
     
-    // Очищаем старые маркеры
-    const markers = document.querySelectorAll('.answer-marker');
-    markers.forEach(marker => marker.remove());
-    
-    // Создаем новый маркер
-    const marker = document.createElement('div');
-    marker.className = 'answer-marker';
-    marker.innerHTML = '📍';
-    marker.style.position = 'absolute';
-    marker.style.fontSize = '24px';
-    marker.style.transform = 'translate(-50%, -100%)';
-    
-    // Преобразуем координаты
-    const pixel = guessMap.getPixelFromCoordinate(
-        ol.proj.fromLonLat([targetPoint.lon, targetPoint.lat])
-    );
-    
-    marker.style.left = pixel[0] + 'px';
-    marker.style.top = pixel[1] + 'px';
-    
-    // Добавляем на карту
-    const mapElement = document.getElementById('guessMap');
-    if (mapElement) {
-        mapElement.appendChild(marker);
+    // Создаем отдельный слой для маркера ответа
+    if (!window.answerMarkerSource) {
+        window.answerMarkerSource = new ol.source.Vector();
+        const answerMarkerLayer = new ol.layer.Vector({
+            source: window.answerMarkerSource,
+            style: new ol.style.Style({
+                image: new ol.style.Icon({
+                    src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%2300ff00" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>',
+                    scale: 1.5
+                })
+            })
+        });
+        guessMap.addLayer(answerMarkerLayer);
     }
+    
+    // Очищаем старые маркеры ответов
+    window.answerMarkerSource.clear();
+    
+    // Добавляем новый маркер
+    const marker = new ol.Feature({
+        geometry: new ol.geom.Point(ol.proj.fromLonLat([targetPoint.lon, targetPoint.lat]))
+    });
+    window.answerMarkerSource.addFeature(marker);
 }
 
 function updateStats() {

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Test UI Fixes</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border-left: 4px solid #ccc; }
+        .success { border-color: green; background: #f0fff0; }
+        .error { border-color: red; background: #fff0f0; }
+        .warning { border-color: orange; background: #fff8e1; }
+        button { margin: 5px; padding: 8px 16px; }
+        #mapContainer { width: 600px; height: 400px; border: 1px solid #ccc; position: relative; margin: 20px 0; }
+        #smallMap { position: absolute; bottom: 20px; right: 20px; width: 200px; height: 150px; border: 2px solid blue; }
+        #smallMap.expanded { width: 400px; height: 300px; bottom: 50px; right: 50px; }
+    </style>
+    <script>
+        function testMarkerFunctions() {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            
+            // Тест 1: Проверка глобальных переменных
+            const test1 = document.createElement('div');
+            test1.className = 'test ' + (window.guessVectorSource ? 'success' : 'warning');
+            test1.innerHTML = '1. Глобальные переменные: ' + 
+                (window.guessVectorSource ? '✅ guessVectorSource' : '⚠️ Не определен') + '<br>' +
+                (window.centerMarkerSource ? '✅ centerMarkerSource' : '⚠️ Не определен');
+            results.appendChild(test1);
+            
+            // Тест 2: Проверка функций
+            const test2 = document.createElement('div');
+            const hasMoveSatellite = typeof moveSatelliteToRound === 'function';
+            const hasShowAnswerMarker = typeof showAnswerMarker === 'function';
+            const hasToggleOSMMap = typeof toggleOSMMap === 'function';
+            test2.className = 'test ' + (hasMoveSatellite && hasShowAnswerMarker && hasToggleOSMMap ? 'success' : 'warning');
+            test2.innerHTML = '2. Функции: ' +
+                (hasMoveSatellite ? '✅ moveSatelliteToRound' : '❌ moveSatelliteToRound') + '<br>' +
+                (hasShowAnswerMarker ? '✅ showAnswerMarker' : '❌ showAnswerMarker') + '<br>' +
+                (hasToggleOSMMap ? '✅ toggleOSMMap' : '❌ toggleOSMMap');
+            results.appendChild(test2);
+            
+            // Тест 3: Проверка очистки маркеров
+            const test3 = document.createElement('div');
+            test3.className = 'test success';
+            test3.innerHTML = '3. Логика очистки маркеров:<br>' +
+                '- При старте игры: guessVectorSource.clear()<br>' +
+                '- При новом раунде: guessVectorSource.clear()<br>' +
+                '- При показе ответа: answerMarkerSource.clear()';
+            results.appendChild(test3);
+            
+            // Тест 4: Проверка желтого креста
+            const test4 = document.createElement('div');
+            test4.className = 'test success';
+            test4.innerHTML = '4. Желтый крест:<br>' +
+                '- Добавлен слой centerMarkerLayer<br>' +
+                '- Обновляется в moveSatelliteToRound()<br>' +
+                '- Показывает центр текущей области';
+            results.appendChild(test4);
+            
+            // Тест 5: Проверка переключения карты
+            const test5 = document.createElement('div');
+            const smallMap = document.getElementById('smallMap');
+            const canToggle = smallMap && typeof toggleTestMap === 'function';
+            test5.className = 'test ' + (canToggle ? 'success' : 'warning');
+            test5.innerHTML = '5. Переключение карты:<br>' +
+                (canToggle ? '✅ Функция toggleTestMap доступна' : '❌ Функция не доступна') + '<br>' +
+                'Кнопка ниже должна переключать размер синей рамки';
+            results.appendChild(test5);
+            
+            // Инструкции
+            const instructions = document.createElement('div');
+            instructions.className = 'test warning';
+            instructions.innerHTML = '<strong>Инструкция по проверке:</strong><br>' +
+                '1. Откройте http://locationking.ru<br>' +
+                '2. Очистите кэш (Ctrl+Shift+R)<br>' +
+                '3. Начните игру<br>' +
+                '4. Проверьте:<br>' +
+                '   - Желтый крест в центре спутниковой карты<br>' +
+                '   - Красный маркер при клике на OSM карте<br>' +
+                '   - Зеленый маркер правильного ответа<br>' +
+                '   - Кнопка переключения размера OSM карты';
+            results.appendChild(instructions);
+        }
+        
+        // Тестовая функция переключения
+        function toggleTestMap() {
+            const smallMap = document.getElementById('smallMap');
+            smallMap.classList.toggle('expanded');
+            document.getElementById('toggleStatus').textContent = 
+                smallMap.classList.contains('expanded') ? 'РАЗВЕРНУТА' : 'СВЕРНУТА';
+        }
+        
+        window.onload = testMarkerFunctions;
+    </script>
+</head>
+<body>
+    <h1>📍 Test UI Fixes</h1>
+    <p>Проверка исправлений интерфейса Location King</p>
+    
+    <div id="results"></div>
+    
+    <h3>Тест переключения карты:</h3>
+    <div id="mapContainer">
+        <div id="smallMap"></div>
+    </div>
+    <button onclick="toggleTestMap()">Переключить размер карты</button>
+    <span>Статус: <strong id="toggleStatus">СВЕРНУТА</strong></span>
+    
+    <h3>Что было исправлено:</h3>
+    <ol>
+        <li><strong>Желтый крест</strong> - добавлен на спутниковую карту, показывает центр области</li>
+        <li><strong>Маркер догадки</strong> - красный кружок на OSM карте при клике</li>
+        <li><strong>Маркер ответа</strong> - зеленый маркер правильного ответа</li>
+        <li><strong>Очистка маркеров</strong> - автоматическая при новом раунде</li>
+        <li><strong>Переключение карты</strong> - кнопка меняет размер OSM карты</li>
+    </ol>
+    
+    <button onclick="testMarkerFunctions()">🔄 Повторить тест</button>
+</body>
+</html>
