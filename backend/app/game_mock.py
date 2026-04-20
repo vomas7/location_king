@@ -89,6 +89,7 @@ async def start_game_session(request: StartRequest):
         "status": "active",
         "target_lat": target_lat,
         "target_lon": target_lon,
+        "view_extent_km": request.view_extent_km,  # сохраняем размер области
         "satellite_image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         "created_at": datetime.now(timezone.utc),
     }
@@ -195,7 +196,9 @@ async def submit_guess(round_id: str, guess: GuessRequest):
 
     # Calculate score
     max_score = 5000
-    max_distance = 100000  # 100 km
+    # Используем view_extent_km для определения максимального расстояния
+    view_extent_km = round_obj.get("view_extent_km", 5)
+    max_distance = view_extent_km * 1000 * 10  # 10x размер области
     score = int(max_score * max(0, 1 - distance / max_distance))
 
     # Update round

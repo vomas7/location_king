@@ -34,9 +34,13 @@ services:
   # BACKEND — FastAPI приложение
   # ─────────────────────────────────────────
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
     container_name: location_king_backend
     restart: unless-stopped
+    volumes:
+      - ./backend:/app  # Mount code for development
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}

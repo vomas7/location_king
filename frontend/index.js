@@ -8,6 +8,7 @@ let selectedPoint = null;
 let score = 0;
 let totalRounds = 0;
 let correctAnswer = null;
+let completedRounds = 0;
 
 // Базовый URL API - для production
 const API_BASE = 'http://api.locationking.ru';
@@ -108,8 +109,14 @@ async function startGame() {
         console.log('startGame: totalRounds =', totalRounds);
         
         score = 0;
+        completedRounds = 0;
         selectedPoint = null;
         correctAnswer = null;
+        
+        // Перемещаем карту к области первого раунда
+        if (currentRound && currentRound.target_point) {
+            moveSatelliteToRound(currentRound);
+        }
         
         console.log('Обновляем UI...');
         document.getElementById('startBtn').disabled = true;
@@ -153,17 +160,27 @@ async function submitGuess() {
         const result = await response.json();
         correctAnswer = result.target_point;
         score += result.score;
+        completedRounds++;
         
         updateStats();
         addLog(`Расстояние: ${(result.distance_meters / 1000).toFixed(1)} км`, 'info');
         addLog(`Очки: ${result.score}`, 'success');
         addLog(`Всего: ${score}`, 'success');
         
+        // Показываем маркер правильного ответа
+        showAnswerMarker(result.target_point);
+        
         if (result.next_round) {
             currentRound = result.next_round;
-            addLog(`Следующий раунд!`, 'info');
             selectedPoint = null;
             correctAnswer = null;
+            
+            // Через 2 секунды перемещаем карту к следующему раунду
+            setTimeout(() => {
+                moveSatelliteToRound(currentRound);
+                addLog(`Раунд ${completedRounds + 1}/${totalRounds} начат!`, 'info');
+            }, 2000);
+            
         } else if (result.session_completed) {
             addLog('Игра завершена! 🎉', 'success');
             document.getElementById('submitBtn').disabled = true;
@@ -180,15 +197,12 @@ async function submitGuess() {
 
 // Центрировать карту
 function centerSatelliteMap() {
-    if (!correctAnswer) {
-        addLog('Нет активного раунда для центрирования', 'error');
-        return;
+    if (currentRound) {
+        moveSatelliteToRound(currentRound);
+        addLog('Карта возвращена к текущей области', 'info');
+    } else {
+        addLog('Сначала начните игру!', 'error');
     }
-    
-    const center = ol.proj.fromLonLat([correctAnswer.lon, correctAnswer.lat]);
-    satelliteMap.getView().setCenter(center);
-    satelliteMap.getView().setZoom(10);
-    addLog('Карта отцентрирована на правильный ответ', 'info');
 }
 
 // Переключить карту OSM
@@ -233,10 +247,62 @@ function addLog(message, type = 'info') {
     }
 }
 
+// Переместить спутниковую карту к области текущего раунда
+function moveSatelliteToRound(round) {
+    if (!round || !round.target_point) return;
+    
+    const lat = round.target_point.lat;
+    const lon = round.target_point.lon;
+    const extentKm = round.view_extent_km || 5;
+    
+    // Вычисляем квадрат области
+    const R = 6371; // радиус Земли в км
+    const deltaLat = (extentKm / 2 / R) * (180 / Math.PI);
+    const deltaLon = (extentKm / 2 / (R * Math.cos(lat * Math.PI / 180))) * (180 / Math.PI);
+    
+    const extent = ol.proj.transformExtent(
+        [lon - deltaLon, lat - deltaLat, lon + deltaLon, lat + deltaLat],
+        'EPSG:4326', 'EPSG:3857'
+    );
+    
+    satelliteMap.getView().fit(extent, { size: satelliteMap.getSize() });
+}
+
+// Показать маркер правильного ответа на карте догадок
+function showAnswerMarker(targetPoint) {
+    if (!targetPoint || !guessMap) return;
+    
+    // Очищаем старые маркеры
+    const markers = document.querySelectorAll('.answer-marker');
+    markers.forEach(marker => marker.remove());
+    
+    // Создаем новый маркер
+    const marker = document.createElement('div');
+    marker.className = 'answer-marker';
+    marker.innerHTML = '📍';
+    marker.style.position = 'absolute';
+    marker.style.fontSize = '24px';
+    marker.style.transform = 'translate(-50%, -100%)';
+    
+    // Преобразуем координаты
+    const pixel = guessMap.getPixelFromCoordinate(
+        ol.proj.fromLonLat([targetPoint.lon, targetPoint.lat])
+    );
+    
+    marker.style.left = pixel[0] + 'px';
+    marker.style.top = pixel[1] + 'px';
+    
+    // Добавляем на карту
+    const mapElement = document.getElementById('guessMap');
+    if (mapElement) {
+        mapElement.appendChild(marker);
+    }
+}
+
 function updateStats() {
     document.getElementById('scoreValue').textContent = score;
-    document.getElementById('roundValue').textContent = currentSession ? 
-        `${currentSession.rounds_done}/${totalRounds}` : '0/0';
+    document.getElementById('roundValue').textContent = 
+        currentSession ? `${completedRounds}/${totalRounds}` : '0/0';
 }
 
 function showLoading(show) {
@@ -270,13 +336,11 @@ window.toggleOSMMap = toggleOSMMap;
 // Глобальная обработка ошибок
 window.onerror = function(message, source, lineno, colno, error) {
     console.error('Глобальная ошибка:', message, 'в', source, 'строка', lineno);
-    alert('Произошла ошибка: ' + message);
-    return true;
+    return false; // не подавлять дефолтное поведение
 };
 
 // Обработка необработанных промисов
 window.addEventListener('unhandledrejection', function(event) {
     console.error('Необработанный промис:', event.reason);
-    alert('Ошибка промиса: ' + event.reason);
-    event.preventDefault();
+    // не показываем alert
 });
