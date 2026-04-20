@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Quick CORS Test</title>
+    <script>
+        async function testCORS() {
+            const result = document.getElementById('result');
+            result.innerHTML = 'Тестируем CORS...<br>';
+            
+            try {
+                // OPTIONS запрос (preflight)
+                const optionsResponse = await fetch('http://api.locationking.ru/api/mock/sessions/start', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'content-type'
+                    }
+                });
+                
+                const originHeader = optionsResponse.headers.get('Access-Control-Allow-Origin');
+                result.innerHTML += `CORS Origin: <strong>${originHeader}</strong><br>`;
+                result.innerHTML += `Текущий origin: <strong>${window.location.origin}</strong><br>`;
+                
+                if (originHeader === window.location.origin) {
+                    result.innerHTML += '<div style="color: green; margin: 10px 0;">✅ CORS настроен правильно!</div>';
+                    
+                    // Тестируем POST запрос
+                    result.innerHTML += 'Тестируем POST запрос...<br>';
+                    const postResponse = await fetch('http://api.locationking.ru/api/mock/sessions/start', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Origin': window.location.origin
+                        },
+                        body: JSON.stringify({ rounds_total: 1 })
+                    });
+                    
+                    if (postResponse.ok) {
+                        const data = await postResponse.json();
+                        result.innerHTML += `<div style="color: green;">✅ POST запрос успешен! ID: ${data.id.substring(0, 8)}...</div>`;
+                        result.innerHTML += '<div style="color: green; font-weight: bold; margin-top: 20px;">🎉 ВСЕ ТЕСТЫ ПРОЙДЕНЫ! Игра должна работать.</div>';
+                    } else {
+                        result.innerHTML += `<div style="color: red;">❌ POST ошибка: ${postResponse.status}</div>`;
+                    }
+                } else {
+                    result.innerHTML += `<div style="color: red;">❌ CORS не настроен для этого origin</div>`;
+                }
+                
+            } catch (error) {
+                result.innerHTML += `<div style="color: red;">❌ Ошибка: ${error.message}</div>`;
+            }
+        }
+        
+        window.onload = testCORS;
+    </script>
+</head>
+<body>
+    <h1>📍 Quick CORS Test</h1>
+    <p>Быстрая проверка CORS для Location King</p>
+    
+    <div id="result" style="padding: 15px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 5px; margin: 20px 0;">
+        Загрузка...
+    </div>
+    
+    <button onclick="testCORS()">🔄 Повторить тест</button>
+    
+    <h3>Инструкция:</h3>
+    <ol>
+        <li>Если тест показывает ✅ - CORS работает</li>
+        <li>Откройте <a href="http://locationking.ru" target="_blank">locationking.ru</a></li>
+        <li>Очистите кэш (Ctrl+Shift+R)</li>
+        <li>Нажмите "НАЧАТЬ ИГРУ"</li>
+    </ol>
+    
+    <p><strong>Исправления:</strong> CORS настроен для <code>http://locationking.ru</code></p>
+</body>
+</html>
