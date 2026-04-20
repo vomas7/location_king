@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Clear Cache Test</title>
+    <script>
+        // Тест текущего состояния
+        async function testCurrentState() {
+            const result = document.getElementById('result');
+            
+            // Проверяем какой путь используется в текущем index.js
+            try {
+                // Создаем скрипт для проверки
+                const scriptCheck = document.createElement('script');
+                scriptCheck.src = 'index.js?v=' + Date.now();
+                scriptCheck.onload = function() {
+                    // После загрузки скрипта проверяем глобальные переменные
+                    if (typeof API_BASE !== 'undefined') {
+                        result.innerHTML += `<div style="color: green;">✅ API_BASE = "${API_BASE}"</div>`;
+                        
+                        // Тестируем API
+                        testAPI();
+                    } else {
+                        result.innerHTML += `<div style="color: red;">❌ API_BASE не определен</div>`;
+                    }
+                };
+                scriptCheck.onerror = function() {
+                    result.innerHTML += `<div style="color: red;">❌ Не удалось загрузить index.js</div>`;
+                };
+                document.head.appendChild(scriptCheck);
+            } catch (error) {
+                result.innerHTML += `<div style="color: red;">❌ Ошибка: ${error.message}</div>`;
+            }
+        }
+        
+        async function testAPI() {
+            const result = document.getElementById('result');
+            
+            // Тестируем оба пути для сравнения
+            const paths = [
+                { path: '/api/mock/sessions/start', expected: 200, desc: 'Правильный путь (с /api/)' },
+                { path: '/mock/sessions/start', expected: 404, desc: 'Неправильный путь (без /api/)' }
+            ];
+            
+            for (const test of paths) {
+                try {
+                    const response = await fetch(`http://api.locationking.ru${test.path}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rounds_total: 1 })
+                    });
+                    
+                    const color = response.status === test.expected ? 'green' : 'red';
+                    const icon = response.status === test.expected ? '✅' : '❌';
+                    
+                    result.innerHTML += `
+                        <div style="color: ${color}; margin: 10px 0;">
+                            ${icon} ${test.desc}<br>
+                            Путь: ${test.path}<br>
+                            Статус: ${response.status} (ожидалось: ${test.expected})<br>
+                            ${response.status === 200 ? '✅ API работает' : ''}
+                        </div>
+                    `;
+                } catch (error) {
+                    result.innerHTML += `<div style="color: red;">❌ Ошибка при тесте ${test.path}: ${error.message}</div>`;
+                }
+            }
+        }
+        
+        // Функция для принудительной очистки кэша
+        function forceClearCache() {
+            const result = document.getElementById('result');
+            result.innerHTML = '<div style="color: blue;">🔄 Принудительная перезагрузка страницы...</div>';
+            
+            // Перезагружаем страницу с параметром для сброса кэша
+            window.location.href = window.location.href.split('?')[0] + '?nocache=' + Date.now();
+        }
+        
+        window.onload = testCurrentState;
+    </script>
+</head>
+<body>
+    <h1>📍 Location King - Clear Cache Test</h1>
+    
+    <p>Если вы видите ошибку "404 Not Found" при нажатии "Начать игру", проблема в кэше браузера.</p>
+    
+    <h2>Быстрое решение:</h2>
+    <button onclick="forceClearCache()" style="padding: 10px 20px; font-size: 16px; margin: 10px;">
+        🔄 Принудительно обновить страницу (очистить кэш)
+    </button>
+    
+    <p>Или вручную:</p>
+    <ul>
+        <li><strong>Chrome/Edge:</strong> Ctrl+Shift+R или Ctrl+F5</li>
+        <li><strong>Firefox:</strong> Ctrl+Shift+R или Ctrl+F5</li>
+        <li><strong>Safari:</strong> Cmd+Option+E (очистить кэш), затем Cmd+R</li>
+        <li><strong>Любой браузер:</strong> Откройте в режиме инкогнито/приватном</li>
+    </ul>
+    
+    <h2>Результаты теста:</h2>
+    <div id="result" style="padding: 15px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 5px;">
+        Загрузка...
+    </div>
+    
+    <h2>Что было исправлено:</h2>
+    <ol>
+        <li>✅ API пути изменены с <code>/mock/...</code> на <code>/api/mock/...</code></li>
+        <li>✅ API_BASE установлен в <code>http://api.locationking.ru</code></li>
+        <li>✅ Mock API запущен на порту 8001</li>
+        <li>✅ Nginx настроен для проксирования</li>
+    </ol>
+    
+    <p>После очистки кэша игра должна работать без ошибок CORS и 404.</p>
+</body>
+</html>
