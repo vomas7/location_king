@@ -101,7 +101,6 @@ class ESRISatelliteProvider(BaseSatelliteProvider):
         try:
             # Рассчитываем границы области
             bounds = self._calculate_bounds(center_lng, center_lat, width_km, height_km)
-            west, south, east, north = bounds
 
             # Для ESRI нам нужно рассчитать зум и координаты тайла
             # Используем приблизительный расчёт для зума 15 (хорошая детализация)
