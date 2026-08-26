@@ -101,7 +101,7 @@ async def list_zones(
         raise HTTPException(
             status_code=500,
             detail="Внутренняя ошибка сервера",
-        )
+        ) from e
 
 
 @router.get(
@@ -159,7 +159,7 @@ async def get_random_zone(
         raise HTTPException(
             status_code=500,
             detail="Внутренняя ошибка сервера",
-        )
+        ) from e
 
 
 @router.get(
@@ -210,7 +210,7 @@ async def get_zone(
         raise HTTPException(
             status_code=500,
             detail="Внутренняя ошибка сервера",
-        )
+        ) from e
 
 
 @router.get(
@@ -320,4 +320,4 @@ async def get_zone_preview(
         raise HTTPException(
             status_code=500,
             detail="Внутренняя ошибка сервера",
-        )
+        ) from e

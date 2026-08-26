@@ -124,7 +124,7 @@ class LocationZone(Base):
 
         try:
             return json.loads(self.tags)
-        except:
+        except json.JSONDecodeError:
             return []
 
     def add_tag(self, tag: str) -> None:
@@ -183,9 +183,6 @@ class LocationZone(Base):
         """Получить границы зоны (min_lng, min_lat, max_lng, max_lat)"""
         # В реальной реализации нужно использовать PostGIS функции
         # Это упрощённая версия
-        try:
-            # Предполагаем, что polygon хранится как WKT
-            # В реальности нужно парсить WKT или использовать ST_Extent
-            return (-180.0, -90.0, 180.0, 90.0)  # Заглушка
-        except:
-            return None
+        # Предполагаем, что polygon хранится как WKT
+        # В реальности нужно парсить WKT или использовать ST_Extent
+        return (-180.0, -90.0, 180.0, 90.0)  # Заглушка

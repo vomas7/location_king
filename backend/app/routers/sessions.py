@@ -184,7 +184,7 @@ async def start_session(
         raise HTTPException(
             status_code=500,
             detail="Внутренняя ошибка сервера при создании сессии",
-        )
+        ) from e
 
 
 @router.get(
@@ -275,7 +275,7 @@ async def get_session(
         raise HTTPException(
             status_code=500,
             detail="Внутренняя ошибка сервера",
-        )
+        ) from e
 
 
 @router.get(
@@ -348,7 +348,7 @@ async def get_session_history(
         raise HTTPException(
             status_code=500,
             detail="Внутренняя ошибка сервера",
-        )
+        ) from e
 
 
 @router.post(
@@ -429,4 +429,4 @@ async def finish_session(
         raise HTTPException(
             status_code=500,
             detail="Внутренняя ошибка сервера",
-        )
+        ) from e

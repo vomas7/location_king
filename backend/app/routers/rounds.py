@@ -125,7 +125,7 @@ async def get_round(
         raise HTTPException(
             status_code=500,
             detail="Внутренняя ошибка сервера",
-        )
+        ) from e
 
 
 @router.post(
@@ -296,7 +296,7 @@ async def submit_guess(
         raise HTTPException(
             status_code=500,
             detail="Внутренняя ошибка сервера при обработке догадки",
-        )
+        ) from e
 
 
 @router.get(
@@ -356,4 +356,4 @@ async def get_hint(
         raise HTTPException(
             status_code=500,
             detail="Внутренняя ошибка сервера",
-        )
+        ) from e

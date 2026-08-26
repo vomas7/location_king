@@ -138,7 +138,7 @@ async def start_test_session(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error: {e!s}",
-        )
+        ) from e
 
 
 @router.get("/zones", response_model=list[ZoneResponse])
