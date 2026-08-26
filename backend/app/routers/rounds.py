@@ -1,359 +1,85 @@
-"""
-Роутер для работы с игровыми раундами.
-"""
+"""HTTP-слой раундов и прокси спутниковых тайлов."""
 
-import logging
-from datetime import datetime
-
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, update
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
-from app.models.game_session import GameSession, SessionStatus
-from app.models.round import Round
+from app.dependencies import get_current_user
 from app.models.user import User
-from app.schemas.game import (
-    ErrorResponse,
-    GuessResponse,
-    RoundResponse,
-    SubmitGuessRequest,
-    ZoneResponse,
-)
-from app.services.challenge_generator import ChallengeGenerator, GeometryUtils
+from app.schemas.game import GuessRequest, GuessResponse, RoundView
+from app.services import game as game_service
+from app.services import tiles as tiles_service
+from app.services import views
 
 router = APIRouter(prefix="/api/rounds", tags=["rounds"])
-logger = logging.getLogger(__name__)
 
 
-# Simple inline get_current_user to avoid import issues
-
-
-async def get_current_user(
-    db: AsyncSession = Depends(get_db),
-) -> User:
-    """Get current authenticated user."""
-    from app.models.user import User as UserModel
-
-    result = await db.execute(select(UserModel).where(UserModel.id == 1))
-    user = result.scalar_one_or_none()
-
-    if not user:
-        user = UserModel(
-            id=1,
-            keycloak_id="test-user",
-            email="test@example.com",
-            display_name="Test User",
-            is_verified=True,
-            email_verified=True,
-        )
-        db.add(user)
-        await db.commit()
-        await db.refresh(user)
-
-    return user
-
-
-@router.get(
-    "/{round_id}",
-    response_model=RoundResponse,
-    responses={
-        404: {"model": ErrorResponse, "description": "Раунд не найден"},
-    },
-)
+@router.get("/{round_id}", response_model=RoundView)
 async def get_round(
     round_id: int,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Получить информацию о раунде.
+) -> RoundView:
+    """Активный раунд. Координат цели в ответе нет."""
+    round_obj = await game_service.get_round_for_user(db, user, round_id)
+    session = await game_service.get_session_for_user(db, user, round_obj.session_id)
 
-    Возвращает информацию о раунде, включая космический снимок.
-    Для завершённых раундов также возвращает результат.
-    """
-    try:
-        # Получаем раунд и проверяем права доступа
-        stmt = (
-            select(Round)
-            .join(GameSession)
-            .where(
-                Round.id == round_id,
-                GameSession.user_id == current_user.id,
-            )
-        )
-        result = await db.execute(stmt)
-        round_obj = result.scalar_one_or_none()
-
-        if not round_obj:
-            raise HTTPException(
-                status_code=404,
-                detail="Раунд не найден",
-            )
-
-        # Формируем ответ
-        response = RoundResponse(
-            id=round_obj.id,
-            zone=ZoneResponse(
-                id=round_obj.zone.id,
-                name=round_obj.zone.name,
-                description=round_obj.zone.description,
-                difficulty=round_obj.zone.difficulty,
-                category=round_obj.zone.category,
-            ),
-            satellite_image_url=round_obj.satellite_image_url or "",
-            view_extent_km=round_obj.view_extent_km,
-            created_at=round_obj.created_at,
-        )
-
-        # Если раунд завершён, добавляем результат
-        if round_obj.guess_point:
-            from geoalchemy2.shape import to_shape
-
-            guess_point = to_shape(round_obj.guess_point)
-            response.guess_point = (guess_point.x, guess_point.y)
-            response.distance_km = round_obj.distance_km
-            response.score = round_obj.score
-            response.guessed_at = round_obj.guessed_at
-
-        return response
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting round: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Внутренняя ошибка сервера",
-        ) from e
+    return views.round_view(round_obj, views.round_index(session, round_obj))
 
 
-@router.post(
-    "/{round_id}/guess",
-    response_model=GuessResponse,
-    responses={
-        400: {"model": ErrorResponse, "description": "Раунд уже завершён"},
-        404: {"model": ErrorResponse, "description": "Раунд не найден"},
-    },
-)
+@router.post("/{round_id}/guess", response_model=GuessResponse)
 async def submit_guess(
     round_id: int,
-    request: SubmitGuessRequest,
+    payload: GuessRequest,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Отправить догадку для раунда.
+) -> GuessResponse:
+    """Принять догадку и показать, где была цель."""
+    round_obj = await game_service.get_round_for_user(db, user, round_id)
 
-    Принимает координаты выбранной точки, вычисляет расстояние
-    до правильного ответа, начисляет очки и переходит к следующему раунду.
-    """
-    try:
-        # Получаем раунд и проверяем права доступа
-        stmt = (
-            select(Round)
-            .join(GameSession)
-            .where(
-                Round.id == round_id,
-                GameSession.user_id == current_user.id,
-                GameSession.status == SessionStatus.ACTIVE,
-            )
-        )
-        result = await db.execute(stmt)
-        round_obj = result.scalar_one_or_none()
+    finished_round, next_round = await game_service.submit_guess(
+        db,
+        user,
+        round_obj,
+        longitude=payload.longitude,
+        latitude=payload.latitude,
+    )
 
-        if not round_obj:
-            raise HTTPException(
-                status_code=404,
-                detail="Активный раунд не найден",
-            )
+    session = await game_service.get_session_for_user(db, user, round_obj.session_id)
+    index = views.round_index(session, finished_round)
 
-        # Проверяем, что раунд ещё не завершён
-        if round_obj.guess_point:
-            raise HTTPException(
-                status_code=400,
-                detail="Раунд уже завершён",
-            )
-
-        # Получаем сессию
-        session = round_obj.session
-
-        # 1. Вычисляем расстояние между догадкой и правильным ответом
-        from geoalchemy2.shape import to_shape
-
-        target_point = to_shape(round_obj.target_point)
-        distance_km = GeometryUtils.calculate_distance(
-            point1_lng=request.longitude,
-            point1_lat=request.latitude,
-            point2_lng=target_point.x,
-            point2_lat=target_point.y,
-        )
-
-        # 2. Вычисляем очки
-        score = GeometryUtils.calculate_score(distance_km, max_distance_km=100)
-
-        # 3. Обновляем раунд
-        from geoalchemy2 import WKTElement
-
-        update_stmt = (
-            update(Round)
-            .where(
-                Round.id == round_id,
-            )
-            .values(
-                guess_point=WKTElement(f"POINT({request.longitude} {request.latitude})", srid=4326),
-                distance_km=distance_km,
-                score=score,
-                guessed_at=datetime.utcnow(),
-            )
-        )
-        await db.execute(update_stmt)
-
-        # 4. Обновляем статистику сессии
-        session.rounds_done += 1
-        session.total_score += score
-
-        # 5. Проверяем, завершена ли сессия
-        is_session_finished = False
-        next_round = None
-
-        if session.rounds_done >= session.rounds_total:
-            # Завершаем сессию
-            session.status = SessionStatus.FINISHED
-            session.finished_at = datetime.utcnow()
-            is_session_finished = True
-        else:
-            # Генерируем следующий раунд
-            generator = ChallengeGenerator(db)
-            next_round = await generator.generate_round(
-                session_id=session.id,
-                zone_id=round_obj.zone_id,
-                view_extent_km=round_obj.view_extent_km,
-            )
-
-            if not next_round:
-                logger.error(f"Failed to generate next round for session {session.id}")
-                # Если не удалось сгенерировать следующий раунд, завершаем сессию
-                session.status = SessionStatus.FINISHED
-                session.finished_at = datetime.utcnow()
-                is_session_finished = True
-
-        # 6. Обновляем общий счёт пользователя
-        user_update_stmt = (
-            update(User)
-            .where(
-                User.id == current_user.id,
-            )
-            .values(
-                total_score=User.total_score + score,
-            )
-        )
-        await db.execute(user_update_stmt)
-
-        await db.commit()
-
-        # 7. Формируем ответ
-        response = GuessResponse(
-            round_id=round_obj.id,
-            session_id=session.id,
-            distance_km=distance_km,
-            score=score,
-            total_session_score=session.total_score,
-            rounds_done=session.rounds_done,
-            rounds_total=session.rounds_total,
-            target_point=(target_point.x, target_point.y),
-            is_session_finished=is_session_finished,
-        )
-
-        # 8. Добавляем информацию о следующем раунде (если есть)
-        if next_round and not is_session_finished:
-            response.next_round = RoundResponse(
-                id=next_round.id,
-                zone=ZoneResponse(
-                    id=next_round.zone.id,
-                    name=next_round.zone.name,
-                    description=next_round.zone.description,
-                    difficulty=next_round.zone.difficulty,
-                    category=next_round.zone.category,
-                ),
-                satellite_image_url=next_round.satellite_image_url or "",
-                view_extent_km=next_round.view_extent_km,
-                created_at=next_round.created_at,
-            )
-
-        logger.info(
-            f"Guess submitted for round {round_id}: distance={distance_km:.2f}km, score={score}",
-        )
-
-        return response
-
-    except HTTPException:
-        await db.rollback()
-        raise
-    except Exception as e:
-        logger.error(f"Error submitting guess: {e}")
-        await db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Внутренняя ошибка сервера при обработке догадки",
-        ) from e
+    return GuessResponse(
+        result=await views.round_result(db, finished_round, index),
+        session=views.session_view(session),
+        next_round=(views.round_view(next_round, index + 1) if next_round is not None else None),
+        is_session_finished=not session.is_active,
+    )
 
 
 @router.get(
-    "/{round_id}/hint",
-    responses={
-        404: {"model": ErrorResponse, "description": "Раунд не найден"},
-    },
+    "/{round_id}/tiles/{z}/{x}/{y}.jpg",
+    response_class=Response,
+    responses={200: {"content": {"image/jpeg": {}}}},
 )
-async def get_hint(
+async def get_tile(
     round_id: int,
+    z: int,
+    x: int,
+    y: int,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
+) -> Response:
     """
-    Получить подсказку для раунда.
+    Тайл снимка по локальным координатам раунда.
 
-    Возвращает дополнительную информацию о местности
-    (например, название страны, региона, или тип местности).
+    Глобальные координаты остаются на сервере, выход за пределы области — 404.
     """
-    try:
-        # Получаем раунд и проверяем права доступа
-        stmt = (
-            select(Round)
-            .join(GameSession)
-            .where(
-                Round.id == round_id,
-                GameSession.user_id == current_user.id,
-            )
-        )
-        result = await db.execute(stmt)
-        round_obj = result.scalar_one_or_none()
+    round_obj = await game_service.get_round_for_user(db, user, round_id)
+    tile = await tiles_service.get_tile(round_obj, z, x, y)
 
-        if not round_obj:
-            raise HTTPException(
-                status_code=404,
-                detail="Раунд не найден",
-            )
-
-        # TODO: Реализовать получение подсказок
-        # Например, через геокодирование или базу знаний о местности
-
-        # Временная заглушка
-        zone = round_obj.zone
-        hint = {
-            "zone_name": zone.name,
-            "difficulty": zone.difficulty,
-            "category": zone.category,
-            "hint": f"Это местность в зоне '{zone.name}'. Сложность: {zone.difficulty}/5.",
-        }
-
-        return hint
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting hint: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Внутренняя ошибка сервера",
-        ) from e
+    return Response(
+        content=tile,
+        media_type=tiles_service.TILE_CONTENT_TYPE,
+        headers={"Cache-Control": f"private, max-age={settings.tile_cache_ttl_seconds}"},
+    )

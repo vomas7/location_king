@@ -2,25 +2,23 @@
 fastapi==0.111.0
 uvicorn[standard]==0.30.1
 
-# БД — async driver для приложения, sync driver для Alembic
+# БД — один async-драйвер и для приложения, и для миграций
 asyncpg==0.29.0
-psycopg2-binary==2.9.9
 sqlalchemy[asyncio]==2.0.30
 alembic==1.13.1
 geoalchemy2==0.15.1
 
-# Redis
+# Redis — кэш спутниковых тайлов
 redis[hiredis]==5.0.4
 
-# Auth — проверка JWT
+# Аутентификация — свой JWT и хеширование паролей
 python-jose[cryptography]==3.3.0
+argon2-cffi==23.1.0
 
-# HTTP-клиент — запросы к провайдеру спутниковых снимков
+# HTTP-клиент — запросы к тайловому серверу
 httpx==0.27.0
 
-# Геометрия
-shapely==2.0.4
-
-# Утилиты
+# Схемы и настройки
 pydantic==2.7.1
 pydantic-settings==2.3.0
+email-validator==2.1.1

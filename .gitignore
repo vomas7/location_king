@@ -97,3 +97,7 @@ backend/.pytest_cache/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+# Отчёты о покрытии
+.coverage
+coverage.xml
+htmlcov/

@@ -1,0 +1,333 @@
+"""
+Жизненный цикл игры: сессии, раунды, приём догадок.
+
+Всё, что связано с правилами, происходит здесь. Роутеры только разбирают
+запрос и отдают ответ.
+"""
+
+import logging
+from datetime import UTC, datetime
+from decimal import Decimal
+
+from geoalchemy2 import WKTElement
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.config import settings
+from app.exceptions import ConflictError, ForbiddenError, NotFoundError
+from app.models.enums import RoundStatus, SessionStatus
+from app.models.game_session import GameSession
+from app.models.location_zone import LocationZone
+from app.models.round import Round
+from app.models.user import User
+from app.services import zones as zones_service
+from app.services.scoring import MAX_ROUND_SCORE, evaluate_guess
+from app.utils.geo import lonlat_to_tile, tile_center, tile_width_km, zoom_for_extent
+
+logger = logging.getLogger(__name__)
+
+# Сколько уровней зума вглубь доступно игроку от тайла раунда.
+# Больше уровней — детальнее снимок и тяжелее прокси.
+MAX_LOCAL_ZOOM = 4
+
+
+async def start_session(
+    db: AsyncSession,
+    user: User,
+    rounds_total: int,
+    view_extent_km: float,
+    difficulty: int | None = None,
+    category: str | None = None,
+    zone_id: int | None = None,
+) -> tuple[GameSession, Round]:
+    """Создать сессию и первый раунд."""
+    session = GameSession(user_id=user.id, rounds_total=rounds_total)
+    db.add(session)
+    await db.flush()
+
+    round_obj = await create_round(db, session, view_extent_km, difficulty, category, zone_id)
+
+    logger.info("Сессия %s начата пользователем %s", session.id, user.id)
+    return session, round_obj
+
+
+async def create_round(
+    db: AsyncSession,
+    session: GameSession,
+    view_extent_km: float,
+    difficulty: int | None = None,
+    category: str | None = None,
+    zone_id: int | None = None,
+) -> Round:
+    """
+    Сгенерировать раунд.
+
+    Внутри зоны выбирается случайная точка, под неё подбирается тайл нужного
+    масштаба, и целью раунда становится центр этого тайла — именно его игрок
+    и видит в центре снимка.
+    """
+    zone = (
+        await zones_service.get_zone(db, zone_id)
+        if zone_id is not None
+        else await zones_service.pick_random_zone(db, difficulty, category)
+    )
+
+    lon, lat = await zones_service.random_point_in_zone(db, zone)
+
+    zoom = zoom_for_extent(lat, view_extent_km, max_zoom=settings.satellite_max_zoom - 1)
+    tile_x, tile_y = lonlat_to_tile(lon, lat, zoom)
+    target_lon, target_lat = tile_center(tile_x, tile_y, zoom)
+
+    round_obj = Round(
+        session_id=session.id,
+        zone_id=zone.id,
+        target_point=WKTElement(f"POINT({target_lon} {target_lat})", srid=4326),
+        tile_zoom=zoom,
+        tile_x=tile_x,
+        tile_y=tile_y,
+        status=RoundStatus.ACTIVE,
+        view_extent_km=Decimal(str(round(tile_width_km(tile_x, tile_y, zoom), 3))),
+        max_score=MAX_ROUND_SCORE,
+    )
+    db.add(round_obj)
+
+    zone.popularity += 1
+
+    await db.flush()
+    await db.refresh(round_obj, ["zone"])
+
+    logger.info("Раунд %s создан в зоне %s (зум %s)", round_obj.id, zone.id, zoom)
+    return round_obj
+
+
+def max_local_zoom(round_obj: Round) -> int:
+    """До какого локального зума игрок может приблизить снимок."""
+    return max(0, min(MAX_LOCAL_ZOOM, settings.satellite_max_zoom - round_obj.tile_zoom))
+
+
+async def submit_guess(
+    db: AsyncSession,
+    user: User,
+    round_obj: Round,
+    longitude: float,
+    latitude: float,
+) -> tuple[Round, Round | None]:
+    """
+    Принять догадку: посчитать расстояние и очки, выдать следующий раунд.
+
+    Возвращает завершённый раунд и следующий, если сессия не закончилась.
+    """
+    if round_obj.status != RoundStatus.ACTIVE:
+        raise ConflictError("Догадка по этому раунду уже принята")
+
+    session = round_obj.session
+    if not session.is_active:
+        raise ConflictError("Сессия уже завершена")
+
+    target_lon, target_lat = await target_coordinates(db, round_obj)
+
+    result = evaluate_guess(
+        guess_lon=longitude,
+        guess_lat=latitude,
+        target_lon=target_lon,
+        target_lat=target_lat,
+        view_extent_km=float(round_obj.view_extent_km),
+        max_score=round_obj.max_score,
+    )
+
+    round_obj.guess_point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
+    round_obj.distance_km = Decimal(str(result.distance_km))
+    round_obj.accuracy_percentage = Decimal(str(result.accuracy))
+    round_obj.score = result.score
+    round_obj.status = RoundStatus.GUESSED
+    round_obj.guessed_at = datetime.now(UTC)
+
+    session.rounds_done += 1
+    session.total_score += result.score
+    session.average_score = session.total_score / session.rounds_done
+
+    await db.flush()
+
+    next_round = None
+    if session.rounds_done >= session.rounds_total:
+        await finish_session(db, session)
+    else:
+        previous = await _first_round(db, session)
+        next_round = await create_round(
+            db,
+            session,
+            view_extent_km=float(previous.view_extent_km),
+        )
+
+    await _update_zone_statistics(db, round_obj.zone_id)
+
+    logger.info(
+        "Раунд %s: %s км, %s очков (пользователь %s)",
+        round_obj.id,
+        result.distance_km,
+        result.score,
+        user.id,
+    )
+    return round_obj, next_round
+
+
+async def finish_session(db: AsyncSession, session: GameSession) -> GameSession:
+    """Завершить сессию и пересчитать статистику игрока."""
+    if not session.is_active:
+        return session
+
+    session.status = (
+        SessionStatus.FINISHED
+        if session.rounds_done >= session.rounds_total
+        else SessionStatus.ABANDONED
+    )
+    session.finished_at = datetime.now(UTC)
+
+    await db.flush()
+    await _update_user_statistics(db, session.user_id)
+
+    logger.info("Сессия %s завершена со счётом %s", session.id, session.total_score)
+    return session
+
+
+async def get_session_for_user(db: AsyncSession, user: User, session_id: str) -> GameSession:
+    """Сессия пользователя. Чужая сессия — 403, несуществующая — 404."""
+    stmt = (
+        select(GameSession)
+        .where(GameSession.id == session_id)
+        .options(selectinload(GameSession.rounds).selectinload(Round.zone))
+    )
+    session = (await db.execute(stmt)).scalar_one_or_none()
+
+    if session is None:
+        raise NotFoundError(f"Сессия {session_id} не найдена")
+    if session.user_id != user.id:
+        raise ForbiddenError("Это чужая сессия")
+
+    return session
+
+
+async def get_round_for_user(db: AsyncSession, user: User, round_id: int) -> Round:
+    """Раунд пользователя. Чужой раунд — 403, несуществующий — 404."""
+    stmt = (
+        select(Round)
+        .where(Round.id == round_id)
+        .options(selectinload(Round.session), selectinload(Round.zone))
+    )
+    round_obj = (await db.execute(stmt)).scalar_one_or_none()
+
+    if round_obj is None:
+        raise NotFoundError(f"Раунд {round_id} не найден")
+    if round_obj.session.user_id != user.id:
+        raise ForbiddenError("Это чужой раунд")
+
+    return round_obj
+
+
+async def active_round(db: AsyncSession, session: GameSession) -> Round | None:
+    """Текущий незавершённый раунд сессии."""
+    stmt = (
+        select(Round)
+        .where(Round.session_id == session.id, Round.status == RoundStatus.ACTIVE)
+        .options(selectinload(Round.zone))
+        .order_by(Round.id.desc())
+        .limit(1)
+    )
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
+async def target_coordinates(db: AsyncSession, round_obj: Round) -> tuple[float, float]:
+    """Координаты цели раунда. Читаются из PostGIS, а не из geometry-объекта."""
+    stmt = select(
+        func.ST_X(Round.target_point),
+        func.ST_Y(Round.target_point),
+    ).where(Round.id == round_obj.id)
+
+    row = (await db.execute(stmt)).one()
+    return float(row[0]), float(row[1])
+
+
+async def guess_coordinates(db: AsyncSession, round_obj: Round) -> tuple[float, float] | None:
+    """Координаты догадки, если она была сделана."""
+    if round_obj.guess_point is None:
+        return None
+
+    stmt = select(
+        func.ST_X(Round.guess_point),
+        func.ST_Y(Round.guess_point),
+    ).where(Round.id == round_obj.id)
+
+    row = (await db.execute(stmt)).one()
+    return float(row[0]), float(row[1])
+
+
+async def _first_round(db: AsyncSession, session: GameSession) -> Round:
+    """Первый раунд сессии — по нему выравнивается масштаб остальных."""
+    stmt = select(Round).where(Round.session_id == session.id).order_by(Round.id).limit(1)
+    return (await db.execute(stmt)).scalar_one()
+
+
+async def _update_user_statistics(db: AsyncSession, user_id: int) -> None:
+    """Пересчитать статистику игрока по завершённым сессиям."""
+    finished = select(GameSession.id).where(
+        GameSession.user_id == user_id,
+        GameSession.status.in_([SessionStatus.FINISHED, SessionStatus.ABANDONED]),
+    )
+
+    totals = (
+        await db.execute(
+            select(
+                func.count(GameSession.id),
+                func.coalesce(func.sum(GameSession.total_score), 0),
+                func.coalesce(func.max(GameSession.total_score), 0),
+            ).where(GameSession.id.in_(finished))
+        )
+    ).one()
+
+    rounds = (
+        await db.execute(
+            select(
+                func.count(Round.id),
+                func.avg(Round.score),
+                func.avg(Round.distance_km),
+            ).where(
+                Round.session_id.in_(finished),
+                Round.status == RoundStatus.GUESSED,
+            )
+        )
+    ).one()
+
+    user = await db.get(User, user_id)
+    if user is None:
+        return
+
+    user.games_played = int(totals[0])
+    user.total_score = int(totals[1])
+    user.best_score = int(totals[2])
+    user.total_rounds = int(rounds[0])
+    user.average_score = float(rounds[1]) if rounds[1] is not None else None
+    user.average_distance = float(rounds[2]) if rounds[2] is not None else None
+    user.updated_at = datetime.now(UTC)
+
+
+async def _update_zone_statistics(db: AsyncSession, zone_id: int) -> None:
+    """Пересчитать среднее по зоне после завершённого раунда."""
+    stats = (
+        await db.execute(
+            select(
+                func.count(Round.id),
+                func.avg(Round.score),
+                func.avg(Round.distance_km),
+            ).where(Round.zone_id == zone_id, Round.status == RoundStatus.GUESSED)
+        )
+    ).one()
+
+    zone = await db.get(LocationZone, zone_id)
+    if zone is None:
+        return
+
+    zone.total_rounds = int(stats[0])
+    zone.average_score = float(stats[1]) if stats[1] is not None else None
+    zone.average_distance = float(stats[2]) if stats[2] is not None else None
+    zone.updated_at = datetime.now(UTC)

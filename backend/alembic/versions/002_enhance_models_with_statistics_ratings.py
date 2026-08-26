@@ -105,8 +105,11 @@ def upgrade() -> None:
     # Create indexes for location_zones
     op.create_index('ix_location_zones_name', 'location_zones', ['name'], unique=False)
     op.create_index('ix_location_zones_difficulty', 'location_zones', ['difficulty'], unique=False)
-    op.create_index('ix_location_zones_category', 'location_zones', ['category'], unique=False)
-    op.create_index('ix_location_zones_is_active', 'location_zones', ['is_active'], unique=False)
+    # Эти два индекса уже создала миграция 001 — на чистой базе повтор падал
+    op.execute("CREATE INDEX IF NOT EXISTS ix_location_zones_category ON location_zones (category)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_location_zones_is_active ON location_zones (is_active)"
+    )
     op.create_index('ix_location_zones_is_featured', 'location_zones', ['is_featured'], unique=False)
     
     # ### end Alembic commands ###

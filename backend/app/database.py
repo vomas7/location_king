@@ -1,3 +1,5 @@
+"""Подключение к PostgreSQL и базовый класс моделей."""
+
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -7,16 +9,13 @@ from app.config import settings
 
 engine = create_async_engine(
     settings.database_url,
-    echo=settings.debug,  # SQL-логи только в debug режиме
+    echo=settings.debug,
     pool_size=10,
     max_overflow=20,
+    pool_pre_ping=True,
 )
 
-AsyncSessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 class Base(DeclarativeBase):
@@ -24,6 +23,7 @@ class Base(DeclarativeBase):
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """Сессия БД на время запроса: коммит при успехе, откат при ошибке."""
     async with AsyncSessionLocal() as session:
         try:
             yield session

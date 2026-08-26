@@ -1,3 +1,5 @@
+"""Окружение Alembic. Миграции выполняются на том же async-драйвере, что и приложение."""
+
 import asyncio
 from logging.config import fileConfig
 
@@ -5,7 +7,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-# Импортируем все модели — без этого Alembic не видит таблицы
+# Импорт моделей обязателен: без него Alembic не видит таблицы
 import app.models  # noqa: F401
 from alembic import context
 from app.config import settings
@@ -16,24 +18,17 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Подставляем реальный URL из переменных окружения
-# asyncpg → psycopg2 для синхронного режима Alembic
-config.set_main_option(
-    "sqlalchemy.url",
-    settings.database_url.replace("postgresql+asyncpg", "postgresql+psycopg2"),
-)
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url,
+        url=config.get_main_option("sqlalchemy.url"),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        # Нужно для GeoAlchemy2
         include_schemas=True,
     )
     with context.begin_transaction():
@@ -61,11 +56,7 @@ async def run_async_migrations() -> None:
     await connectable.dispose()
 
 
-def run_migrations_online() -> None:
-    asyncio.run(run_async_migrations())
-
-
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
+    asyncio.run(run_async_migrations())

@@ -1,34 +1,41 @@
-.PHONY: help install lint format test clean build run
+.PHONY: help install lint format fix test cov migrate seed run
 
 help:
-	@echo "Available commands:"
-	@echo "  install    - Install dependencies"
-	@echo "  lint       - Run ruff linting"
-	@echo "  format     - Format code with ruff"
-	@echo "  test       - Run tests"
-	@echo "  clean      - Clean cache files"
-	@echo "  build      - Build Docker image"
-	@echo "  run        - Run application locally"
+	@echo "install  — поставить зависимости для разработки"
+	@echo "lint     — ruff check"
+	@echo "format   — ruff format"
+	@echo "fix      — ruff check --fix и ruff format"
+	@echo "test     — pytest"
+	@echo "cov      — pytest с отчётом о покрытии"
+	@echo "migrate  — alembic upgrade head"
+	@echo "seed     — загрузить игровые зоны"
+	@echo "run      — uvicorn с автоперезагрузкой"
 
 install:
-	pip install -r requirements.txt
+	pip install -r requirements-dev.txt
 
 lint:
-	ruff check app/
+	ruff check .
+	ruff format --check .
 
 format:
-	ruff format app/
+	ruff format .
+
+fix:
+	ruff check --fix .
+	ruff format .
 
 test:
-	pytest tests/ -v
+	pytest -v
 
-clean:
-	find . -type f -name "*.pyc" -delete
-	find . -type d -name "__pycache__" -delete
-	rm -rf .pytest_cache .ruff_cache
+cov:
+	pytest --cov=app --cov-report=term-missing
 
-build:
-	docker build -t location-king-backend .
+migrate:
+	alembic upgrade head
+
+seed:
+	python scripts/seed.py
 
 run:
 	uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

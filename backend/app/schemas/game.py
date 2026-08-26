@@ -1,164 +1,114 @@
 """
-Pydantic схемы для игрового API.
+Схемы игрового API.
+
+Ключевое правило: в схемах активного раунда нет ни одного поля с координатами
+цели. Они появляются только в RoundResult, то есть после принятой догадки.
 """
 
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
-
-# ============================================================================
-# Запросы (Request schemas)
-# ============================================================================
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class StartSessionRequest(BaseModel):
-    """Запрос на начало новой игровой сессии"""
+    """Параметры новой партии."""
 
-    zone_id: int | None = Field(
-        None,
-        description="ID конкретной зоны. Если не указан, будет выбрана случайная зона.",
+    rounds_total: int = Field(default=5, ge=1, le=20)
+    view_extent_km: float = Field(
+        default=5.0,
+        gt=0.2,
+        le=200.0,
+        description="Желаемый размер показываемой области в километрах",
     )
-    difficulty: int | None = Field(
-        None,
-        ge=1,
-        le=5,
-        description="Сложность зоны (1-5). Используется если zone_id не указан.",
-    )
-    category: str | None = Field(
-        None,
-        description="Категория зоны. Используется если zone_id не указан.",
-    )
-    rounds_total: int = Field(
-        5,
-        ge=1,
-        le=20,
-        description="Общее количество раундов в сессии (1-20).",
-    )
-    view_extent_km: int = Field(
-        5,
-        ge=1,
-        le=50,
-        description="Размер видимой области в километрах (1-50).",
-    )
+    difficulty: int | None = Field(default=None, ge=1, le=5)
+    category: str | None = None
+    zone_id: int | None = None
 
 
-class SubmitGuessRequest(BaseModel):
-    """Запрос на отправку догадки"""
+class GuessRequest(BaseModel):
+    """Догадка игрока."""
 
-    longitude: float = Field(
-        ...,
-        ge=-180,
-        le=180,
-        description="Долгота выбранной точки",
-    )
-    latitude: float = Field(
-        ...,
-        ge=-90,
-        le=90,
-        description="Широта выбранной точки",
-    )
+    longitude: float = Field(ge=-180, le=180)
+    latitude: float = Field(ge=-90, le=90)
 
 
-# ============================================================================
-# Ответы (Response schemas)
-# ============================================================================
+class ZoneView(BaseModel):
+    """Зона. Отдаётся в списке зон и в результатах завершённого раунда."""
 
-
-class ZoneResponse(BaseModel):
-    """Информация о зоне"""
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
     description: str | None
     difficulty: int
-    category: str | None = None
+    difficulty_name: str
+    category: str
+    category_name: str
+    country: str | None
+    region: str | None
+    tags: list[str] = Field(default_factory=list)
 
-    class Config:
-        from_attributes = True
 
+class RoundView(BaseModel):
+    """
+    Активный раунд глазами клиента.
 
-class RoundResponse(BaseModel):
-    """Информация о раунде"""
+    Никаких координат: снимок доступен только через tiles_url.
+    """
 
     id: int
-    zone: ZoneResponse
-    satellite_image_url: str
-    view_extent_km: int
+    index: int
+    status: str
+    view_extent_km: Decimal
+    max_zoom: int
+    tiles_url: str
+    attribution: str
     created_at: datetime
 
-    # Поля, которые заполняются после отправки догадки
-    guess_point: tuple[float, float] | None = None
-    distance_km: Decimal | None = None
-    score: int | None = None
-    guessed_at: datetime | None = None
 
-    class Config:
-        from_attributes = True
+class RoundResult(BaseModel):
+    """Завершённый раунд: здесь цель уже можно показать."""
+
+    id: int
+    index: int
+    status: str
+    view_extent_km: Decimal
+    target: tuple[float, float]
+    guess: tuple[float, float] | None
+    distance_km: Decimal | None
+    score: int
+    max_score: int
+    accuracy: Decimal | None
+    zone: ZoneView
+    guessed_at: datetime | None
 
 
-class SessionResponse(BaseModel):
-    """Информация об игровой сессии"""
+class SessionView(BaseModel):
+    """Состояние партии."""
 
     id: str
-    mode: str
     status: str
     rounds_total: int
     rounds_done: int
     total_score: int
+    average_score: float | None
     started_at: datetime
     finished_at: datetime | None
 
-    # Текущий активный раунд (если есть)
-    current_round: RoundResponse | None = None
 
-    class Config:
-        from_attributes = True
+class SessionStateResponse(BaseModel):
+    """Партия вместе с текущим раундом и историей завершённых."""
+
+    session: SessionView
+    current_round: RoundView | None
+    results: list[RoundResult]
 
 
 class GuessResponse(BaseModel):
-    """Результат отправки догадки"""
+    """Результат догадки и следующий шаг."""
 
-    round_id: int
-    session_id: str
-    distance_km: Decimal
-    score: int
-    total_session_score: int
-    rounds_done: int
-    rounds_total: int
-
-    # Координаты правильной точки (показываются после гесса)
-    target_point: tuple[float, float]
-
-    # Информация для следующего раунда (если есть)
-    next_round: RoundResponse | None = None
-    is_session_finished: bool = False
-
-
-class ScoreboardEntry(BaseModel):
-    """Запись в таблице лидеров"""
-
-    username: str
-    total_score: int
-    games_played: int
-    average_score: float
-
-
-# ============================================================================
-# Вспомогательные схемы
-# ============================================================================
-
-
-class HealthResponse(BaseModel):
-    """Ответ health check"""
-
-    status: str
-    service: str
-    timestamp: datetime = Field(default_factory=datetime.now)
-
-
-class ErrorResponse(BaseModel):
-    """Схема для ошибок API"""
-
-    detail: str
-    error_code: str | None = None
+    result: RoundResult
+    session: SessionView
+    next_round: RoundView | None
+    is_session_finished: bool
