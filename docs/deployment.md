@@ -1,26 +1,30 @@
 # Деплой
 
-Прод-контур поднимается одним `docker compose` из корня репозитория.
-Публикацией образов CI не занимается: compose собирает бэкенд локально из
-`backend/Dockerfile.prod`.
+Прод-контур поднимается одним `docker compose` из корня репозитория. Образ
+бэкенда собирается локально из `backend/Dockerfile.prod`, ничего никуда не
+публикуется.
 
 ## Что требуется
 
 - Linux-сервер с Docker и плагином Compose
-  ([инструкция Docker](https://docs.docker.com/engine/install/))
-- DNS-записи на IP сервера: основной домен и поддомены `api.` и `auth.`
+  ([инструкция](https://docs.docker.com/engine/install/))
+- DNS-запись на IP сервера
 - Заполненный `.env` в корне репозитория
 
 ## Сервисы
 
-| Сервис      | Образ                        | Назначение                         |
-|-------------|------------------------------|------------------------------------|
-| `nginx`     | `nginx:alpine`               | статика фронтенда и прокси к API   |
-| `backend`   | сборка `backend/Dockerfile.prod` | FastAPI                        |
-| `postgres`  | `postgis/postgis:16-3.4-alpine` | основная БД                     |
-| `redis`     | `redis:7-alpine`             | кэш                                |
-| `keycloak`  | `quay.io/keycloak/keycloak:24.0` | не подключён к бэкенду         |
-| `keycloak_db` | `postgres:16-alpine`       | БД для Keycloak                    |
+| Сервис     | Образ                             | Сеть        | Назначение                        |
+|------------|-----------------------------------|-------------|-----------------------------------|
+| `nginx`    | `nginx:alpine`                    | edge        | статика фронтенда и прокси к API  |
+| `backend`  | сборка `backend/Dockerfile.prod`  | edge + data | FastAPI                           |
+| `postgres` | `postgis/postgis:16-3.4-alpine`   | data        | основная база                     |
+| `redis`    | `redis:7-alpine`                  | data        | кэш спутниковых тайлов            |
+
+Сеть `data` объявлена `internal: true`: база и кэш недоступны снаружи.
+Бэкенд подключён и к `edge` — иначе он не смог бы забирать тайлы снимков.
+
+Фронтенд и API отдаются с одного origin, поэтому CORS в прод-контуре не
+используется вовсе.
 
 ## Порядок
 
@@ -33,56 +37,87 @@
    $EDITOR .env
    ```
 
-3. Поднять контейнеры:
+   Обязательные переменные: `POSTGRES_PASSWORD`, `REDIS_PASSWORD`,
+   `JWT_SECRET`. Секрет генерируется так:
 
    ```bash
-   docker compose up --build -d
-   docker compose ps
+   python3 -c "import secrets; print(secrets.token_urlsafe(48))"
    ```
 
-4. Накатить миграции и загрузить игровые зоны:
+   Без `JWT_SECRET` бэкенд не стартует — это сделано намеренно.
+
+3. Выбрать контур TLS переменной `NGINX_PROFILE`:
+
+   - `http` (по умолчанию) — сертификаты терминирует хостинг или
+     балансировщик, nginx слушает только 80;
+   - `tls` — сертификаты свои. Положите их в `./ssl` как `fullchain.pem` и
+     `privkey.pem`; nginx поднимет 443, включит HSTS и будет редиректить с 80.
+
+4. Запустить:
 
    ```bash
+   ./deploy.sh
+   ```
+
+   Скрипт собирает образы, поднимает контейнеры, ждёт готовности бэкенда,
+   накатывает миграции и загружает игровые зоны. То же вручную:
+
+   ```bash
+   docker compose up -d --build
    docker compose exec backend alembic upgrade head
-   docker compose exec backend python3 scripts/init_test_data.py
-   docker compose exec backend python3 scripts/add_more_zones.py
+   docker compose exec backend python scripts/seed.py
    ```
 
 5. Проверить:
 
    ```bash
-   curl http://api.<ваш-домен>/health
+   curl http://<домен>/api/health
    ```
 
-Скрипт `deploy.sh` в корне делает те же шаги подряд.
-
-Полезные команды собраны в корневом `Makefile`: `make prod`, `make logs`,
-`make migrate`, `make shell-db`.
+Полезные команды — в корневом `Makefile`: `make prod`, `make prod-down`.
 
 ## Обновление
 
 ```bash
 git pull
-docker compose up --build -d
+docker compose up -d --build
 docker compose exec backend alembic upgrade head
 ```
 
-Миграции применяются только вперёд, уже применённые ревизии не редактируются.
+Миграции применяются только вперёд; уже применённые ревизии не редактируются.
 
-## Что в прод-контуре пока не работает
+## Заголовки безопасности
 
-Это известные проблемы, а не то, что нужно перепроверять при деплое:
+`nginx/snippets/site.conf` выставляет `X-Content-Type-Options`,
+`X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` и
+`Content-Security-Policy`; в контуре `tls` добавляется `Strict-Transport-Security`.
 
-- **HTTPS не настроен.** В `nginx/conf.d/locationking.conf` есть только
-  `listen 80`, хотя compose публикует и 443. Сертификаты сейчас
-  терминируются на стороне хостинга. 443-блок добавляется на этапе 8.
-- **Образ бэкенда в проде не используется.** Сервис `backend` монтирует
-  `./backend:/app` поверх собранного образа, то есть исполняется код с
-  хоста. Убирается на этапе 3.
-- **У бэкенда нет выхода в интернет.** Сервис подключён только к сети
-  `internal_net` с `internal: true`, а провайдер снимков ходит наружу к
-  ESRI. Сеть чинится на этапе 3.
-- **Игра работает на заглушке в памяти процесса.** PostgreSQL и Redis
-  подняты, но игровым циклом не используются. Переезд на БД — этап 2.
-- **Авторизации нет.** Keycloak поднят, но к бэкенду не подключён; все
-  запросы выполняются от пользователя `id=1`. Собственный JWT — этап 4.
+CSP строгая: страница не загружает ничего со сторонних доменов — OpenLayers
+лежит в `frontend/vendor/`, шрифты системные. Единственное исключение —
+`img-src` для тайлов OpenStreetMap на карте догадки. Если меняете фронтенд и
+добавляете внешний ресурс, политику придётся расширить осознанно.
+
+Директива `http2 on` требует nginx 1.25.1 и новее; в `nginx:alpine` он новее.
+
+## Провайдер спутниковых снимков
+
+По умолчанию используется ESRI World Imagery, токен не нужен. Адрес задаётся
+переменной `SATELLITE_TILE_URL` и меняется без пересборки.
+
+Важно: бэкенд **проксирует** тайлы — иначе клиент узнал бы координаты цели.
+Перед сменой провайдера или выходом за рамки личного использования проверьте
+его условия: проксирование и кэширование тайлов разрешено не всеми. Для
+Mapbox шаблон выглядит так (токен подставьте свой):
+
+```
+SATELLITE_TILE_URL=https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg90?access_token=ВАШ_ТОКЕН
+```
+
+## Резервное копирование
+
+Данные лежат в томах `postgres_data` и `redis_data`. Кэш тайлов
+восстанавливается сам, а базу стоит выгружать:
+
+```bash
+docker compose exec -T postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > backup.sql.gz
+```

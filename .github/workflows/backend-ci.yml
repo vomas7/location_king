@@ -26,6 +26,8 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
+        cache: pip
+        cache-dependency-path: backend/requirements-dev.txt
 
     - name: Install dependencies
       run: |
@@ -33,10 +35,10 @@ jobs:
         pip install -r requirements-dev.txt
 
     - name: Run ruff lint
-      run: ruff check --config=pyproject.toml .
+      run: ruff check .
 
     - name: Run ruff format check
-      run: ruff format --check --config=pyproject.toml .
+      run: ruff format --check .
 
   test:
     runs-on: ubuntu-latest
@@ -49,7 +51,7 @@ jobs:
         image: postgis/postgis:16-3.4
         env:
           POSTGRES_USER: locationking
-          POSTGRES_PASSWORD: locationking123
+          POSTGRES_PASSWORD: locationking
           POSTGRES_DB: location_king_test
         options: >-
           --health-cmd pg_isready
@@ -76,6 +78,8 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
+        cache: pip
+        cache-dependency-path: backend/requirements-dev.txt
 
     - name: Install dependencies
       run: |
@@ -84,13 +88,12 @@ jobs:
 
     - name: Run tests
       env:
-        DATABASE_URL: postgresql+asyncpg://locationking:locationking123@localhost:5432/location_king_test
-        REDIS_URL: redis://localhost:6379/0
-        KEYCLOAK_URL: https://keycloak.example.com
-        KEYCLOAK_REALM: location-king
-        KEYCLOAK_CLIENT_ID: location-king-backend
-        DEBUG: "true"
-      run: pytest -v
+        # Тесты работают с отдельной базой и сами накатывают на неё миграции
+        DATABASE_URL: postgresql+asyncpg://locationking:locationking@localhost:5432/location_king_test
+        REDIS_URL: redis://localhost:6379/1
+        JWT_SECRET: ci-secret-for-tests-only
+        DEBUG: "false"
+      run: pytest -v --cov=app --cov-report=term-missing --cov-fail-under=60
 
   build:
     runs-on: ubuntu-latest
@@ -102,7 +105,7 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Build image
+    - name: Build production image
       uses: docker/build-push-action@v5
       with:
         context: ./backend

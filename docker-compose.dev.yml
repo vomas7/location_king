@@ -1,0 +1,75 @@
+# Location King — окружение разработки.
+# Одна команда поднимает всё с нуля: make dev
+#
+# Отличия от прод-контура: код смонтирован с хоста, uvicorn с автоперезагрузкой,
+# порты базы и кэша проброшены наружу, пароли простые и лежат прямо здесь.
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: lk_dev_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/http:/etc/nginx/conf.d:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lk_dev_backend
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://locationking:locationking@postgres:5432/location_king
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: dev-secret-only-for-local-development
+      DEBUG: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: lk_dev_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: locationking
+      POSTGRES_PASSWORD: locationking
+      POSTGRES_DB: location_king
+    ports:
+      - "5432:5432"
+    volumes:
+      - dev_postgres_data:/var/lib/postgresql/data
+      - ./backend/scripts/init_prod.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U locationking -d location_king"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: lk_dev_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  dev_postgres_data:

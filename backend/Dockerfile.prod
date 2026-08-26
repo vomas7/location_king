@@ -1,51 +1,39 @@
-FROM python:3.11-slim as builder
+# Прод-образ: зависимости собираются отдельным слоем, приложение работает
+# от непривилегированного пользователя, код внутрь образа копируется и
+# ничем не перекрывается снаружи.
+
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-# Установка системных зависимостей
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
-    g++ \
-    postgresql-client \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Копирование requirements
 COPY requirements.txt .
-
-# Установка Python зависимостей
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # ─────────────────────────────────────────
-# Production stage
-# ─────────────────────────────────────────
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Установка runtime зависимостей
-RUN apt-get update && apt-get install -y \
-    postgresql-client \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-# Создание non-root пользователя
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+COPY --from=builder /install /usr/local
 
-# Копирование зависимостей из builder
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+RUN groupadd --system appuser && useradd --system --gid appuser appuser
 
-# Копирование исходного кода
-COPY . .
+COPY --chown=appuser:appuser . .
 
-# Настройка прав
-RUN chown -R appuser:appuser /app
 USER appuser
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/api/health || exit 1
+EXPOSE 8000
 
-# Запуск приложения
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"
+
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

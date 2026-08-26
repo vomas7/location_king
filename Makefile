@@ -1,62 +1,69 @@
-.PHONY: dev dev-d prod down down-v logs logs-backend ps \
-        shell-backend shell-db shell-redis migrate migration
+.PHONY: help dev dev-build down down-v logs ps migrate seed shell-backend shell-db \
+        prod prod-down lint test cov
+
+help:
+	@echo "Разработка:"
+	@echo "  dev          — поднять окружение разработки (http://localhost:8080)"
+	@echo "  dev-build    — то же с пересборкой образов"
+	@echo "  migrate      — накатить миграции"
+	@echo "  seed         — загрузить игровые зоны"
+	@echo "  lint         — ruff check и ruff format --check"
+	@echo "  test         — pytest"
+	@echo "  cov          — pytest с отчётом о покрытии"
+	@echo "  down         — остановить (down-v — вместе с данными)"
+	@echo ""
+	@echo "Прод:"
+	@echo "  prod         — собрать и поднять прод-контур"
+	@echo "  prod-down    — остановить прод-контур"
+	@echo "  logs, ps     — логи и статус"
+
+# ─── Разработка ───────────────────────────────────────────────────────
+DEV := docker compose -f docker-compose.dev.yml
 
 dev:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+	$(DEV) up -d
+	@echo "Игра: http://localhost:8080   API: http://localhost:8000/api/docs"
 
-dev-d:
-	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+dev-build:
+	$(DEV) up -d --build
 
-prod:
-	docker compose up --build -d
+migrate:
+	$(DEV) exec backend alembic upgrade head
 
-down:
-	docker compose down
+seed:
+	$(DEV) exec backend python scripts/seed.py
 
-down-v:
-	docker compose down -v
-
-logs:
-	docker compose logs -f
-
-logs-backend:
-	docker compose logs -f backend
-
-logs-db:
-	docker compose logs -f db
-
-ps:
-	docker compose ps
-
-# ─── Shells (доступны после: ssh -L порт:localhost:порт user@server) ───
 shell-backend:
-	docker compose exec backend bash
+	$(DEV) exec backend bash
 
 shell-db:
-	docker compose exec db psql -U $${POSTGRES_USER} -d $${POSTGRES_DB}
+	$(DEV) exec postgres psql -U locationking -d location_king
 
-shell-redis:
-	docker compose exec redis redis-cli -a $${REDIS_PASSWORD}
+down:
+	$(DEV) down
 
-# ─── Миграции ─────────────────────────────────────────────────────────
-migrate:
-	docker compose exec backend alembic upgrade head
+down-v:
+	$(DEV) down -v
 
-# Использование: make migration msg="add leaderboard table"
-migration:
-	docker compose exec backend alembic revision --autogenerate -m "$(msg)"
+logs:
+	$(DEV) logs -f
 
-rollback:
-	docker compose exec backend alembic downgrade -1
+ps:
+	$(DEV) ps
 
-# ─── Линтинг и форматирование ────────────────────────────────────────
+# ─── Проверки (без Docker, из backend/) ───────────────────────────────
 lint:
-	cd backend && ruff check .
+	$(MAKE) -C backend lint
 
-format:
-	cd backend && ruff format .
+test:
+	$(MAKE) -C backend test
 
-fix:
-	cd backend && ruff check --fix .
+cov:
+	$(MAKE) -C backend cov
 
-lint-all: lint format fix
+# ─── Прод ─────────────────────────────────────────────────────────────
+prod:
+	docker compose up -d --build
+
+prod-down:
+	docker compose down

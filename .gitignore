@@ -101,3 +101,6 @@ frontend/.vite/
 .coverage
 coverage.xml
 htmlcov/
+
+# Дамп Redis, если сервер запускали из каталога проекта
+dump.rdb

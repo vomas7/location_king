@@ -1,95 +1,70 @@
 # Location King
 
-Геогессер по спутниковым снимкам: игроку показывают квадрат снимка, он ищет
-это место на обычной карте и ставит точку. Чем ближе точка к центру снимка,
-тем больше очков.
+Геогессер по спутниковым снимкам. Игроку показывают участок снимка — без
+подписей и без координат — и он ищет это место на карте мира. Чем ближе
+поставленная точка к центру участка, тем больше очков.
 
-## Состояние проекта
+<!-- markdownlint-disable-next-line -->
+> Сервер авторитетен: до принятой догадки клиент не получает координаты цели
+> ни в одном ответе API. Снимок приходит через прокси по локальным координатам
+> тайлов, так что подсмотреть ответ в DevTools нельзя.
 
-Проект приводится в порядок по этапам, и часть заявленной функциональности
-пока не работает. Что есть на сегодня:
+## Как это устроено
 
-- игровой цикл работает на заглушке в памяти процесса (`app/game_mock.py`),
-  роутеры `sessions`, `rounds`, `zones` в приложение не подключены;
-- PostgreSQL/PostGIS, модели и миграции написаны, но в рабочем контуре не
-  задействованы;
-- авторизации нет: бэкенд всегда работает от пользователя `id=1`;
-- сервер отдаёт клиенту координаты цели, то есть ответ виден в DevTools.
+Область раунда — это один тайл Web Mercator и его потомки на четыре уровня
+вглубь. Цель раунда — центр этого тайла.
 
-Ничего из перечисленного не нужно считать рабочим, пока соответствующий этап
-не закрыт.
+Клиент запрашивает тайлы по локальной сетке:
+`GET /api/rounds/{id}/tiles/{z}/{x}/{y}.jpg`, где `z` — уровень от 0 до
+максимального, а `x` и `y` — номера внутри уровня. Сервер переводит их в
+координаты тайлового сервера, забирает снимок и кладёт в Redis. Запрос за
+пределы области возвращает 404, чужой раунд — 403.
+
+Расстояние и очки считает только сервер, единственной формулой из
+`app/services/scoring.py`.
 
 ## Стек
 
-- Backend: Python 3.12, FastAPI, SQLAlchemy 2.0 (async), Alembic
-- База данных: PostgreSQL 16 + PostGIS
-- Кэш: Redis 7
-- Frontend: статические HTML/JS на OpenLayers, без сборки
-- Инфраструктура: Docker Compose, Nginx
-- Снимки: ESRI World Imagery (Mapbox — запасной вариант, нужен токен)
+- **Backend:** Python 3.12, FastAPI, SQLAlchemy 2.0 (async), Alembic
+- **База:** PostgreSQL 16 + PostGIS — зоны хранятся полигонами, точка раунда
+  выбирается через `ST_GeneratePoints`
+- **Кэш:** Redis 7 — спутниковые тайлы
+- **Аутентификация:** свой JWT, пароли argon2id, есть гостевой вход
+- **Frontend:** статические HTML/CSS/JS на OpenLayers, без сборки и без
+  запросов на сторонние домены
+- **Инфраструктура:** Docker Compose, Nginx
 
-## Структура репозитория
+## Запуск
 
-```
-backend/
-  app/
-    routers/    HTTP-слой: разбор запроса, вызов сервиса, ответ
-    services/   бизнес-логика
-    models/     модели SQLAlchemy
-    schemas/    схемы Pydantic
-    utils/      чистые функции без зависимостей от БД
-  alembic/      миграции
-  scripts/      сиды и SQL инициализации БД
-  tests/        тесты
-frontend/       статический клиент
-nginx/          конфигурация Nginx для прод-контура
-docs/           документация по деплою
+```bash
+git clone https://github.com/vomas7/location_king
+cd location_king
+
+make dev        # поднимет postgres, redis, backend и nginx
+make migrate    # накатит миграции
+make seed       # загрузит 23 игровые зоны
 ```
 
-## Локальный запуск
+Игра: <http://localhost:8080>. Документация API: <http://localhost:8000/api/docs>.
 
-Нужны Python 3.12 и Docker.
+Остановить — `make down`, вместе с данными — `make down-v`.
 
-1. Поднять базу и Redis:
+### Без Docker
 
-   ```bash
-   docker run -d --name lk_postgres -p 5432:5432 \
-     -e POSTGRES_USER=locationking -e POSTGRES_PASSWORD=locationking \
-     -e POSTGRES_DB=location_king postgis/postgis:16-3.4
-   docker run -d --name lk_redis -p 6379:6379 redis:7-alpine
-   ```
+```bash
+cd backend
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements-dev.txt
+cp .env.example .env      # заполните JWT_SECRET
+alembic upgrade head
+python scripts/seed.py
+uvicorn app.main:app --reload
+```
 
-   Одна команда `make dev` появится вместе с `docker-compose.dev.yml`.
+Фронтенд — статика: раздайте каталог `frontend/` любым сервером, который
+проксирует `/api` на бэкенд (как это делает `nginx/snippets/site.conf`).
 
-2. Установить зависимости и настроить окружение:
-
-   ```bash
-   cd backend
-   python3 -m venv venv && source venv/bin/activate
-   pip install -r requirements-dev.txt
-   cp .env.example .env
-   ```
-
-3. Накатить миграции и загрузить зоны:
-
-   ```bash
-   alembic upgrade head
-   python scripts/init_test_data.py
-   ```
-
-4. Запустить приложение:
-
-   ```bash
-   uvicorn app.main:app --reload --port 8000
-   ```
-
-   Проверка: <http://localhost:8000/api/health>.
-   Swagger доступен на `/api/docs` при `DEBUG=true`.
-
-Фронтенд — статика, её достаточно раздать любым статическим сервером из
-каталога `frontend/`. Адрес API сейчас захардкожен в `frontend/index.js`.
-
-## Линтер и тесты
+## Разработка
 
 Перед коммитом, из каталога `backend/`:
 
@@ -99,11 +74,42 @@ ruff format --check .
 pytest
 ```
 
-Те же три проверки выполняет CI и падает, если хотя бы одна не проходит.
+CI выполняет то же самое и падает, если проверки не проходят или покрытие
+опускается ниже 60%.
+
+Структура бэкенда:
+
+```
+app/
+  routers/    HTTP-слой: разбор запроса, вызов сервиса, ответ
+  services/   бизнес-логика и правила игры
+  models/     модели SQLAlchemy
+  schemas/    схемы Pydantic
+  utils/      чистые функции без зависимостей от БД
+```
+
+## API
+
+| Метод  | Путь                                    | Что делает                             |
+|--------|-----------------------------------------|----------------------------------------|
+| `POST` | `/api/auth/register`                    | регистрация по email и паролю          |
+| `POST` | `/api/auth/login`                       | вход                                   |
+| `POST` | `/api/auth/guest`                       | игра без регистрации                   |
+| `POST` | `/api/auth/refresh`                     | обновление пары токенов                |
+| `GET`  | `/api/auth/me`                          | профиль и статистика                   |
+| `POST` | `/api/sessions`                         | начать партию, получить первый раунд   |
+| `GET`  | `/api/sessions/{id}`                    | состояние партии и история раундов     |
+| `POST` | `/api/sessions/{id}/finish`             | завершить партию досрочно              |
+| `GET`  | `/api/rounds/{id}`                      | активный раунд, без координат          |
+| `POST` | `/api/rounds/{id}/guess`                | догадка, в ответе появляется цель      |
+| `GET`  | `/api/rounds/{id}/tiles/{z}/{x}/{y}.jpg`| тайл снимка по локальным координатам   |
+| `GET`  | `/api/zones`                            | список игровых зон                     |
+
+Полное описание — в `/api/docs`.
 
 ## Деплой
 
-Описан в [docs/deployment.md](docs/deployment.md).
+См. [docs/deployment.md](docs/deployment.md).
 
 ## Лицензия
 
