@@ -1,0 +1,9 @@
+# Зависимости для разработки и CI. Прод-зависимости — в requirements.txt
+-r requirements.txt
+
+# Линтер и форматтер
+ruff==0.9.4
+
+# Тесты
+pytest==8.1.1
+pytest-asyncio==0.23.5
