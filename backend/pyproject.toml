@@ -2,6 +2,8 @@
 # Настройки линтера
 line-length = 100
 target-version = "py310"
+# Уже применённые миграции не редактируются — ни линтером, ни форматтером
+extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
 # Включить основные правила
@@ -47,10 +49,6 @@ ignore = [
 ]
 fixable = ["ALL"]
 unfixable = []
-
-[tool.ruff.lint.per-file-ignores]
-# Игнорировать миграции Alembic
-"**/alembic/versions/*.py" = ["ALL"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
