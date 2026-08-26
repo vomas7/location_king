@@ -1,154 +1,110 @@
-# 🦁 Location King
+# Location King
 
-Профессиональный геогейссер с космическими снимками. Игроки видят квадрат спутникового снимка и должны найти его центр на карте.
+Геогессер по спутниковым снимкам: игроку показывают квадрат снимка, он ищет
+это место на обычной карте и ставит точку. Чем ближе точка к центру снимка,
+тем больше очков.
 
-## 🚀 Быстрый старт
+## Состояние проекта
 
-### Требования
-- Docker & Docker Compose
-- SSL сертификаты для вашего домена
-- Домен (например, locationking.ru)
+Проект приводится в порядок по этапам, и часть заявленной функциональности
+пока не работает. Что есть на сегодня:
 
-### Установка
+- игровой цикл работает на заглушке в памяти процесса (`app/game_mock.py`),
+  роутеры `sessions`, `rounds`, `zones` в приложение не подключены;
+- PostgreSQL/PostGIS, модели и миграции написаны, но в рабочем контуре не
+  задействованы;
+- авторизации нет: бэкенд всегда работает от пользователя `id=1`;
+- сервер отдаёт клиенту координаты цели, то есть ответ виден в DevTools.
 
-1. **Клонируйте репозиторий**
+Ничего из перечисленного не нужно считать рабочим, пока соответствующий этап
+не закрыт.
+
+## Стек
+
+- Backend: Python 3.12, FastAPI, SQLAlchemy 2.0 (async), Alembic
+- База данных: PostgreSQL 16 + PostGIS
+- Кэш: Redis 7
+- Frontend: статические HTML/JS на OpenLayers, без сборки
+- Инфраструктура: Docker Compose, Nginx
+- Снимки: ESRI World Imagery (Mapbox — запасной вариант, нужен токен)
+
+## Структура репозитория
+
+```
+backend/
+  app/
+    routers/    HTTP-слой: разбор запроса, вызов сервиса, ответ
+    services/   бизнес-логика
+    models/     модели SQLAlchemy
+    schemas/    схемы Pydantic
+    utils/      чистые функции без зависимостей от БД
+  alembic/      миграции
+  scripts/      сиды и SQL инициализации БД
+  tests/        тесты
+frontend/       статический клиент
+nginx/          конфигурация Nginx для прод-контура
+docs/           документация по деплою
+```
+
+## Локальный запуск
+
+Нужны Python 3.12 и Docker.
+
+1. Поднять базу и Redis:
+
    ```bash
-   git clone <repository-url>
-   cd location_king
+   docker run -d --name lk_postgres -p 5432:5432 \
+     -e POSTGRES_USER=locationking -e POSTGRES_PASSWORD=locationking \
+     -e POSTGRES_DB=location_king postgis/postgis:16-3.4
+   docker run -d --name lk_redis -p 6379:6379 redis:7-alpine
    ```
 
-2. **Настройте окружение**
+   Одна команда `make dev` появится вместе с `docker-compose.dev.yml`.
+
+2. Установить зависимости и настроить окружение:
+
    ```bash
+   cd backend
+   python3 -m venv venv && source venv/bin/activate
+   pip install -r requirements-dev.txt
    cp .env.example .env
-   # Отредактируйте .env файл
    ```
 
-3. **Добавьте SSL сертификаты**
+3. Накатить миграции и загрузить зоны:
+
    ```bash
-   mkdir -p ssl
-   # Поместите ваши сертификаты:
-   # - ssl/fullchain.pem
-   # - ssl/privkey.pem
+   alembic upgrade head
+   python scripts/init_test_data.py
    ```
 
-4. **Запустите приложение**
+4. Запустить приложение:
+
    ```bash
-   ./deploy.sh
+   uvicorn app.main:app --reload --port 8000
    ```
 
-## 🏗️ Архитектура
+   Проверка: <http://localhost:8000/api/health>.
+   Swagger доступен на `/api/docs` при `DEBUG=true`.
 
-### Технологии
-- **Backend:** Python + FastAPI (асинхронный)
-- **Frontend:** OpenLayers + Bootstrap 5
-- **База данных:** PostgreSQL + PostGIS
-- **Аутентификация:** Keycloak
-- **Спутниковые снимки:** ESRI World Imagery (бесплатно)
-- **Инфраструктура:** Docker + Nginx
+Фронтенд — статика, её достаточно раздать любым статическим сервером из
+каталога `frontend/`. Адрес API сейчас захардкожен в `frontend/index.js`.
 
-### Сервисы
-- `nginx` - Веб-сервер и прокси
-- `backend` - FastAPI приложение
-- `postgres` - База данных с PostGIS
-- `redis` - Кэш и сессии
-- `keycloak` - Аутентификация
+## Линтер и тесты
 
-## 📁 Структура проекта
-
-```
-location_king/
-├── backend/                 # FastAPI приложение
-│   ├── app/                # Исходный код
-│   ├── alembic/            # Миграции базы данных
-│   ├── scripts/            # Вспомогательные скрипты
-│   └── requirements.txt    # Зависимости Python
-├── frontend/               # Веб-интерфейс
-│   └── index.html          # Основная страница
-├── nginx/                  # Конфигурация Nginx
-│   └── conf.d/
-│       └── locationking.ru.conf
-├── ssl/                    # SSL сертификаты
-├── .env                    # Конфигурация (не в репозитории)
-├── .env.example            # Пример конфигурации
-├── docker-compose.yml      # Docker Compose
-├── deploy.sh               # Скрипт деплоя
-└── README.md               # Эта документация
-```
-
-## 🔧 Конфигурация
-
-### .env файл
-Создайте `.env` файл на основе `.env.example`:
+Перед коммитом, из каталога `backend/`:
 
 ```bash
-# База данных
-POSTGRES_USER=locationking
-POSTGRES_PASSWORD=your_password
-POSTGRES_DB=location_king
-
-# Redis
-REDIS_PASSWORD=your_redis_password
-
-# Keycloak
-KEYCLOAK_ADMIN=admin
-KEYCLOAK_ADMIN_PASSWORD=admin_password
-KEYCLOAK_URL=https://your-domain.ru/auth
-KEYCLOAK_REALM=location-king
-KEYCLOAK_CLIENT_ID=location-king-client
-
-# Приложение
-DATABASE_URL=postgresql+asyncpg://user:password@postgres:5432/location_king
-REDIS_URL=redis://:password@redis:6379/0
-MAPBOX_ACCESS_TOKEN=  # Опционально, по умолчанию используется ESRI
+ruff check .
+ruff format --check .
+pytest
 ```
 
-### SSL сертификаты
-Поместите ваши SSL сертификаты в папку `ssl/`:
-- `ssl/fullchain.pem` - Публичный сертификат
-- `ssl/privkey.pem` - Приватный ключ
+Те же три проверки выполняет CI и падает, если хотя бы одна не проходит.
 
-## 🎮 Игровой процесс
+## Деплой
 
-1. **Начало игры:** Игрок начинает новую сессию
-2. **Показ снимка:** Отображается квадрат спутникового снимка
-3. **Поиск на карте:** Игрок ищет это место на карте OpenStreetMap
-4. **Отметка точки:** Игрок отмечает предполагаемый центр снимка
-5. **Результат:** Система вычисляет расстояние и начисляет очки
+Описан в [docs/deployment.md](docs/deployment.md).
 
-## 📊 Особенности
+## Лицензия
 
-### Для игроков
-- Система рейтингов ELO
-- Уровни и опыт
-- Ежедневные челленджи
-- Таблицы лидеров
-- Детальная статистика
-
-### Для разработчиков
-- Профессиональная архитектура
-- Полная документация API
-- Автоматические миграции БД
-- Готовность к продакшену
-- Масштабируемость
-
-## 🔐 Безопасность
-
-- HTTPS с правильными security headers
-- Аутентификация через Keycloak
-- Валидация всех входных данных
-- Защита от распространенных атак
-
-## 📞 Поддержка
-
-Если возникли проблемы:
-1. Проверьте логи: `docker-compose logs -f`
-2. Убедитесь в наличии SSL сертификатов
-3. Проверьте конфигурацию в `.env` файле
-
-## 📄 Лицензия
-
-MIT License
-
----
-
-**Удачи с Location King!** 🦁
+MIT — см. [LICENSE](LICENSE).
