@@ -60,7 +60,3 @@ fix:
 	cd backend && ruff check --fix .
 
 lint-all: lint format fix
-
-# Запуск линтинга локально (без Docker)
-lint-local:
-	./lint_and_fix.sh
