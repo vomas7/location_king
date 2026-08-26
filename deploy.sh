@@ -66,7 +66,7 @@ done
 
 # Apply migrations
 echo "📊 Applying database migrations..."
-docker-compose exec backend python3 apply_migrations.py
+docker-compose exec backend alembic upgrade head
 
 # Initialize data
 echo "📝 Initializing game data..."
