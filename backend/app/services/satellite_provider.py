@@ -63,6 +63,7 @@ class BaseSatelliteProvider(ABC):
         # Примерное преобразование: 1° широты ≈ 111 км
         # 1° долготы ≈ 111 км * cos(широта)
         import math
+
         lat_deg_per_km = 1 / 111.0
         lat_rad = math.radians(center_lat)
         cos_lat = max(abs(math.cos(lat_rad)), 0.0001)  # защита от нуля
