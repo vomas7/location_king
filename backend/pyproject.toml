@@ -42,9 +42,7 @@ ignore = [
     "RET504", # Лишняя переменная перед return
     "PIE790", # Лишний pass
     "E712",  # Сравнение с True/False
-    "E722",  # Bare except
     "B008",  # Depends в аргументах по умолчанию (FastAPI pattern)
-    "B904",  # raise в except clause без from
     "RUF001", # Кириллица в строках
 ]
 fixable = ["ALL"]
@@ -69,3 +67,7 @@ max-locals = 15
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
