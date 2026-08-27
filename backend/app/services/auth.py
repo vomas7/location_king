@@ -96,6 +96,16 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     return (await db.execute(stmt)).scalar_one_or_none()
 
 
+def default_display_name() -> str:
+    """
+    Имя для таблицы лидеров, если игрок его не задал.
+
+    Раньше сюда подставлялась часть адреса до собаки — и почта игрока
+    оказывалась на всеобщем обозрении. Публичным именем адрес быть не должен.
+    """
+    return f"Игрок {secrets.token_hex(2).upper()}"
+
+
 async def register(db: AsyncSession, email: str, password: str, display_name: str | None) -> User:
     """Создать пользователя с email и паролем."""
     email = email.strip().lower()
@@ -107,7 +117,7 @@ async def register(db: AsyncSession, email: str, password: str, display_name: st
         username=await _unique_username(db, email.split("@")[0]),
         email=email,
         password_hash=hash_password(password),
-        display_name=display_name or email.split("@")[0],
+        display_name=(display_name or "").strip() or default_display_name(),
         last_login_at=datetime.now(UTC),
     )
     db.add(user)
@@ -148,6 +158,24 @@ async def get_active_user(db: AsyncSession, user_id: int) -> User:
     if user is None or not user.is_active:
         raise AuthError("Пользователь не найден или отключён")
     return user
+
+
+async def delete_account(db: AsyncSession, user: User, password: str) -> None:
+    """
+    Удалить учётную запись вместе со всем, что к ней привязано.
+
+    Пароль спрашиваем ещё раз: с угнанным токеном доступа стереть чужой
+    аккаунт быть не должно. Партии, раунды и созданные комнаты уходят
+    каскадом — так это описано в схеме, а не собирается здесь руками.
+    """
+    if not verify_password(password, user.password_hash):
+        raise AuthError("Неверный пароль")
+
+    user_id = user.id
+    await db.delete(user)
+    await db.flush()
+
+    logger.info("Учётная запись %s удалена по просьбе владельца", user_id)
 
 
 async def _unique_username(db: AsyncSession, base: str) -> str:

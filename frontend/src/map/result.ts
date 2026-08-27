@@ -8,11 +8,10 @@ import LineString from "ol/geom/LineString";
 import Point from "ol/geom/Point";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { defaults as defaultControls } from "ol/control/defaults";
 import { defaults as defaultInteractions } from "ol/interaction/defaults";
 import { fromLonLat } from "ol/proj";
 
-import { osmLayer } from "~/map/osm";
+import { osmControls, osmLayer } from "~/map/osm";
 import { STYLE_GUESS, STYLE_LINE, STYLE_TARGET } from "~/map/styles";
 
 type Coordinates = [number, number];
@@ -39,7 +38,7 @@ export function createResultMap(target: HTMLElement): ResultMap {
         },
       }),
     ],
-    controls: defaultControls({ attribution: false, rotate: false }),
+    controls: osmControls(),
     interactions: defaultInteractions({ mouseWheelZoom: false }),
     view: new View({ center: [0, 0], zoom: 1 }),
   });

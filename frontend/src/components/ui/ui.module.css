@@ -324,3 +324,47 @@
     background-position: -20% 0;
   }
 }
+
+/* ── Флажок ───────────────────────────────────────────────────────── */
+
+.checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+/* Системный флажок на тёмном фоне выглядит белым пятном, поэтому рисуем свой */
+.checkboxInput {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg-deep);
+  appearance: none;
+  cursor: pointer;
+  transition:
+    background 0.16s var(--ease),
+    border-color 0.16s var(--ease);
+}
+
+.checkboxInput:hover {
+  border-color: var(--accent-deep);
+}
+
+.checkboxInput:checked {
+  border-color: var(--accent);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3.2 3.2L13 5' fill='none' stroke='%231a1002' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      center / 13px no-repeat,
+    var(--accent);
+}
+
+.checkboxText {
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}

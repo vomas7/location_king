@@ -8,6 +8,8 @@ from jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.models.game_session import GameSession
+from app.models.location_zone import LocationZone
 from app.models.user import User
 from app.services.auth import create_token, hash_password, verify_password
 
@@ -212,3 +214,80 @@ def test_verify_password_rejects_broken_hash():
 async def test_guest_endpoint_is_gone(client: AsyncClient):
     """Играть без учётной записи нельзя: эндпоинта гостя больше нет."""
     assert (await client.post("/api/auth/guest")).status_code == 404
+
+
+async def test_display_name_is_not_taken_from_email(client: AsyncClient):
+    """Адрес почты не должен оказаться в публичной таблице лидеров."""
+    response = await client.post(
+        "/api/auth/register",
+        json={"email": "ivan.petrov@example.com", "password": "long enough password"},
+    )
+
+    assert response.status_code == 201
+    display_name = response.json()["user"]["display_name"]
+
+    assert display_name is not None
+    assert "ivan" not in display_name.lower()
+    assert display_name.startswith("Игрок ")
+
+
+async def test_own_display_name_is_kept(client: AsyncClient):
+    response = await client.post(
+        "/api/auth/register",
+        json={
+            "email": "someone@example.com",
+            "password": "long enough password",
+            "display_name": "Штурман",
+        },
+    )
+
+    assert response.json()["user"]["display_name"] == "Штурман"
+
+
+async def test_account_deletion_removes_the_player_and_the_games(
+    client: AsyncClient,
+    auth_headers: dict,
+    db: AsyncSession,
+    registered_user: User,
+    zone: LocationZone,
+):
+    """Обещание в политике должно быть выполнимым: удаляется всё."""
+    started = await client.post("/api/sessions", json={"rounds_total": 1}, headers=auth_headers)
+    assert started.status_code == 201
+
+    user_id = registered_user.id
+    session_id = started.json()["session"]["id"]
+
+    response = await client.post(
+        "/api/auth/me/delete",
+        json={"password": "correct horse battery"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 204
+
+    assert await db.get(User, user_id) is None
+    assert await db.get(GameSession, session_id) is None
+    assert (await client.get("/api/auth/me", headers=auth_headers)).status_code == 401
+
+
+async def test_account_deletion_needs_the_password(
+    client: AsyncClient,
+    auth_headers: dict,
+    registered_user: User,
+    db: AsyncSession,
+):
+    """С угнанным токеном стереть чужую учётную запись быть не должно."""
+    response = await client.post(
+        "/api/auth/me/delete",
+        json={"password": "какой-то другой пароль"},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 401
+    assert await db.get(User, registered_user.id) is not None
+
+
+async def test_account_deletion_requires_authorization(client: AsyncClient):
+    response = await client.post("/api/auth/me/delete", json={"password": "что угодно"})
+
+    assert response.status_code == 401

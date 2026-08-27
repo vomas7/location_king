@@ -34,6 +34,10 @@ export const auth = {
   login: (email: string, password: string) => authenticate("/api/auth/login", { email, password }),
 
   me: () => request<UserProfile>("/api/auth/me"),
+
+  /** Удалить учётную запись со всеми данными. Пароль подтверждает владельца. */
+  deleteAccount: (password: string) =>
+    request<void>("/api/auth/me/delete", { method: "POST", body: { password } }),
 };
 
 export const game = {

@@ -1,0 +1,46 @@
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--line-soft);
+  background: var(--bg-deep);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-size: 12.5px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.16s var(--ease);
+}
+
+.link:hover {
+  color: var(--text);
+}
+
+.credits {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.credit {
+  color: var(--text-faint);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.credit:hover {
+  color: var(--text);
+}

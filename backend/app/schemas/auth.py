@@ -26,6 +26,12 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class DeleteAccountRequest(BaseModel):
+    """Удаление учётной записи. Пароль подтверждает, что это владелец."""
+
+    password: str = Field(min_length=1, max_length=128)
+
+
 class TokenPair(BaseModel):
     """Пара токенов и срок жизни access-токена в секундах."""
 

@@ -109,6 +109,9 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     throw new ApiError(response.status, await readError(response));
   }
 
+  // 204 приходит без тела, и разбор JSON на нём падает
+  if (response.status === 204) return undefined as T;
+
   return (await response.json()) as T;
 }
 

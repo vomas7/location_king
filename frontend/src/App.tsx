@@ -13,9 +13,13 @@ import { GameScreen } from "~/components/game/GameScreen";
 import { RoundResult } from "~/components/game/RoundResult";
 import { SummaryScreen } from "~/components/game/SummaryScreen";
 import { HomeScreen } from "~/components/home/HomeScreen";
+import { LegalDialog } from "~/components/legal/LegalDialog";
+import { StorageNotice } from "~/components/legal/StorageNotice";
+import { Footer } from "~/components/layout/Footer";
 import { TopBar } from "~/components/layout/TopBar";
 import { Loader } from "~/components/ui/Loader";
 import { Toast } from "~/components/ui/Toast";
+import type { LegalDocumentId } from "~/legal/documents";
 import { useAuth } from "~/state/authContext";
 import { useGame } from "~/state/useGame";
 import { useToast } from "~/state/useToast";
@@ -26,6 +30,7 @@ export function App() {
 
   // Таблица лидеров и история перечитываются после каждой партии
   const [refreshKey, setRefreshKey] = useState(0);
+  const [legal, setLegal] = useState<LegalDocumentId | null>(null);
   const [bestBeforeGame, setBestBeforeGame] = useState(0);
 
   const onSessionEnd = useCallback(() => {
@@ -63,8 +68,23 @@ export function App() {
     return <Loader text="Восстанавливаем сессию…" />;
   }
 
+  const closeLegal = () => {
+    setLegal(null);
+  };
+
   if (status === "anonymous" || user === null) {
-    return <AuthScreen />;
+    return (
+      <>
+        <AuthScreen onOpenLegal={setLegal} />
+        <StorageNotice
+          onDetails={() => {
+            setLegal("storage");
+          }}
+        />
+        <Footer onOpen={setLegal} />
+        <LegalDialog open={legal} onClose={closeLegal} />
+      </>
+    );
   }
 
   const playing = state.phase === "playing" || state.phase === "result";
@@ -145,8 +165,21 @@ export function App() {
         )}
       </main>
 
+      {!playing && (
+        <>
+          <StorageNotice
+            onDetails={() => {
+              setLegal("storage");
+            }}
+          />
+          <Footer onOpen={setLegal} />
+        </>
+      )}
+
       {state.phase === "loading" && <Loader text={state.loadingText} />}
       {message !== null && <Toast message={message} />}
+
+      <LegalDialog open={legal} onClose={closeLegal} />
     </>
   );
 }

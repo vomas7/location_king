@@ -7,10 +7,9 @@ import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { defaults as defaultControls } from "ol/control/defaults";
 import { fromLonLat, toLonLat } from "ol/proj";
 
-import { osmLayer } from "~/map/osm";
+import { osmControls, osmLayer } from "~/map/osm";
 import { STYLE_GUESS } from "~/map/styles";
 
 /** Точка на глобусе. */
@@ -33,7 +32,7 @@ export function createGuessMap(target: HTMLElement, onPick: (point: LonLat) => v
   const map = new MapBrowser({
     target,
     layers: [osmLayer(), new VectorLayer({ source, style: STYLE_GUESS })],
-    controls: defaultControls({ attribution: false, rotate: false }),
+    controls: osmControls(),
     view: new View({
       center: fromLonLat([20, 30]),
       zoom: 1,

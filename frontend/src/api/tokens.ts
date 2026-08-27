@@ -7,13 +7,14 @@
 
 import type { TokenPair } from "~/api/types";
 
-const STORAGE_KEY = "location-king:session";
+/** Ключ в localStorage. Он назван в документе про хранилище, и тест это сверяет. */
+export const SESSION_STORAGE_KEY = "location-king:session";
 
 let tokens: TokenPair | null = read();
 
 function read(): TokenPair | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
     return raw === null ? null : (JSON.parse(raw) as TokenPair);
   } catch {
     // Приватный режим или испорченное значение: играем без запоминания сессии
@@ -30,9 +31,9 @@ export function setTokens(value: TokenPair | null): void {
 
   try {
     if (value === null) {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(SESSION_STORAGE_KEY);
     } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
     }
   } catch {
     // Записать не вышло — токены останутся только в памяти вкладки

@@ -147,6 +147,33 @@ a {
   color: var(--text);
 }
 
+/* Подпись об источнике карты: обязательна по лицензии, поэтому читаемая,
+   но негромкая */
+.ol-attribution {
+  right: 0;
+  bottom: 0;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm) 0 0;
+  background: color-mix(in srgb, var(--bg-deep) 78%, transparent);
+  font-size: 11px;
+  line-height: 1.4;
+  backdrop-filter: blur(6px);
+}
+
+.ol-attribution ul {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  color: var(--text-faint);
+  text-shadow: none;
+}
+
+.ol-attribution a {
+  color: var(--text-dim);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

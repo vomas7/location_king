@@ -1,0 +1,127 @@
+/**
+ * Правовые документы: условия, политика и хранилище браузера.
+ *
+ * Все три живут в одном окне с вкладками, а не на отдельных страницах:
+ * роутера в игре нет, а читают их обычно по ссылке из футера и сразу
+ * закрывают.
+ */
+
+import { useEffect, useRef, useState } from "react";
+
+import styles from "~/components/legal/LegalDialog.module.css";
+import { Button } from "~/components/ui/Button";
+import { useFocusTrap } from "~/components/ui/useFocusTrap";
+import { LEGAL_DOCUMENTS, legalDocument, type LegalDocumentId } from "~/legal/documents";
+
+interface LegalDialogProps {
+  /** Какой документ открыть. null — окно закрыто. */
+  open: LegalDocumentId | null;
+  onClose: () => void;
+}
+
+export function LegalDialog({ open, onClose }: LegalDialogProps) {
+  const dialog = useRef<HTMLDivElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const body = useRef<HTMLDivElement>(null);
+  const [current, setCurrent] = useState<LegalDocumentId>("terms");
+
+  useFocusTrap(dialog);
+
+  useEffect(() => {
+    if (open === null) return;
+
+    setCurrent(open);
+    closeButton.current?.focus();
+  }, [open]);
+
+  // Смена вкладки — новый текст: возвращаем чтение к началу
+  useEffect(() => {
+    body.current?.scrollTo({ top: 0 });
+  }, [current]);
+
+  useEffect(() => {
+    if (open === null) return undefined;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, onClose]);
+
+  if (open === null) return null;
+
+  const document = legalDocument(current);
+
+  return (
+    <div
+      className={styles.overlay}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        ref={dialog}
+        className={styles.sheet}
+        role="dialog"
+        aria-modal="true"
+        aria-label={document.title}
+      >
+        <header className={styles.header}>
+          <div className={styles.tabs} role="tablist" aria-label="Документы">
+            {LEGAL_DOCUMENTS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={item.id === current}
+                className={[styles.tab, item.id === current ? styles.tabActive : ""]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => {
+                  setCurrent(item.id);
+                }}
+              >
+                {item.tab}
+              </button>
+            ))}
+          </div>
+
+          <Button ref={closeButton} variant="ghost" size="small" onClick={onClose}>
+            Закрыть
+          </Button>
+        </header>
+
+        <div className={styles.body} ref={body} tabIndex={0}>
+          <h2 className={styles.title}>{document.title}</h2>
+          <p className={styles.updated}>Редакция от {document.updated}</p>
+
+          {document.sections.map((section) => (
+            <section key={section.heading} className={styles.section}>
+              <h3 className={styles.heading}>{section.heading}</h3>
+
+              {section.paragraphs?.map((text) => (
+                <p key={text} className={styles.text}>
+                  {text}
+                </p>
+              ))}
+
+              {section.list !== undefined && (
+                <ul className={styles.list}>
+                  {section.list.map((item) => (
+                    <li key={item} className={styles.item}>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

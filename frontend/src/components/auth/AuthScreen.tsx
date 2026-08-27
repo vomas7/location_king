@@ -1,4 +1,4 @@
-/** Экран входа: логин, регистрация и игра без регистрации. */
+/** Экран входа: логин и регистрация. */
 
 import { useState, type FormEvent } from "react";
 
@@ -7,7 +7,9 @@ import styles from "~/components/auth/AuthScreen.module.css";
 import { Alert } from "~/components/ui/Alert";
 import { Button } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
+import { Checkbox } from "~/components/ui/Checkbox";
 import { Field } from "~/components/ui/Field";
+import type { LegalDocumentId } from "~/legal/documents";
 import { useAuth } from "~/state/authContext";
 
 type Mode = "login" | "register";
@@ -24,13 +26,18 @@ function describe(error: unknown): string {
   return error instanceof ApiError ? error.detail : "Сервер недоступен. Попробуй ещё раз";
 }
 
-export function AuthScreen() {
+interface AuthScreenProps {
+  onOpenLegal: (document: LegalDocumentId) => void;
+}
+
+export function AuthScreen({ onOpenLegal }: AuthScreenProps) {
   const { login, register } = useAuth();
 
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -49,6 +56,10 @@ export function AuthScreen() {
     }
     if (mode === "register" && password.length < MIN_PASSWORD_LENGTH) {
       setError(`Пароль должен быть не короче ${String(MIN_PASSWORD_LENGTH)} символов`);
+      return;
+    }
+    if (mode === "register" && !accepted) {
+      setError("Чтобы завести учётную запись, нужно принять условия");
       return;
     }
 
@@ -157,6 +168,36 @@ export function AuthScreen() {
             />
           )}
 
+          {mode === "register" && (
+            <Checkbox
+              checked={accepted}
+              onChange={(event) => {
+                setAccepted(event.target.checked);
+              }}
+            >
+              Принимаю{" "}
+              <button
+                type="button"
+                className={styles.link}
+                onClick={() => {
+                  onOpenLegal("terms");
+                }}
+              >
+                условия использования
+              </button>{" "}
+              и{" "}
+              <button
+                type="button"
+                className={styles.link}
+                onClick={() => {
+                  onOpenLegal("privacy");
+                }}
+              >
+                политику конфиденциальности
+              </button>
+            </Checkbox>
+          )}
+
           <Alert message={error} />
 
           <Button type="submit" variant="primary" block disabled={busy}>
@@ -180,7 +221,7 @@ export function AuthScreen() {
               {" — это полминуты"}
             </>
           ) : (
-            "Нужны только email и пароль. Почту мы никуда не отправляем"
+            "Нужны только email и пароль. Писем мы не отправляем и адрес никому не передаём"
           )}
         </p>
       </Card>

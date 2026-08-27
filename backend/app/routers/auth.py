@@ -9,6 +9,7 @@ from app.dependencies import get_current_user, limit_by_address
 from app.models.user import User
 from app.schemas.auth import (
     AuthResponse,
+    DeleteAccountRequest,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
@@ -64,3 +65,18 @@ async def refresh(payload: RefreshRequest, db: AsyncSession = Depends(get_db)) -
 async def me(user: User = Depends(get_current_user)) -> UserProfile:
     """Профиль текущего игрока."""
     return UserProfile.model_validate(user)
+
+
+@router.post("/me/delete", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_me(
+    payload: DeleteAccountRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """
+    Удалить учётную запись и все данные игрока.
+
+    Метод POST, а не DELETE: тело с паролем в DELETE-запросе часть клиентов и
+    прокси выбрасывает по дороге.
+    """
+    await auth_service.delete_account(db, user, payload.password)

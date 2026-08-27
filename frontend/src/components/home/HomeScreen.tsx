@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { game, zones } from "~/api/endpoints";
 import type { SessionState, StartSessionOptions } from "~/api/types";
 import { DailyChallenge } from "~/components/home/DailyChallenge";
+import { DeleteAccount } from "~/components/home/DeleteAccount";
 import { GameHistory } from "~/components/home/GameHistory";
 import styles from "~/components/home/HomeScreen.module.css";
 import { Leaderboard } from "~/components/home/Leaderboard";
@@ -237,6 +238,8 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
               <dd>{formatDistance(user.average_distance)}</dd>
             </div>
           </dl>
+
+          <DeleteAccount />
         </Card>
 
         <Card>

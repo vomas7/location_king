@@ -26,6 +26,7 @@ export async function register(page: Page): Promise<Player> {
   await page.getByPlaceholder("you@example.com").fill(player.email);
   await page.getByPlaceholder(/Не короче/).fill(player.password);
   await page.getByPlaceholder("Как тебя показывать").fill(player.name);
+  await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
 
   await expect(page.getByRole("button", { name: "Начать игру" })).toBeVisible();

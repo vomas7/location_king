@@ -36,9 +36,14 @@ class User(Base):
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
+    # passive_deletes: партии и раунды удаляет сама база по внешнему ключу.
+    # Без этого SQLAlchemy при удалении игрока полез бы читать все его партии,
+    # чтобы обнулить ссылку, — и упёрся бы в NOT NULL.
     sessions: Mapped[list["GameSession"]] = relationship(  # noqa: F821
         back_populates="user",
         lazy="select",
+        cascade="all, delete",
+        passive_deletes=True,
     )
 
     def __repr__(self) -> str:
