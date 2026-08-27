@@ -1,240 +1,29 @@
 <!doctype html>
 <html lang="ru">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Location King — геогессер по спутниковым снимкам</title>
-    <meta name="description" content="Посмотри на участок спутникового снимка и найди его на карте мира.">
-    <meta name="theme-color" content="#0a0e14">
+    <meta
+      name="description"
+      content="Посмотри на участок спутникового снимка и найди это место на карте мира. Бесплатно и без регистрации."
+    />
+    <meta name="theme-color" content="#080b11" />
 
-    <link rel="stylesheet" href="vendor/ol/ol.css">
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛰️</text></svg>">
-</head>
-<body>
-<div class="app" id="app">
+    <meta property="og:title" content="Location King" />
+    <meta property="og:description" content="Геогессер по спутниковым снимкам. Играть бесплатно." />
+    <meta property="og:type" content="website" />
 
-    <!-- ── Шапка ──────────────────────────────────────────────────── -->
-    <header class="topbar" id="topbar" hidden>
-        <div class="topbar__brand">
-            <span class="topbar__mark">LK</span>
-            <span class="topbar__name">Location King</span>
-        </div>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛰️</text></svg>"
+    />
 
-        <div class="topbar__stats" id="gameStats" hidden>
-            <div class="stat">
-                <span class="stat__label">Раунд</span>
-                <span class="stat__value" id="statRound">1 / 5</span>
-            </div>
-            <div class="stat">
-                <span class="stat__label">Очки</span>
-                <span class="stat__value stat__value--accent" id="statScore">0</span>
-            </div>
-        </div>
-
-        <div class="topbar__user">
-            <span class="topbar__player" id="playerName"></span>
-            <button class="btn btn--ghost btn--sm" id="btnQuit" hidden>Завершить</button>
-            <button class="btn btn--ghost btn--sm" id="btnLogout">Выйти</button>
-        </div>
-    </header>
-
-    <!-- ── Вход ───────────────────────────────────────────────────── -->
-    <section class="screen screen--auth" id="screenAuth" hidden>
-        <div class="hero">
-            <div class="hero__glow" aria-hidden="true"></div>
-            <p class="hero__eyebrow">Геогессер по спутниковым снимкам</p>
-            <h1 class="hero__title">Найди точку<br>на планете</h1>
-            <p class="hero__text">
-                Тебе показывают квадрат спутникового снимка — без подписей, без координат,
-                без единой подсказки в коде страницы. Найди это место на карте мира.
-                Чем ближе к центру, тем больше очков.
-            </p>
-        </div>
-
-        <div class="card card--auth">
-            <div class="tabs" role="tablist">
-                <button class="tab is-active" id="tabLogin" role="tab">Вход</button>
-                <button class="tab" id="tabRegister" role="tab">Регистрация</button>
-            </div>
-
-            <form class="form" id="authForm" novalidate>
-                <label class="field">
-                    <span class="field__label">Email</span>
-                    <input class="field__input" type="email" id="authEmail" autocomplete="email"
-                           placeholder="you@example.com" required>
-                </label>
-
-                <label class="field">
-                    <span class="field__label">Пароль</span>
-                    <input class="field__input" type="password" id="authPassword"
-                           autocomplete="current-password" placeholder="Не короче 8 символов" required>
-                </label>
-
-                <label class="field" id="fieldName" hidden>
-                    <span class="field__label">Отображаемое имя <span class="field__hint">необязательно</span></span>
-                    <input class="field__input" type="text" id="authName" autocomplete="nickname"
-                           placeholder="Как тебя показывать">
-                </label>
-
-                <p class="alert" id="authError" hidden></p>
-
-                <button class="btn btn--primary btn--block" type="submit" id="btnAuthSubmit">Войти</button>
-            </form>
-
-            <div class="divider"><span>или</span></div>
-
-            <button class="btn btn--ghost btn--block" id="btnGuest">Играть без регистрации</button>
-        </div>
-    </section>
-
-    <!-- ── Настройка партии ───────────────────────────────────────── -->
-    <section class="screen screen--menu" id="screenMenu" hidden>
-        <div class="card card--menu">
-            <h2 class="card__title">Новая партия</h2>
-            <p class="card__subtitle">Настрой сложность и жми «Начать»</p>
-
-            <div class="option">
-                <span class="option__label">Раундов</span>
-                <div class="segmented" id="optRounds" role="group">
-                    <button class="segmented__item" data-value="3">3</button>
-                    <button class="segmented__item is-active" data-value="5">5</button>
-                    <button class="segmented__item" data-value="10">10</button>
-                </div>
-            </div>
-
-            <div class="option">
-                <span class="option__label">Размер участка</span>
-                <div class="segmented" id="optExtent" role="group">
-                    <button class="segmented__item" data-value="2">2 км</button>
-                    <button class="segmented__item is-active" data-value="5">5 км</button>
-                    <button class="segmented__item" data-value="20">20 км</button>
-                    <button class="segmented__item" data-value="60">60 км</button>
-                </div>
-                <p class="option__hint">Чем меньше участок, тем труднее узнать место</p>
-            </div>
-
-            <div class="option">
-                <span class="option__label">Сложность зон</span>
-                <div class="segmented" id="optDifficulty" role="group">
-                    <button class="segmented__item is-active" data-value="">Любая</button>
-                    <button class="segmented__item" data-value="1">1</button>
-                    <button class="segmented__item" data-value="2">2</button>
-                    <button class="segmented__item" data-value="3">3</button>
-                    <button class="segmented__item" data-value="4">4</button>
-                    <button class="segmented__item" data-value="5">5</button>
-                </div>
-            </div>
-
-            <p class="alert" id="menuError" hidden></p>
-
-            <button class="btn btn--primary btn--block btn--lg" id="btnStart">Начать игру</button>
-        </div>
-
-        <aside class="card card--profile" id="profileCard">
-            <h3 class="card__title card__title--sm">Твоя статистика</h3>
-            <dl class="metrics">
-                <div class="metric">
-                    <dt>Партий</dt>
-                    <dd id="mGames">0</dd>
-                </div>
-                <div class="metric">
-                    <dt>Раундов</dt>
-                    <dd id="mRounds">0</dd>
-                </div>
-                <div class="metric">
-                    <dt>Лучший счёт</dt>
-                    <dd id="mBest">0</dd>
-                </div>
-                <div class="metric">
-                    <dt>Средний промах</dt>
-                    <dd id="mDistance">—</dd>
-                </div>
-            </dl>
-        </aside>
-    </section>
-
-    <!-- ── Игра ───────────────────────────────────────────────────── -->
-    <section class="screen screen--game" id="screenGame" hidden>
-        <div class="satellite" id="satelliteMap"></div>
-
-        <div class="satellite__badge">
-            <span class="satellite__scale" id="extentLabel"></span>
-            <span class="satellite__credit" id="attribution"></span>
-        </div>
-
-        <div class="guess" id="guessPanel">
-            <button class="guess__toggle" id="btnGuessToggle" aria-expanded="false">
-                <span class="guess__toggle-icon" aria-hidden="true">🗺️</span>
-                <span class="guess__toggle-text">Карта</span>
-            </button>
-
-            <div class="guess__body">
-                <div class="guess__map" id="guessMap"></div>
-                <div class="guess__actions">
-                    <p class="guess__hint" id="guessHint">Кликни по карте, чтобы поставить точку</p>
-                    <button class="btn btn--primary btn--block" id="btnSubmit" disabled>Ответить</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ── Результат раунда ───────────────────────────────────────── -->
-    <div class="overlay" id="overlayRound" hidden>
-        <div class="sheet">
-            <div class="sheet__map" id="resultMap"></div>
-
-            <div class="sheet__panel">
-                <p class="sheet__eyebrow" id="resultTier"></p>
-                <h2 class="sheet__score"><span id="resultScore">0</span><small>очков</small></h2>
-
-                <div class="readouts">
-                    <div class="readout">
-                        <span class="readout__label">Промах</span>
-                        <span class="readout__value" id="resultDistance">—</span>
-                    </div>
-                    <div class="readout">
-                        <span class="readout__label">Точность</span>
-                        <span class="readout__value" id="resultAccuracy">—</span>
-                    </div>
-                </div>
-
-                <div class="place">
-                    <p class="place__name" id="resultZone"></p>
-                    <p class="place__meta" id="resultZoneMeta"></p>
-                </div>
-
-                <button class="btn btn--primary btn--block btn--lg" id="btnNext">Следующий раунд</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ── Итог партии ────────────────────────────────────────────── -->
-    <section class="screen screen--summary" id="screenSummary" hidden>
-        <div class="card card--summary">
-            <p class="card__eyebrow">Партия окончена</p>
-            <h2 class="summary__score"><span id="summaryScore">0</span><small>очков</small></h2>
-            <p class="summary__subtitle" id="summarySubtitle"></p>
-
-            <ol class="rounds" id="summaryRounds"></ol>
-
-            <div class="summary__actions">
-                <button class="btn btn--primary btn--block btn--lg" id="btnPlayAgain">Играть снова</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- ── Загрузка ───────────────────────────────────────────────── -->
-    <div class="loader" id="loader" hidden>
-        <div class="loader__orbit" aria-hidden="true"><span></span></div>
-        <p class="loader__text" id="loaderText">Ищем место…</p>
-    </div>
-
-    <div class="toast" id="toast" hidden role="status"></div>
-</div>
-
-<script src="config.js"></script>
-<script src="vendor/ol/ol.js"></script>
-<script type="module" src="js/app.js"></script>
-</body>
+    <!-- Конфигурация окружения: подставляется при деплое, сборку не трогает -->
+    <script src="/config.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

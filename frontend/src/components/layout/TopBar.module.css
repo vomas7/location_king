@@ -1,0 +1,121 @@
+.topbar {
+  display: flex;
+  z-index: 40;
+  flex: 0 0 var(--topbar-h);
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--line-soft);
+  background: color-mix(in srgb, var(--bg-deep) 88%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: linear-gradient(140deg, var(--accent) 0%, #6366f1 100%);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.name {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.progress {
+  display: flex;
+  flex: 0 1 320px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.progressLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.progressLabel {
+  color: var(--text-faint);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.progressScore {
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.track {
+  display: flex;
+  gap: 3px;
+  height: 4px;
+}
+
+.segment {
+  flex: 1;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  transition: background 0.3s var(--ease);
+}
+
+.segmentDone {
+  background: linear-gradient(90deg, var(--accent) 0%, var(--gold) 100%);
+}
+
+.segmentCurrent {
+  background: var(--accent);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.player {
+  overflow: hidden;
+  max-width: 180px;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 780px) {
+  .topbar {
+    padding: 0 12px;
+  }
+
+  .name,
+  .player {
+    display: none;
+  }
+}

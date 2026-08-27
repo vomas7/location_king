@@ -1,0 +1,255 @@
+/* Общие элементы интерфейса: кнопки, карточки, поля, переключатели. */
+
+/* ── Кнопки ───────────────────────────────────────────────────────── */
+
+.button {
+  padding: 11px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  font-size: 14px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.16s var(--ease),
+    border-color 0.16s var(--ease),
+    transform 0.08s var(--ease),
+    opacity 0.16s var(--ease);
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--line);
+  background: var(--surface-2);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.primary {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
+  color: var(--accent-ink);
+  font-weight: 650;
+}
+
+.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5cc9fa 0%, #1eaef4 100%);
+}
+
+.ghost {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.block {
+  display: block;
+  width: 100%;
+}
+
+.small {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.large {
+  padding: 14px 20px;
+  font-size: 15px;
+}
+
+/* ── Карточка ─────────────────────────────────────────────────────── */
+
+.card {
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow);
+}
+
+.cardTitle {
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.cardSubtitle {
+  margin-bottom: 22px;
+  color: var(--text-faint);
+  font-size: 14px;
+}
+
+.eyebrow {
+  color: var(--text-faint);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ── Поля ─────────────────────────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.fieldLabel {
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.fieldHint {
+  color: var(--text-faint);
+  font-weight: 400;
+}
+
+.input {
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+  color: var(--text);
+  transition:
+    border-color 0.16s var(--ease),
+    box-shadow 0.16s var(--ease);
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent-deep);
+  box-shadow: 0 0 0 3px rgb(56 189 248 / 18%);
+}
+
+/* ── Сообщение об ошибке ──────────────────────────────────────────── */
+
+.alert {
+  padding: 10px 13px;
+  border: 1px solid rgb(248 113 113 / 32%);
+  border-radius: var(--radius-sm);
+  background: rgb(248 113 113 / 10%);
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+/* ── Сегментированный переключатель ───────────────────────────────── */
+
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+}
+
+.segmentedItem {
+  flex: 1 1 auto;
+  min-width: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  transition:
+    background 0.16s var(--ease),
+    color 0.16s var(--ease);
+}
+
+.segmentedItem:hover {
+  color: var(--text-dim);
+}
+
+.segmentedItemActive {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+/* ── Загрузка ─────────────────────────────────────────────────────── */
+
+.loader {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 20px;
+  background: rgb(5 7 11 / 82%);
+  backdrop-filter: blur(4px);
+}
+
+.orbit {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  animation: spin 2.4s linear infinite;
+}
+
+.orbit span {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 14px var(--accent);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loaderText {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+/* ── Всплывающее сообщение ────────────────────────────────────────── */
+
+.toast {
+  position: fixed;
+  z-index: 90;
+  bottom: 24px;
+  left: 50%;
+  padding: 12px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+  font-size: 14px;
+  transform: translateX(-50%);
+  animation: rise 0.18s var(--ease);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}

@@ -1,0 +1,189 @@
+.screen {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--bg-deep);
+}
+
+/* ── Снимок ───────────────────────────────────────────────────────── */
+
+.satellite {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(45deg, #0c1219 0 12px, #0e1520 12px 24px);
+}
+
+.badge {
+  position: absolute;
+  z-index: 10;
+  bottom: 14px;
+  left: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-deep) 78%, transparent);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.scale {
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.credit {
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
+.tileError {
+  position: absolute;
+  z-index: 12;
+  top: 50%;
+  left: 50%;
+  max-width: 320px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.hints {
+  position: absolute;
+  z-index: 10;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-deep) 72%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--text-faint);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.hints kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+/* ── Панель догадки ───────────────────────────────────────────────── */
+
+.panel {
+  position: absolute;
+  z-index: 20;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  width: 280px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition:
+    width 0.22s var(--ease),
+    opacity 0.22s var(--ease);
+}
+
+/* Наведение раскрывает карту: лишний клик каждый раунд не нужен */
+.panel:hover,
+.panel:focus-within,
+.panelPinned {
+  width: min(460px, calc(100vw - 32px));
+}
+
+.map {
+  height: 180px;
+  background: var(--surface-2);
+  transition: height 0.22s var(--ease);
+}
+
+.panel:hover .map,
+.panel:focus-within .map,
+.panelPinned .map {
+  height: min(320px, 40vh);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.hint {
+  color: var(--text-faint);
+  font-size: 12px;
+  text-align: center;
+}
+
+.pin {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pin:hover {
+  color: var(--text);
+}
+
+@media (max-width: 780px) {
+  .hints {
+    display: none;
+  }
+
+  .panel {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+  }
+
+  .panel:hover,
+  .panel:focus-within,
+  .panelPinned {
+    width: auto;
+  }
+
+  .map {
+    height: 34vh;
+  }
+
+  .panel:hover .map,
+  .panel:focus-within .map,
+  .panelPinned .map {
+    height: 34vh;
+  }
+}
