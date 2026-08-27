@@ -68,7 +68,11 @@ class Round(Base):
         nullable=False,
         server_default=func.now(),
     )
+    #: До какого момента принимается ответ. NULL — время не ограничено
+    deadline_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     guessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    #: Сколько секунд игрок думал — для статистики и текста результата
+    answer_seconds: Mapped[Decimal | None] = mapped_column(Numeric(6, 2))
 
     session: Mapped["GameSession"] = relationship(back_populates="rounds")  # noqa: F821
     zone: Mapped["LocationZone"] = relationship(back_populates="rounds")  # noqa: F821
@@ -79,3 +83,8 @@ class Round(Base):
     @property
     def is_guessed(self) -> bool:
         return self.status == RoundStatus.GUESSED
+
+    @property
+    def is_open(self) -> bool:
+        """Раунд ещё ждёт ответа."""
+        return self.status == RoundStatus.ACTIVE

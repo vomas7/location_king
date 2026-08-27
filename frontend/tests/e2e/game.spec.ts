@@ -186,3 +186,24 @@ test("результатом можно поделиться", async ({ context,
   // В тексте не должно быть названий мест: он уходит тем, кто ещё не играл
   expect(copied).not.toContain("Москва");
 });
+
+test("в режиме на время идёт обратный отсчёт", async ({ page }) => {
+  await register(page);
+
+  await page.getByRole("radio", { name: "3", exact: true }).first().click();
+  await page.getByRole("radio", { name: "30 сек" }).click();
+  await page.getByRole("button", { name: "Начать игру" }).click();
+
+  const timer = page.getByRole("timer");
+  await expect(timer).toBeVisible();
+
+  const first = await timer.textContent();
+  await page.waitForTimeout(2500);
+  const second = await timer.textContent();
+
+  expect(first).not.toBe(second);
+
+  // Ответ засчитывается как обычно
+  await answerRound(page);
+  await expect(page.getByRole("dialog")).toBeVisible();
+});

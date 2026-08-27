@@ -1,0 +1,61 @@
+.timer {
+  position: absolute;
+  z-index: 15;
+  top: 14px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--bg-deep) 82%, transparent);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+  transform: translateX(-50%);
+}
+
+.value {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.warning {
+  color: var(--gold);
+}
+
+.danger {
+  color: var(--danger);
+  animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.bar {
+  overflow: hidden;
+  width: 90px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+}
+
+.fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.25s linear;
+}
+
+.fillWarning {
+  background: var(--gold);
+}
+
+.fillDanger {
+  background: var(--danger);
+}

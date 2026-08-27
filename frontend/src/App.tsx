@@ -104,9 +104,13 @@ export function App() {
           round={state.round}
           guess={state.guess}
           busy={state.phase !== "playing"}
+          timeLimitSeconds={state.session?.time_limit_seconds ?? null}
           onPick={game.pick}
           onSubmit={() => {
             void game.submit();
+          }}
+          onTimeout={() => {
+            void game.timeout();
           }}
         />
       )}

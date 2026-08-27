@@ -15,6 +15,7 @@ function result(score: number, distanceKm: string | null = "12.500"): RoundResul
     score,
     max_score: 5000,
     accuracy: "50.00",
+    answer_seconds: null,
     zone: {
       id: 1,
       name: "Секретное место",
@@ -39,6 +40,7 @@ const session: SessionView = {
   rounds_done: 3,
   total_score: 9000,
   average_score: 3000,
+  time_limit_seconds: null,
   started_at: "2026-08-27T10:00:00Z",
   finished_at: "2026-08-27T10:10:00Z",
 };

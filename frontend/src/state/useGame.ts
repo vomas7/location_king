@@ -133,6 +133,8 @@ export interface GameController {
   resume: (session: SessionState) => void;
   pick: (guess: LonLat) => void;
   submit: () => Promise<void>;
+  /** Закрыть раунд, на который не успели ответить. */
+  timeout: () => Promise<void>;
   advance: () => void;
   quit: () => Promise<void>;
   reset: () => void;
@@ -203,6 +205,27 @@ export function useGame(onSessionEnd: () => void): GameController {
     }
   }, [state.round, state.guess, onSessionEnd]);
 
+  const timeout = useCallback(async () => {
+    if (state.round === null) return;
+
+    dispatch({ type: "loading", text: "Время вышло…" });
+
+    try {
+      const response = await game.timeout(state.round.id);
+
+      dispatch({
+        type: "guessed",
+        session: response.session,
+        result: response.result,
+        next: response.next_round,
+      });
+
+      if (response.is_session_finished) onSessionEnd();
+    } catch (error) {
+      dispatch({ type: "failed", error: describe(error) });
+    }
+  }, [state.round, onSessionEnd]);
+
   const advance = useCallback(() => {
     dispatch({ type: "advanced" });
   }, []);
@@ -225,5 +248,5 @@ export function useGame(onSessionEnd: () => void): GameController {
     dispatch({ type: "reset" });
   }, []);
 
-  return { state, start, resume, pick, submit, advance, quit, reset };
+  return { state, start, resume, pick, submit, timeout, advance, quit, reset };
 }

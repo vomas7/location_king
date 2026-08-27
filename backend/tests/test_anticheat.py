@@ -131,6 +131,7 @@ async def test_active_round_response_carries_no_coordinates(
         "tiles_url",
         "attribution",
         "created_at",
+        "deadline_at",
     }
 
 

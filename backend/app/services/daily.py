@@ -27,6 +27,7 @@ from app.models.game_session import GameSession
 from app.models.round import Round
 from app.models.user import User
 from app.services import zones as zones_service
+from app.services.round_timer import deadline_for
 from app.services.scoring import MAX_ROUND_SCORE
 from app.utils.geo import lonlat_to_tile, tile_center, tile_width_km, zoom_for_extent
 
@@ -112,6 +113,7 @@ async def open_round(
         tile_y=template.tile_y,
         view_extent_km=template.view_extent_km,
         max_score=MAX_ROUND_SCORE,
+        deadline_at=deadline_for(session),
     )
     db.add(round_obj)
 

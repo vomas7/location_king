@@ -55,6 +55,31 @@ async def submit_guess(
     )
 
 
+@router.post("/{round_id}/timeout", response_model=GuessResponse)
+async def timeout_round(
+    round_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> GuessResponse:
+    """
+    Закрыть раунд, на который не успели ответить.
+
+    Сервер сам проверяет, что срок вышел: иначе это был бы бесплатный пропуск
+    неудобного раунда.
+    """
+    round_obj = await game_service.get_round_for_user(db, user, round_id)
+    finished_round, next_round = await game_service.timeout_round(db, round_obj)
+
+    session = await game_service.get_session_for_user(db, user, round_obj.session_id)
+
+    return GuessResponse(
+        result=await views.round_result(db, finished_round),
+        session=views.session_view(session),
+        next_round=(views.round_view(next_round) if next_round is not None else None),
+        is_session_finished=not session.is_active,
+    )
+
+
 @router.get(
     "/{round_id}/tiles/{z}/{x}/{y}.jpg",
     response_class=Response,

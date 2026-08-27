@@ -5,20 +5,46 @@ import { useCallback, useEffect, useState } from "react";
 import type { RoundView } from "~/api/types";
 import styles from "~/components/game/GameScreen.module.css";
 import { GuessPanel } from "~/components/game/GuessPanel";
+import { RoundTimer } from "~/components/game/RoundTimer";
 import { SatelliteView } from "~/components/game/SatelliteView";
 import type { LonLat } from "~/map/guess";
+import { useCountdown } from "~/state/useCountdown";
 
 interface GameScreenProps {
   round: RoundView;
   guess: LonLat | null;
   busy: boolean;
+  timeLimitSeconds: number | null;
   onPick: (guess: LonLat) => void;
   onSubmit: () => void;
+  /** Время вышло, а точка не поставлена. */
+  onTimeout: () => void;
 }
 
-export function GameScreen({ round, guess, busy, onPick, onSubmit }: GameScreenProps) {
+export function GameScreen({
+  round,
+  guess,
+  busy,
+  timeLimitSeconds,
+  onPick,
+  onSubmit,
+  onTimeout,
+}: GameScreenProps) {
   const [pinned, setPinned] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
+  const { secondsLeft, expired } = useCountdown(round.deadline_at);
+
+  // Время вышло: отправляем поставленную точку, а если её нет — закрываем
+  // раунд. Решение всё равно принимает сервер, здесь только повод его позвать.
+  useEffect(() => {
+    if (!expired || busy) return;
+
+    if (guess === null) {
+      onTimeout();
+    } else {
+      onSubmit();
+    }
+  }, [expired, busy, guess, onSubmit, onTimeout]);
 
   const resetView = useCallback(() => {
     setResetSignal((value) => value + 1);
@@ -53,6 +79,10 @@ export function GameScreen({ round, guess, busy, onPick, onSubmit }: GameScreenP
   return (
     <div className={styles.screen}>
       <SatelliteView round={round} resetSignal={resetSignal} />
+
+      {secondsLeft !== null && timeLimitSeconds !== null && (
+        <RoundTimer secondsLeft={secondsLeft} totalSeconds={timeLimitSeconds} />
+      )}
 
       <GuessPanel
         roundId={round.id}

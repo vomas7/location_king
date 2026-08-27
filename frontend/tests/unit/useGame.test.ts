@@ -34,6 +34,7 @@ function round(index: number): RoundView {
     tiles_url: `/api/rounds/${String(index)}/tiles/{z}/{x}/{y}.jpg`,
     attribution: "Провайдер",
     created_at: "2026-08-27T10:00:00Z",
+    deadline_at: null,
   };
 }
 
@@ -46,6 +47,7 @@ function session(overrides: Partial<SessionView> = {}): SessionView {
     rounds_done: 0,
     total_score: 0,
     average_score: null,
+    time_limit_seconds: null,
     started_at: "2026-08-27T10:00:00Z",
     finished_at: null,
     ...overrides,
@@ -64,6 +66,7 @@ function result(index: number, score: number): RoundResult {
     score,
     max_score: 5000,
     accuracy: "12.00",
+    answer_seconds: "8.40",
     zone: {
       id: 1,
       name: "Тестовая зона",
@@ -80,7 +83,12 @@ function result(index: number, score: number): RoundResult {
   };
 }
 
-const OPTIONS = { rounds_total: 2, view_extent_km: 5, difficulty: null };
+const OPTIONS = {
+  rounds_total: 2,
+  view_extent_km: 5,
+  difficulty: null,
+  time_limit_seconds: null,
+};
 
 beforeEach(() => {
   vi.clearAllMocks();

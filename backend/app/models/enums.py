@@ -23,7 +23,7 @@ class RoundStatus(StrEnum):
 
     ACTIVE = "active"
     GUESSED = "guessed"
-    SKIPPED = "skipped"
+    TIMED_OUT = "timed_out"
 
 
 class ZoneCategory(StrEnum):

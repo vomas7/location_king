@@ -8,7 +8,9 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.services.round_timer import ALLOWED_TIME_LIMITS
 
 
 class StartSessionRequest(BaseModel):
@@ -24,6 +26,19 @@ class StartSessionRequest(BaseModel):
     difficulty: int | None = Field(default=None, ge=1, le=5)
     category: str | None = None
     zone_id: int | None = None
+    time_limit_seconds: int | None = Field(
+        default=None,
+        description="Сколько секунд даётся на раунд. Пусто — без ограничения",
+    )
+
+    @field_validator("time_limit_seconds")
+    @classmethod
+    def check_time_limit(cls, value: int | None) -> int | None:
+        """Произвольные значения не принимаем: режимы должны быть сравнимы."""
+        if value is not None and value not in ALLOWED_TIME_LIMITS:
+            allowed = ", ".join(str(item) for item in ALLOWED_TIME_LIMITS)
+            raise ValueError(f"Допустимые значения: {allowed}")
+        return value
 
 
 class GuessRequest(BaseModel):
@@ -65,6 +80,8 @@ class RoundView(BaseModel):
     tiles_url: str
     attribution: str
     created_at: datetime
+    #: До какого момента принимается ответ. Пусто — время не ограничено
+    deadline_at: datetime | None
 
 
 class RoundResult(BaseModel):
@@ -80,6 +97,8 @@ class RoundResult(BaseModel):
     score: int
     max_score: int
     accuracy: Decimal | None
+    #: Сколько секунд игрок думал над раундом
+    answer_seconds: Decimal | None
     zone: ZoneView
     guessed_at: datetime | None
 
@@ -95,6 +114,8 @@ class SessionView(BaseModel):
     rounds_done: int
     total_score: int
     average_score: float | None
+    #: Сколько секунд даётся на раунд. Пусто — без ограничения
+    time_limit_seconds: int | None
     started_at: datetime
     finished_at: datetime | None
 

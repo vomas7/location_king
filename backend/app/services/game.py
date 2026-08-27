@@ -25,6 +25,7 @@ from app.models.round import Round
 from app.models.user import User
 from app.services import daily
 from app.services import zones as zones_service
+from app.services.round_timer import deadline_for, is_late, time_left_fraction
 from app.services.scoring import MAX_ROUND_SCORE, evaluate_guess
 from app.utils.geo import lonlat_to_tile, tile_center, tile_width_km, zoom_for_extent
 
@@ -43,6 +44,7 @@ async def start_session(
     difficulty: int | None = None,
     category: str | None = None,
     zone_id: int | None = None,
+    time_limit_seconds: int | None = None,
 ) -> tuple[GameSession, Round]:
     """
     Создать сессию и первый раунд.
@@ -55,7 +57,11 @@ async def start_session(
     if previous is not None:
         await finish_session(db, previous)
 
-    session = GameSession(user_id=user.id, rounds_total=rounds_total)
+    session = GameSession(
+        user_id=user.id,
+        rounds_total=rounds_total,
+        time_limit_seconds=time_limit_seconds,
+    )
     db.add(session)
     await db.flush()
 
@@ -127,6 +133,7 @@ async def create_round(
         status=RoundStatus.ACTIVE,
         view_extent_km=Decimal(str(round(tile_width_km(tile_x, tile_y, zoom), 3))),
         max_score=MAX_ROUND_SCORE,
+        deadline_at=deadline_for(session),
     )
     db.add(round_obj)
 
@@ -156,12 +163,16 @@ async def submit_guess(
 
     Возвращает завершённый раунд и следующий, если сессия не закончилась.
     """
-    if round_obj.status != RoundStatus.ACTIVE:
+    if not round_obj.is_open:
         raise ConflictError("Догадка по этому раунду уже принята")
 
     session = round_obj.session
     if not session.is_active:
         raise ConflictError("Сессия уже завершена")
+
+    if is_late(round_obj):
+        # Ответ опоздал: раунд закрывается нулём, но партия продолжается
+        return await _close_timed_out(db, round_obj)
 
     target_lon, target_lat = await target_coordinates(db, round_obj)
 
@@ -172,6 +183,7 @@ async def submit_guess(
         target_lat=target_lat,
         view_extent_km=float(round_obj.view_extent_km),
         max_score=round_obj.max_score,
+        time_left_fraction=time_left_fraction(session, round_obj),
     )
 
     round_obj.guess_point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
@@ -180,6 +192,7 @@ async def submit_guess(
     round_obj.score = result.score
     round_obj.status = RoundStatus.GUESSED
     round_obj.guessed_at = datetime.now(UTC)
+    round_obj.answer_seconds = _elapsed(round_obj)
 
     session.rounds_done += 1
     session.total_score += result.score
@@ -187,20 +200,7 @@ async def submit_guess(
 
     await db.flush()
 
-    next_round = None
-    if session.rounds_done >= session.rounds_total:
-        await finish_session(db, session)
-    elif session.challenge_day is not None:
-        challenge = await daily.get_or_create(db, session.challenge_day)
-        next_round = await daily.open_round(db, session, challenge, session.rounds_done + 1)
-    else:
-        previous = await _first_round(db, session)
-        next_round = await create_round(
-            db,
-            session,
-            view_extent_km=float(previous.view_extent_km),
-        )
-
+    next_round = await _advance(db, session)
     await _update_zone_statistics(db, round_obj.zone_id)
 
     logger.info(
@@ -211,6 +211,68 @@ async def submit_guess(
         user.id,
     )
     return round_obj, next_round
+
+
+async def timeout_round(
+    db: AsyncSession,
+    round_obj: Round,
+) -> tuple[Round, Round | None]:
+    """
+    Закрыть раунд, на который не успели ответить.
+
+    Клиент зовёт это, когда таймер дошёл до нуля, а точка не поставлена.
+    Сервер проверяет, что срок действительно вышел: иначе это был бы
+    бесплатный пропуск неудобного раунда.
+    """
+    if not round_obj.is_open:
+        raise ConflictError("Раунд уже закрыт")
+    if not round_obj.session.is_active:
+        raise ConflictError("Сессия уже завершена")
+    if not is_late(round_obj):
+        raise ConflictError("Время ещё не вышло")
+
+    return await _close_timed_out(db, round_obj)
+
+
+async def _close_timed_out(db: AsyncSession, round_obj: Round) -> tuple[Round, Round | None]:
+    """Раунд без ответа: ноль очков, партия идёт дальше."""
+    session = round_obj.session
+
+    round_obj.status = RoundStatus.TIMED_OUT
+    round_obj.score = 0
+    round_obj.guessed_at = datetime.now(UTC)
+    round_obj.answer_seconds = _elapsed(round_obj)
+
+    session.rounds_done += 1
+    session.average_score = session.total_score / session.rounds_done
+
+    await db.flush()
+
+    next_round = await _advance(db, session)
+    await _update_zone_statistics(db, round_obj.zone_id)
+
+    logger.info("Раунд %s закрыт по времени", round_obj.id)
+    return round_obj, next_round
+
+
+async def _advance(db: AsyncSession, session: GameSession) -> Round | None:
+    """Следующий раунд партии или ничего, если она закончилась."""
+    if session.rounds_done >= session.rounds_total:
+        await finish_session(db, session)
+        return None
+
+    if session.challenge_day is not None:
+        challenge = await daily.get_or_create(db, session.challenge_day)
+        return await daily.open_round(db, session, challenge, session.rounds_done + 1)
+
+    previous = await _first_round(db, session)
+    return await create_round(db, session, view_extent_km=float(previous.view_extent_km))
+
+
+def _elapsed(round_obj: Round) -> Decimal:
+    """Сколько секунд прошло с начала раунда."""
+    seconds = (datetime.now(UTC) - round_obj.created_at).total_seconds()
+    return Decimal(str(round(max(seconds, 0.0), 2)))
 
 
 async def finish_session(db: AsyncSession, session: GameSession) -> GameSession:

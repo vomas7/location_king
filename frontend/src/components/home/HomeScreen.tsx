@@ -24,6 +24,13 @@ const EXTENTS = [
   { value: 60, label: "60 км" },
 ];
 
+const TIME_LIMITS = [
+  { value: null, label: "Без лимита" },
+  { value: 120, label: "2 мин" },
+  { value: 60, label: "1 мин" },
+  { value: 30, label: "30 сек" },
+];
+
 const DIFFICULTIES = [
   { value: null, label: "Любая" },
   ...[1, 2, 3, 4, 5].map((value) => ({ value, label: String(value) })),
@@ -44,6 +51,7 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
   const [rounds, setRounds] = useState(5);
   const [extent, setExtent] = useState(5);
   const [difficulty, setDifficulty] = useState<number | null>(null);
+  const [timeLimit, setTimeLimit] = useState<number | null>(null);
   const [unfinished, setUnfinished] = useState<SessionState | null>(null);
 
   // Незавершённая партия — предлагаем продолжить, а не начинать заново
@@ -108,6 +116,13 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
               value={difficulty}
               onChange={setDifficulty}
             />
+            <Segmented
+              label="Время на раунд"
+              options={TIME_LIMITS}
+              value={timeLimit}
+              onChange={setTimeLimit}
+              hint="Чем быстрее ответ, тем больше очков за раунд"
+            />
           </div>
 
           <Alert message={error} />
@@ -121,6 +136,7 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
                 rounds_total: rounds,
                 view_extent_km: extent,
                 difficulty,
+                time_limit_seconds: timeLimit,
               });
             }}
           >

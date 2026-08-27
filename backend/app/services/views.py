@@ -46,6 +46,7 @@ def round_view(round_obj: Round) -> RoundView:
         tiles_url=f"/api/rounds/{round_obj.id}/tiles/{{z}}/{{x}}/{{y}}.jpg",
         attribution=settings.satellite_attribution,
         created_at=round_obj.created_at,
+        deadline_at=round_obj.deadline_at,
     )
 
 
@@ -65,6 +66,7 @@ async def round_result(db: AsyncSession, round_obj: Round) -> RoundResult:
         score=round_obj.score,
         max_score=round_obj.max_score,
         accuracy=round_obj.accuracy_percentage,
+        answer_seconds=round_obj.answer_seconds,
         zone=zone_view(round_obj.zone),
         guessed_at=round_obj.guessed_at,
     )
@@ -80,6 +82,7 @@ def session_view(session: GameSession) -> SessionView:
         rounds_done=session.rounds_done,
         total_score=session.total_score,
         average_score=session.average_score,
+        time_limit_seconds=session.time_limit_seconds,
         started_at=session.started_at,
         finished_at=session.finished_at,
     )
@@ -87,8 +90,10 @@ def session_view(session: GameSession) -> SessionView:
 
 async def session_results(db: AsyncSession, rounds: list[Round]) -> list[RoundResult]:
     """История завершённых раундов сессии по порядку."""
+    # Раунд, закрытый по времени, — тоже часть партии: игрок должен увидеть,
+    # где была цель, и почему за него ноль
     played = sorted(
-        (item for item in rounds if item.status == RoundStatus.GUESSED),
+        (item for item in rounds if item.status != RoundStatus.ACTIVE),
         key=lambda item: item.position,
     )
     return [await round_result(db, round_obj) for round_obj in played]

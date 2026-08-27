@@ -45,6 +45,9 @@ export const game = {
   finish: (sessionId: string) =>
     request<SessionState>(`/api/sessions/${sessionId}/finish`, { method: "POST" }),
 
+  timeout: (roundId: number) =>
+    request<GuessResponse>(`/api/rounds/${String(roundId)}/timeout`, { method: "POST" }),
+
   guess: (roundId: number, longitude: number, latitude: number) =>
     request<GuessResponse>(`/api/rounds/${String(roundId)}/guess`, {
       method: "POST",

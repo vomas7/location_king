@@ -55,6 +55,8 @@ export interface RoundView {
   tiles_url: string;
   attribution: string;
   created_at: string;
+  /** До какого момента принимается ответ. null — время не ограничено. */
+  deadline_at: string | null;
 }
 
 /** Завершённый раунд: здесь цель уже раскрыта. */
@@ -69,6 +71,7 @@ export interface RoundResult {
   score: number;
   max_score: number;
   accuracy: string | null;
+  answer_seconds: string | null;
   zone: Zone;
   guessed_at: string | null;
 }
@@ -82,6 +85,7 @@ export interface SessionView {
   rounds_done: number;
   total_score: number;
   average_score: number | null;
+  time_limit_seconds: number | null;
   started_at: string;
   finished_at: string | null;
 }
@@ -139,6 +143,8 @@ export interface StartSessionOptions {
   rounds_total: number;
   view_extent_km: number;
   difficulty: number | null;
+  /** Сколько секунд даётся на раунд. null — без ограничения. */
+  time_limit_seconds: number | null;
 }
 
 export interface DailyResult {

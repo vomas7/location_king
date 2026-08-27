@@ -37,6 +37,9 @@ class GameSession(Base):
         index=True,
     )
 
+    #: Сколько секунд даётся на раунд. NULL — без ограничения
+    time_limit_seconds: Mapped[int | None] = mapped_column(SmallInteger)
+
     rounds_total: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=5)
     rounds_done: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
     total_score: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
