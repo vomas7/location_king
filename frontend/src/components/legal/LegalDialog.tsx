@@ -23,6 +23,7 @@ export function LegalDialog({ open, onClose }: LegalDialogProps) {
   const dialog = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
   const body = useRef<HTMLDivElement>(null);
+  const activeTab = useRef<HTMLButtonElement>(null);
   const [current, setCurrent] = useState<LegalDocumentId>("terms");
 
   useFocusTrap(dialog);
@@ -34,9 +35,12 @@ export function LegalDialog({ open, onClose }: LegalDialogProps) {
     closeButton.current?.focus();
   }, [open]);
 
-  // Смена вкладки — новый текст: возвращаем чтение к началу
+  // Смена вкладки — новый текст: возвращаем чтение к началу. Заодно
+  // подтягиваем саму вкладку в видимую часть: на узком экране их ряд
+  // прокручивается вбок, и открытая могла оказаться за краем
   useEffect(() => {
     body.current?.scrollTo({ top: 0 });
+    activeTab.current?.scrollIntoView({ inline: "center", block: "nearest" });
   }, [current]);
 
   useEffect(() => {
@@ -75,6 +79,7 @@ export function LegalDialog({ open, onClose }: LegalDialogProps) {
             {LEGAL_DOCUMENTS.map((item) => (
               <button
                 key={item.id}
+                ref={item.id === current ? activeTab : null}
                 type="button"
                 role="tab"
                 aria-selected={item.id === current}

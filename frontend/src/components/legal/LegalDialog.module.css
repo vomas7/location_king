@@ -140,7 +140,32 @@
 }
 
 @media (max-width: 600px) {
+  /* На узком экране вкладки и «Закрыть» переносились на разные строки и
+     съедали треть окна. Вкладки прокручиваются вбок, шапка остаётся в строку */
+  .header {
+    flex-wrap: nowrap;
+    padding: 12px 14px;
+  }
+
+  .tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    white-space: nowrap;
+  }
+
   .body {
     padding: 20px 18px 28px;
+  }
+
+  .title {
+    font-size: 22px;
   }
 }
