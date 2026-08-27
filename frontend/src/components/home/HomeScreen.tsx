@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { game } from "~/api/endpoints";
 import type { SessionState, StartSessionOptions } from "~/api/types";
+import { DailyChallenge } from "~/components/home/DailyChallenge";
 import { GameHistory } from "~/components/home/GameHistory";
 import styles from "~/components/home/HomeScreen.module.css";
 import { Leaderboard } from "~/components/home/Leaderboard";
@@ -32,11 +33,12 @@ interface HomeScreenProps {
   error: string | null;
   onStart: (options: StartSessionOptions) => void;
   onResume: (session: SessionState) => void;
+  onError: (message: string) => void;
   /** Меняется после каждой партии, чтобы таблица и история перечитались. */
   refreshKey: number;
 }
 
-export function HomeScreen({ error, onStart, onResume, refreshKey }: HomeScreenProps) {
+export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: HomeScreenProps) {
   const { user } = useAuth();
 
   const [rounds, setRounds] = useState(5);
@@ -132,6 +134,8 @@ export function HomeScreen({ error, onStart, onResume, refreshKey }: HomeScreenP
       </div>
 
       <div className={styles.column}>
+        <DailyChallenge refreshKey={refreshKey} onStarted={onResume} onError={onError} />
+
         <Card>
           <CardTitle>Твоя статистика</CardTitle>
 

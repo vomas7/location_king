@@ -46,9 +46,14 @@ class Limit(StrEnum):
 
 # Единственная таблица лимитов. Перебор пароля и наливание учёток считаются по
 # адресу клиента, игровые запросы — по игроку.
+#
+# Значения выбраны с оглядкой на общий адрес: за одним NAT сидит целый офис или
+# студенческое общежитие, и десяток регистраций за час оттуда — это нормально,
+# а не атака. От скрипта такой лимит всё равно защищает: он режет скорость на
+# порядки. Настоящая защита от массовой регистрации — подтверждение почты.
 RULES: dict[Limit, RateLimit] = {
-    Limit.LOGIN: RateLimit(limit=10, window_seconds=15 * 60),
-    Limit.REGISTER: RateLimit(limit=5, window_seconds=60 * 60),
+    Limit.LOGIN: RateLimit(limit=20, window_seconds=15 * 60),
+    Limit.REGISTER: RateLimit(limit=30, window_seconds=60 * 60),
     Limit.START_SESSION: RateLimit(limit=60, window_seconds=60 * 60),
     Limit.TILES: RateLimit(limit=3000, window_seconds=60 * 60),
 }

@@ -39,6 +39,9 @@ class Round(Base):
     )
     zone_id: Mapped[int] = mapped_column(ForeignKey("location_zones.id"), nullable=False)
 
+    #: Номер раунда внутри партии, начиная с единицы
+    position: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+
     target_point: Mapped[Geometry] = mapped_column(
         Geometry(geometry_type="POINT", srid=4326),
         nullable=False,

@@ -24,9 +24,7 @@ async def get_round(
 ) -> RoundView:
     """Активный раунд. Координат цели в ответе нет."""
     round_obj = await game_service.get_round_for_user(db, user, round_id)
-    session = await game_service.get_session_for_user(db, user, round_obj.session_id)
-
-    return views.round_view(round_obj, views.round_index(session, round_obj))
+    return views.round_view(round_obj)
 
 
 @router.post("/{round_id}/guess", response_model=GuessResponse)
@@ -48,12 +46,11 @@ async def submit_guess(
     )
 
     session = await game_service.get_session_for_user(db, user, round_obj.session_id)
-    index = views.round_index(session, finished_round)
 
     return GuessResponse(
-        result=await views.round_result(db, finished_round, index),
+        result=await views.round_result(db, finished_round),
         session=views.session_view(session),
-        next_round=(views.round_view(next_round, index + 1) if next_round is not None else None),
+        next_round=(views.round_view(next_round) if next_round is not None else None),
         is_session_finished=not session.is_active,
     )
 

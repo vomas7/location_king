@@ -7,11 +7,12 @@
 
 import logging
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from geoalchemy2 import WKTElement
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -22,6 +23,7 @@ from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
 from app.models.round import Round
 from app.models.user import User
+from app.services import daily
 from app.services import zones as zones_service
 from app.services.scoring import MAX_ROUND_SCORE, evaluate_guess
 from app.utils.geo import lonlat_to_tile, tile_center, tile_width_km, zoom_for_extent
@@ -63,6 +65,30 @@ async def start_session(
     return session, round_obj
 
 
+async def start_daily_challenge(
+    db: AsyncSession,
+    user: User,
+    day: date,
+) -> tuple[GameSession, Round]:
+    """
+    Начать челлендж дня.
+
+    Правило «одна незавершённая партия» общее для обычной игры и челленджа,
+    поэтому предыдущая партия закрывается так же.
+    """
+    previous = await current_session(db, user)
+    if previous is not None:
+        await finish_session(db, previous)
+
+    try:
+        return await daily.start(db, user, day)
+    except IntegrityError as e:
+        # Уникальный индекс на (user_id, challenge_day): игрок успел начать
+        # челлендж в другой вкладке
+        await db.rollback()
+        raise ConflictError("Челлендж этого дня уже сыгран") from e
+
+
 async def create_round(
     db: AsyncSession,
     session: GameSession,
@@ -92,6 +118,7 @@ async def create_round(
 
     round_obj = Round(
         session_id=session.id,
+        position=session.rounds_done + 1,
         zone_id=zone.id,
         target_point=WKTElement(f"POINT({target_lon} {target_lat})", srid=4326),
         tile_zoom=zoom,
@@ -163,6 +190,9 @@ async def submit_guess(
     next_round = None
     if session.rounds_done >= session.rounds_total:
         await finish_session(db, session)
+    elif session.challenge_day is not None:
+        challenge = await daily.get_or_create(db, session.challenge_day)
+        next_round = await daily.open_round(db, session, challenge, session.rounds_done + 1)
     else:
         previous = await _first_round(db, session)
         next_round = await create_round(
@@ -211,10 +241,14 @@ async def get_session_for_user(db: AsyncSession, user: User, session_id: str) ->
     except ValueError as e:
         raise NotFoundError(f"Сессия {session_id} не найдена") from e
 
+    # populate_existing: за время запроса у сессии мог появиться новый раунд, а
+    # без этого SQLAlchemy вернул бы объект из карты идентичности со старым
+    # списком раундов.
     stmt = (
         select(GameSession)
         .where(GameSession.id == session_id)
         .options(selectinload(GameSession.rounds).selectinload(Round.zone))
+        .execution_options(populate_existing=True)
     )
     session = (await db.execute(stmt)).scalar_one_or_none()
 
@@ -262,6 +296,7 @@ async def current_session(db: AsyncSession, user: User) -> GameSession | None:
         .options(selectinload(GameSession.rounds).selectinload(Round.zone))
         .order_by(GameSession.started_at.desc())
         .limit(1)
+        .execution_options(populate_existing=True)
     )
     return (await db.execute(stmt)).scalar_one_or_none()
 
@@ -289,7 +324,7 @@ async def active_round(db: AsyncSession, session: GameSession) -> Round | None:
         select(Round)
         .where(Round.session_id == session.id, Round.status == RoundStatus.ACTIVE)
         .options(selectinload(Round.zone))
-        .order_by(Round.id.desc())
+        .order_by(Round.position.desc())
         .limit(1)
     )
     return (await db.execute(stmt)).scalar_one_or_none()
@@ -322,7 +357,7 @@ async def guess_coordinates(db: AsyncSession, round_obj: Round) -> tuple[float, 
 
 async def _first_round(db: AsyncSession, session: GameSession) -> Round:
     """Первый раунд сессии — по нему выравнивается масштаб остальных."""
-    stmt = select(Round).where(Round.session_id == session.id).order_by(Round.id).limit(1)
+    stmt = select(Round).where(Round.session_id == session.id, Round.position == 1)
     return (await db.execute(stmt)).scalar_one()
 
 

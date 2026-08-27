@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, SmallInteger, String, func
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, SmallInteger, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,6 +26,10 @@ class GameSession(Base):
     )
 
     mode: Mapped[str] = mapped_column(String(20), nullable=False, default=GameMode.SOLO)
+
+    # Заполнено — партия относится к челленджу этого дня. Уникальный индекс не
+    # даёт сыграть челлендж дважды.
+    challenge_day: Mapped[date | None] = mapped_column(Date, index=True)
     status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
@@ -49,7 +53,7 @@ class GameSession(Base):
     rounds: Mapped[list["Round"]] = relationship(  # noqa: F821
         back_populates="session",
         lazy="select",
-        order_by="Round.id",
+        order_by="Round.position",
         cascade="all, delete-orphan",
     )
 

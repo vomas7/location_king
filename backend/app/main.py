@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.exceptions import AppError
-from app.routers import auth, leaderboard, rounds, sessions, zones
+from app.routers import auth, daily, leaderboard, rounds, sessions, zones
 from app.services.tiles import close_clients
 
 logging.basicConfig(
@@ -57,6 +57,7 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
 
 app.include_router(auth.router)
 app.include_router(sessions.router)
+app.include_router(daily.router)
 app.include_router(rounds.router)
 app.include_router(zones.router)
 app.include_router(leaderboard.router)

@@ -12,6 +12,7 @@ from app.models.enums import RoundStatus, category_name, difficulty_name
 from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
 from app.models.round import Round
+from app.schemas.daily import DailyResult
 from app.schemas.game import RoundResult, RoundView, SessionSummary, SessionView, ZoneView
 from app.schemas.leaderboard import LeaderboardEntry
 from app.services import game as game_service
@@ -34,11 +35,11 @@ def zone_view(zone: LocationZone) -> ZoneView:
     )
 
 
-def round_view(round_obj: Round, index: int) -> RoundView:
+def round_view(round_obj: Round) -> RoundView:
     """Активный раунд: адрес прокси тайлов вместо координат."""
     return RoundView(
         id=round_obj.id,
-        index=index,
+        index=round_obj.position,
         status=round_obj.status,
         view_extent_km=round_obj.view_extent_km,
         max_zoom=game_service.max_local_zoom(round_obj),
@@ -48,14 +49,14 @@ def round_view(round_obj: Round, index: int) -> RoundView:
     )
 
 
-async def round_result(db: AsyncSession, round_obj: Round, index: int) -> RoundResult:
+async def round_result(db: AsyncSession, round_obj: Round) -> RoundResult:
     """Завершённый раунд вместе с координатами цели."""
     target = await game_service.target_coordinates(db, round_obj)
     guess = await game_service.guess_coordinates(db, round_obj)
 
     return RoundResult(
         id=round_obj.id,
-        index=index,
+        index=round_obj.position,
         status=round_obj.status,
         view_extent_km=round_obj.view_extent_km,
         target=target,
@@ -85,17 +86,11 @@ def session_view(session: GameSession) -> SessionView:
 
 async def session_results(db: AsyncSession, rounds: list[Round]) -> list[RoundResult]:
     """История завершённых раундов сессии по порядку."""
-    return [
-        await round_result(db, round_obj, index)
-        for index, round_obj in enumerate(sorted(rounds, key=lambda r: r.id), start=1)
-        if round_obj.status == RoundStatus.GUESSED
-    ]
-
-
-def round_index(session: GameSession, round_obj: Round) -> int:
-    """Порядковый номер раунда в сессии, начиная с единицы."""
-    ordered = sorted(session.rounds, key=lambda r: r.id)
-    return next(i for i, r in enumerate(ordered, start=1) if r.id == round_obj.id)
+    played = sorted(
+        (item for item in rounds if item.status == RoundStatus.GUESSED),
+        key=lambda item: item.position,
+    )
+    return [await round_result(db, round_obj) for round_obj in played]
 
 
 def session_summary(session: GameSession) -> SessionSummary:
@@ -122,4 +117,19 @@ def leaderboard_entry(row: LeaderboardRow) -> LeaderboardEntry:
         best_score=row.user.best_score,
         total_score=row.user.total_score,
         average_distance=row.user.average_distance,
+    )
+
+
+def session_summary_or_none(session: GameSession | None) -> SessionSummary | None:
+    """Партия в списке истории или ничего, если её нет."""
+    return None if session is None else session_summary(session)
+
+
+def daily_result(rank: int, session: GameSession) -> DailyResult:
+    """Строка таблицы челленджа дня."""
+    return DailyResult(
+        rank=rank,
+        display_name=session.user.display_name or session.user.username,
+        total_score=session.total_score,
+        finished_at=session.finished_at,
     )

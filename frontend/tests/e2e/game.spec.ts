@@ -138,3 +138,27 @@ test("вход отвергает неверный пароль", async ({ page 
 
   await expect(page.getByRole("alert")).toContainText("Неверный email или пароль");
 });
+
+test("челлендж дня играется один раз в сутки", async ({ page }) => {
+  await register(page);
+
+  await expect(page.getByText("Челлендж дня")).toBeVisible();
+  await page.getByRole("button", { name: "Играть челлендж" }).click();
+
+  await expect(page.getByRole("progressbar")).toBeVisible();
+  await expect(page.locator("canvas").first()).toBeVisible();
+
+  // Челлендж всегда из пяти раундов
+  await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "5");
+
+  for (let round = 1; round <= 5; round += 1) {
+    await answerRound(page);
+    const next = round === 5 ? "Посмотреть итоги" : "Следующий раунд";
+    await page.getByRole("dialog").getByRole("button", { name: next }).click();
+  }
+
+  await page.getByRole("button", { name: "В меню" }).click();
+
+  await expect(page.getByText("Твой результат сегодня")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Играть челлендж" })).toHaveCount(0);
+});

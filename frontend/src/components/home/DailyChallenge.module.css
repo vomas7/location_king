@@ -1,0 +1,109 @@
+.card {
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--accent) 100%);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.day {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.subtitle {
+  margin-bottom: 18px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.played {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+}
+
+.playedLabel {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.playedScore {
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 16px;
+}
+
+.row {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  grid-template-columns: 24px 1fr auto;
+}
+
+.rowMe {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 35%, transparent);
+}
+
+.rank {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 13px;
+  text-align: right;
+}
+
+.rankTop {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.player {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.empty {
+  padding: 14px 0;
+  color: var(--text-faint);
+  font-size: 13px;
+  text-align: center;
+}

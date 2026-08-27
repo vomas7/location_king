@@ -43,7 +43,7 @@ async def start_session(
 
     return SessionStateResponse(
         session=views.session_view(session),
-        current_round=views.round_view(first_round, index=1),
+        current_round=views.round_view(first_round),
         results=[],
     )
 
@@ -100,11 +100,7 @@ async def _session_state(db: AsyncSession, session: GameSession) -> SessionState
 
     return SessionStateResponse(
         session=views.session_view(session),
-        current_round=(
-            views.round_view(current, views.round_index(session, current))
-            if current is not None
-            else None
-        ),
+        current_round=views.round_view(current) if current is not None else None,
         results=await views.session_results(db, session.rounds),
     )
 

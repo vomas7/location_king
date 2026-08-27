@@ -137,3 +137,20 @@ export interface StartSessionOptions {
   view_extent_km: number;
   difficulty: number | null;
 }
+
+export interface DailyResult {
+  rank: number;
+  display_name: string;
+  total_score: number;
+  finished_at: string | null;
+}
+
+export interface DailyChallenge {
+  day: string;
+  rounds_total: number;
+  view_extent_km: number;
+  /** Партия игрока по этому челленджу, если он его уже начинал. */
+  my_session: SessionSummary | null;
+  finished_players: number;
+  results: DailyResult[];
+}

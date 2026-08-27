@@ -94,6 +94,7 @@ export function App() {
           error={state.error}
           onStart={startGame}
           onResume={resumeGame}
+          onError={show}
           refreshKey={refreshKey}
         />
       )}

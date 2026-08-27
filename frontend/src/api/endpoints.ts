@@ -4,6 +4,7 @@ import { request } from "~/api/client";
 import { setTokens } from "~/api/tokens";
 import type {
   AuthResponse,
+  DailyChallenge,
   GuessResponse,
   Leaderboard,
   LeaderboardMetric,
@@ -51,6 +52,12 @@ export const game = {
     }),
 
   history: (limit = 10) => request<SessionHistory>(`/api/sessions?limit=${String(limit)}`),
+};
+
+export const challenge = {
+  today: () => request<DailyChallenge>("/api/challenge/today"),
+
+  start: () => request<SessionState>("/api/challenge/today/start", { method: "POST" }),
 };
 
 export const leaderboard = {
