@@ -13,6 +13,9 @@ services:
       args:
         # Пусто — canonical, og:url и sitemap.xml в сборку не попадут
         SITE_URL: ${SITE_URL:-}
+        # Реквизиты оператора для условий использования и политики
+        OPERATOR_NAME: ${OPERATOR_NAME:-}
+        OPERATOR_EMAIL: ${OPERATOR_EMAIL:-}
     container_name: location_king_nginx
     restart: unless-stopped
     ports:

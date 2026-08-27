@@ -17,6 +17,13 @@ COPY . .
 ARG SITE_URL=""
 ENV SITE_URL=$SITE_URL
 
+# Реквизиты оператора показываются в правовых документах. Не заданы — документы
+# честно скажут, что реквизиты не указаны, вместо выдуманного контакта.
+ARG OPERATOR_NAME=""
+ARG OPERATOR_EMAIL=""
+RUN OPERATOR_NAME="$OPERATOR_NAME" OPERATOR_EMAIL="$OPERATOR_EMAIL" \
+    node scripts/make-config.mjs
+
 RUN npm run build
 
 # ─────────────────────────────────────────

@@ -5,6 +5,12 @@
 # Первый запуск на чистом сервере сам создаёт .env со сгенерированными
 # паролями. Дальше достаточно git pull && ./deploy.sh.
 #
+# Значения, которые неудобно вписывать руками, можно передать окружением —
+# они попадут в .env при его создании:
+#
+#     SITE_URL=https://example.com OPERATOR_NAME="Имя" \
+#         OPERATOR_EMAIL=mail@example.com ./deploy.sh
+#
 # Подробности — в docs/deployment.md.
 
 set -euo pipefail
@@ -13,6 +19,10 @@ cd "$(dirname "$0")"
 
 readonly HEALTH_TIMEOUT_SECONDS=180
 readonly SECRET_VARS=(POSTGRES_PASSWORD REDIS_PASSWORD JWT_SECRET)
+
+# Переменные, которые при создании .env можно передать окружением
+readonly ENV_OVERRIDES=(SITE_URL OPERATOR_NAME OPERATOR_EMAIL)
+
 
 readonly CLOUDFLARE_IPS_V4=https://www.cloudflare.com/ips-v4
 readonly CLOUDFLARE_IPS_V6=https://www.cloudflare.com/ips-v6
@@ -38,6 +48,26 @@ random_secret() {
     fi
 }
 
+# Значение переменной в .env: заменяем строку целиком или дописываем в конец.
+# Значение передаём окружением, а не -v: awk разбирает в -v escape-последо-
+# вательности, и обратный слэш в имени оператора превратился бы в мусор.
+set_env_value() {
+    local name="$1"
+
+    name="$name" value="$2" awk '
+        $0 ~ "^" ENVIRON["name"] "=" && !done {
+            print ENVIRON["name"] "=" ENVIRON["value"]
+            done = 1
+            next
+        }
+        { print }
+        END { if (!done) print ENVIRON["name"] "=" ENVIRON["value"] }
+    ' .env > .env.new
+
+    mv .env.new .env
+    chmod 600 .env
+}
+
 # ─── Проверки окружения ───────────────────────────────────────────────
 docker compose version > /dev/null 2>&1 ||
     die "нужен docker compose: https://docs.docker.com/engine/install/"
@@ -59,6 +89,15 @@ if [ ! -f .env ]; then
         sed -i "s|^${name}=$|${name}=${secret}|" .env
     done
 
+    # Значения из окружения: так первый запуск обходится без правки .env
+    # редактором — это заметно проще, когда сервер настраивают с телефона
+    for name in "${ENV_OVERRIDES[@]}"; do
+        value="${!name-}"
+        [ -n "$value" ] || continue
+        set_env_value "$name" "$value"
+        echo "${name} взят из окружения."
+    done
+
     echo "Пароли сгенерированы, файл доступен только владельцу."
     echo "Домен и провайдера снимков задайте в .env, если нужны не значения по умолчанию."
 fi
@@ -76,6 +115,13 @@ env_value() {
 for name in "${SECRET_VARS[@]}"; do
     [ -n "$(env_value "$name")" ] || die "в .env не заполнена переменная ${name}"
 done
+
+# Не смертельно, но документы без реквизитов оператора бесполезны: игроку
+# некуда обратиться по поводу своих данных
+if [ -z "$(env_value OPERATOR_NAME)" ] || [ -z "$(env_value OPERATOR_EMAIL)" ]; then
+    echo "Внимание: в .env не заполнены OPERATOR_NAME и OPERATOR_EMAIL." >&2
+    echo "Условия использования и политика покажут, что реквизиты не указаны." >&2
+fi
 
 # ─── Контур TLS ───────────────────────────────────────────────────────
 # Список сетей Cloudflare меняется, поэтому он не лежит в репозитории, а
