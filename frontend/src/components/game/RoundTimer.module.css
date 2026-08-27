@@ -23,7 +23,7 @@
 }
 
 .warning {
-  color: var(--gold);
+  color: var(--accent);
 }
 
 .danger {
@@ -53,7 +53,7 @@
 }
 
 .fillWarning {
-  background: var(--gold);
+  background: var(--accent);
 }
 
 .fillDanger {

@@ -18,6 +18,23 @@ interface TopBarProps {
 }
 
 /**
+ * Знак игры — то же перекрестие, что стоит в центре снимка.
+ *
+ * Он повторяется на вкладке браузера и на карте: игрок каждый раз целится в
+ * одну и ту же метку, и она же представляет игру.
+ */
+function Reticle() {
+  return (
+    <span className={styles.mark} aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="18" height="18" fill="none" stroke="currentColor">
+        <circle cx="16" cy="16" r="6" strokeWidth="2.5" />
+        <path d="M16 2v7M16 23v7M2 16h7M23 16h7" strokeWidth="2.5" strokeLinecap="round" />
+      </svg>
+    </span>
+  );
+}
+
+/**
  * Прогресс партии показан полосками, а не только цифрами: так видно, сколько
  * осталось, не читая текст.
  */
@@ -60,7 +77,7 @@ export function TopBar({ playerName, progress, onQuit, onLogout }: TopBarProps) 
   return (
     <header className={styles.topbar}>
       <div className={styles.brand}>
-        <span className={styles.mark}>LK</span>
+        <Reticle />
         <span className={styles.name}>Location King</span>
       </div>
 

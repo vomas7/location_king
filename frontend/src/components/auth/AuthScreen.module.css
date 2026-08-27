@@ -10,8 +10,8 @@
   min-height: 0;
   padding: 32px 20px 48px;
   background:
-    radial-gradient(900px 500px at 15% -5%, rgb(56 189 248 / 12%), transparent 60%),
-    radial-gradient(700px 500px at 95% 105%, rgb(99 102 241 / 12%), transparent 60%), var(--bg);
+    radial-gradient(900px 500px at 15% -5%, var(--glow-warm), transparent 60%),
+    radial-gradient(700px 500px at 95% 105%, var(--glow-cool), transparent 60%), var(--bg);
 }
 
 .hero {
@@ -28,7 +28,7 @@
   width: 340px;
   height: 340px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgb(56 189 248 / 18%), transparent 70%);
+  background: radial-gradient(circle, var(--glow-warm), transparent 70%);
   filter: blur(20px);
 }
 
@@ -43,7 +43,8 @@
 
 .title {
   margin-bottom: 18px;
-  font-size: clamp(38px, 6vw, 60px);
+  font-family: var(--font-display);
+  font-size: clamp(34px, 5vw, 52px);
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1.03;
@@ -97,7 +98,7 @@
   flex: 1;
   padding: 9px 12px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-faint);
   font-size: 14px;

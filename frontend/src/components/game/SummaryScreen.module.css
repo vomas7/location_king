@@ -7,7 +7,7 @@
   min-height: 0;
   padding: 32px 20px 48px;
   background:
-    radial-gradient(900px 500px at 50% -10%, rgb(251 191 36 / 10%), transparent 60%), var(--bg);
+    radial-gradient(900px 500px at 50% -10%, var(--glow-warm), transparent 60%), var(--bg);
 }
 
 .card {
@@ -45,7 +45,7 @@
 
 .record {
   margin-bottom: 24px;
-  color: var(--gold);
+  color: var(--accent);
   font-size: 13px;
   font-weight: 600;
 }
@@ -89,7 +89,7 @@
 .points {
   grid-area: score;
   min-width: 62px;
-  color: var(--gold);
+  color: var(--accent);
   font-family: var(--mono);
   font-size: 14px;
   font-weight: 700;
@@ -108,7 +108,7 @@
 .barFill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent) 0%, var(--gold) 100%);
+  background: var(--accent);
 }
 
 .actions {

@@ -23,16 +23,16 @@
   place-items: center;
   width: 32px;
   height: 32px;
-  border-radius: 9px;
-  background: linear-gradient(140deg, var(--accent) 0%, #6366f1 100%);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
   color: var(--accent-ink);
-  font-size: 13px;
-  font-weight: 700;
 }
 
 .name {
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   white-space: nowrap;
 }
 
@@ -59,7 +59,7 @@
 }
 
 .progressScore {
-  color: var(--gold);
+  color: var(--accent);
   font-family: var(--mono);
   font-size: 14px;
   font-weight: 700;
@@ -79,7 +79,7 @@
 }
 
 .segmentDone {
-  background: linear-gradient(90deg, var(--accent) 0%, var(--gold) 100%);
+  background: var(--accent);
 }
 
 .segmentCurrent {

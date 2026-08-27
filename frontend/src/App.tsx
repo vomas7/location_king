@@ -79,6 +79,10 @@ export function App() {
 
   return (
     <>
+      <a className="skip-link" href="#main">
+        Перейти к игре
+      </a>
+
       <TopBar
         playerName={user.display_name ?? user.username}
         progress={progress}
@@ -89,55 +93,57 @@ export function App() {
         }}
       />
 
-      {(state.phase === "idle" || state.phase === "loading") && (
-        <HomeScreen
-          error={state.error}
-          onStart={startGame}
-          onResume={resumeGame}
-          onError={show}
-          refreshKey={refreshKey}
-        />
-      )}
+      <main id="main" className="main">
+        {(state.phase === "idle" || state.phase === "loading") && (
+          <HomeScreen
+            error={state.error}
+            onStart={startGame}
+            onResume={resumeGame}
+            onError={show}
+            refreshKey={refreshKey}
+          />
+        )}
 
-      {playing && state.round !== null && (
-        <GameScreen
-          round={state.round}
-          guess={state.guess}
-          busy={state.phase !== "playing"}
-          timeLimitSeconds={state.session?.time_limit_seconds ?? null}
-          onPick={game.pick}
-          onSubmit={() => {
-            void game.submit();
-          }}
-          onTimeout={() => {
-            void game.timeout();
-          }}
-        />
-      )}
+        {playing && state.round !== null && (
+          <GameScreen
+            round={state.round}
+            guess={state.guess}
+            busy={state.phase !== "playing"}
+            timeLimitSeconds={state.session?.time_limit_seconds ?? null}
+            onPick={game.pick}
+            onSubmit={() => {
+              void game.submit();
+            }}
+            onTimeout={() => {
+              void game.timeout();
+            }}
+          />
+        )}
 
-      {state.phase === "result" && state.lastResult !== null && (
-        <RoundResult
-          result={state.lastResult}
-          isLastRound={state.pendingRound === null}
-          onNext={game.advance}
-        />
-      )}
+        {state.phase === "result" && state.lastResult !== null && (
+          <RoundResult
+            result={state.lastResult}
+            isLastRound={state.pendingRound === null}
+            onNext={game.advance}
+          />
+        )}
 
-      {state.phase === "finished" && state.session !== null && (
-        <SummaryScreen
-          session={state.session}
-          results={state.results}
-          previousBest={bestBeforeGame}
-          {...(state.session.challenge_day === null
-            ? {}
-            : { challengeDay: state.session.challenge_day })}
-          onPlayAgain={() => {
-            game.reset();
-            show("Настрой партию и жми «Начать»");
-          }}
-          onHome={game.reset}
-        />
-      )}
+        {state.phase === "finished" && state.session !== null && (
+          <SummaryScreen
+            session={state.session}
+            results={state.results}
+            previousBest={bestBeforeGame}
+            {...(state.session.challenge_day === null
+              ? {}
+              : { challengeDay: state.session.challenge_day })}
+            onPlayAgain={() => {
+              game.reset();
+              show("Настрой партию и жми «Начать»");
+            }}
+            onHome={game.reset}
+          />
+        )}
+      </main>
 
       {state.phase === "loading" && <Loader text={state.loadingText} />}
       {message !== null && <Toast message={message} />}

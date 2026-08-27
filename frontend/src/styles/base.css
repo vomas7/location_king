@@ -1,6 +1,7 @@
 /* Базовые стили документа. Всё остальное живёт в CSS-модулях компонентов. */
 
 @import "./tokens.css";
+@import "./fonts.css";
 @import "ol/ol.css";
 
 *,
@@ -19,10 +20,20 @@ body {
 }
 
 /* Корень приложения — колонка: шапка сверху, экран занимает остальное */
-#root {
+#root,
+.main {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+
+#root {
   height: 100dvh;
+}
+
+/* Ориентир для клавиатуры и для читалок; на раскладку не влияет */
+.main {
+  flex: 1 1 auto;
 }
 
 body {
@@ -34,6 +45,31 @@ body {
   font-size: 15px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizelegibility;
+}
+
+/* Дисплейный шрифт — широкий и заметный, поэтому он достаётся только знаку
+   игры и заголовкам экранов. В карточках заголовков много, и там же он
+   превращает интерфейс в набор вывесок */
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+/* Цифры сравнивают взглядом: колонки должны совпадать по вертикали */
+[class*="mono"],
+code,
+kbd,
+samp {
+  font-family: var(--mono);
+}
+
+body {
+  font-variant-numeric: tabular-nums;
 }
 
 h1,
@@ -64,6 +100,26 @@ a {
   color: var(--accent);
 }
 
+/* Первая цель табуляции: попасть с клавиатуры сразу в игру, минуя шапку */
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 8px;
+  left: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform 0.16s var(--ease);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -78,7 +134,7 @@ a {
 .ol-control button {
   width: 30px;
   height: 30px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   color: var(--text);
   font-size: 17px;

@@ -7,8 +7,9 @@
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--gold) 0%, var(--accent) 100%);
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.75;
 }
 
 .header {
@@ -23,6 +24,7 @@
   color: var(--text-faint);
   font-family: var(--mono);
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .subtitle {
@@ -49,7 +51,7 @@
 }
 
 .playedScore {
-  color: var(--gold);
+  color: var(--accent);
   font-family: var(--mono);
   font-size: 22px;
   font-weight: 700;
@@ -72,8 +74,8 @@
 }
 
 .rowMe {
-  background: color-mix(in srgb, var(--gold) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .rank {
@@ -84,7 +86,7 @@
 }
 
 .rankTop {
-  color: var(--gold);
+  color: var(--accent);
   font-weight: 700;
 }
 

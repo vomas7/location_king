@@ -11,7 +11,7 @@
   flex: 1;
   padding: 7px 8px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-faint);
   font-size: 12px;
@@ -55,7 +55,7 @@
 }
 
 .rankTop {
-  color: var(--gold);
+  color: var(--accent);
   font-weight: 700;
 }
 

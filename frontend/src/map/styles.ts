@@ -18,13 +18,17 @@ function token(name: string, fallback: string): string {
   return value === "" ? fallback : value;
 }
 
-/** Цвет точки игрока. Тот же, что у акцента интерфейса. */
-export const COLOR_GUESS = token("--accent", "#38bdf8");
+/**
+ * Цель — тёплая, ответ игрока — холодный.
+ *
+ * Это не украшение, а кодировка: на карте результата две точки, и по цвету
+ * должно быть сразу понятно, где правда, а где догадка. Цель совпадает с
+ * акцентом интерфейса, потому что именно к ней всё время ведут очки.
+ */
+export const COLOR_TARGET = token("--accent", "#ffab2e");
+export const COLOR_GUESS = token("--marker-guess", "#56c7f0");
 
-/** Цвет цели. Тот же, что у очков. */
-export const COLOR_TARGET = token("--gold", "#fbbf24");
-
-const OUTLINE = token("--bg", "#080b11");
+const OUTLINE = token("--bg", "#070d0c");
 
 function marker(color: string): Style {
   return new Style({
@@ -39,8 +43,9 @@ function marker(color: string): Style {
 export const STYLE_GUESS = marker(COLOR_GUESS);
 export const STYLE_TARGET = marker(COLOR_TARGET);
 
+/** Линия промаха между догадкой и целью. */
 export const STYLE_LINE = new Style({
-  stroke: new Stroke({ color: "#e2e8f0", width: 2, lineDash: [6, 6] }),
+  stroke: new Stroke({ color: token("--text-dim", "#9fb3ad"), width: 2, lineDash: [6, 6] }),
 });
 
 /**

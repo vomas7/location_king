@@ -7,8 +7,9 @@
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent) 0%, var(--gold) 100%);
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.75;
 }
 
 .header {
@@ -34,7 +35,7 @@
 /* Код диктуют голосом и набирают руками — он должен читаться издалека */
 .code {
   margin: 10px 0 6px;
-  color: var(--gold);
+  color: var(--accent);
   font-family: var(--mono);
   font-size: 30px;
   font-weight: 700;
@@ -184,7 +185,7 @@
 }
 
 .myScoreValue {
-  color: var(--gold);
+  color: var(--accent);
   font-family: var(--mono);
   font-size: 22px;
   font-weight: 700;

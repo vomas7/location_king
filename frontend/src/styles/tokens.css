@@ -1,41 +1,59 @@
-/* Дизайн-токены. Единственное место, где заданы цвета, радиусы и тени. */
+/*
+ * Дизайн-токены. Единственное место, где заданы цвета, шрифты, радиусы и тени.
+ *
+ * Направление — приборная панель орбитального снимка: интерфейс уходит в
+ * тень, чтобы цветом на экране был сам снимок, и один сигнальный янтарь
+ * отмечает то, на что нужно смотреть. Нейтральные тона все из одного
+ * холодного зелёно-серого семейства: смешивать тёплый и холодный серый — самый
+ * быстрый способ получить грязь.
+ */
 
 :root {
   /* Поверхности: от самой глубокой к самой светлой */
-  --bg: #080b11;
-  --bg-deep: #05070b;
-  --surface: #101822;
-  --surface-2: #17212e;
-  --surface-3: #1f2b3a;
-  --line: #253243;
-  --line-soft: #1a2432;
+  --bg: #070d0c;
+  --bg-deep: #040807;
+  --surface: #0e1614;
+  --surface-2: #14201d;
+  --surface-3: #1c2b27;
+  --line: #263833;
+  --line-soft: #182521;
 
-  /* Текст. Контраст к --surface: 15.3 / 8.7 / 5.9 — все выше порога WCAG AA 4.5 */
-  --text: #e8eef6;
-  --text-dim: #a7b7ca;
-  --text-faint: #8296ad;
+  /* Текст. Контраст к --surface-3, самой светлой поверхности: 12.6 / 6.7 / 5.1
+     — все выше порога WCAG AA 4.5 */
+  --text: #e6efeb;
+  --text-dim: #9fb3ad;
+  --text-faint: #849d96;
 
-  /* Акценты */
-  --accent: #38bdf8;
-  --accent-deep: #0ea5e9;
-  --accent-ink: #04131f;
-  --gold: #fbbf24;
-  --green: #34d399;
-  --danger: #f87171;
+  /* Единственный акцент: действие, очки, цель раунда */
+  --accent: #ffab2e;
+  --accent-deep: #e08a12;
+  --accent-ink: #1a1002;
 
-  --radius-sm: 8px;
-  --radius: 14px;
-  --radius-lg: 20px;
+  /* Смысловые цвета. Это не украшение, а кодировка: близко/далеко, свой ответ */
+  --positive: #5fd6a4;
+  --danger: #ff6b5e;
+  --marker-guess: #56c7f0;
+
+  /* Подсветка фона. Расходится от акцента, чтобы цвет был задан один раз */
+  --glow-warm: color-mix(in srgb, var(--accent) 9%, transparent);
+  --glow-cool: color-mix(in srgb, var(--marker-guess) 7%, transparent);
+
+  /* Радиусы: снаружи мягче, внутри жёстче — так вложенность видно без рамок */
+  --radius-sm: 6px;
+  --radius: 12px;
+  --radius-lg: 18px;
   --radius-pill: 999px;
 
-  --shadow: 0 18px 50px rgb(0 0 0 / 55%);
-  --shadow-sm: 0 6px 20px rgb(0 0 0 / 35%);
+  /* Тени в цвете фона, а не чёрные: чёрная тень на цветной подложке серая */
+  --shadow: 0 20px 60px rgb(2 10 9 / 62%);
+  --shadow-sm: 0 6px 22px rgb(2 10 9 / 42%);
 
   --topbar-h: 60px;
 
-  /* Только системные шрифты: страница не делает внешних запросов */
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  /* Шрифты лежат в public/fonts: сторонних запросов страница не делает */
+  --font-display: Unbounded, "Segoe UI", system-ui, sans-serif;
+  --font: Onest, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
 }

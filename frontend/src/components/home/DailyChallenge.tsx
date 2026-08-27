@@ -7,6 +7,7 @@ import type { DailyChallenge as DailyChallengeData, SessionState } from "~/api/t
 import styles from "~/components/home/DailyChallenge.module.css";
 import { Button } from "~/components/ui/Button";
 import { Card, CardTitle } from "~/components/ui/Card";
+import { Skeleton } from "~/components/ui/Skeleton";
 import { formatNumber, plural } from "~/domain/format";
 import { useAuth } from "~/state/authContext";
 
@@ -44,7 +45,20 @@ export function DailyChallenge({ refreshKey, onStarted, onError }: DailyChalleng
     };
   }, [refreshKey]);
 
-  if (data === null || user === null) return null;
+  if (user === null) return null;
+
+  // Карточка занимает своё место сразу: иначе весь столбец подпрыгивает,
+  // когда ответ приходит
+  if (data === null) {
+    return (
+      <Card className={styles.card}>
+        <div className={styles.header}>
+          <CardTitle>Челлендж дня</CardTitle>
+        </div>
+        <Skeleton rows={4} />
+      </Card>
+    );
+  }
 
   const played = data.my_session !== null;
   const finished = data.my_session?.status === "finished";

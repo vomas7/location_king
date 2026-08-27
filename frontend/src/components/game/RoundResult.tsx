@@ -82,7 +82,10 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
           </div>
 
           <div className={styles.bar}>
-            <div className={styles.barFill} style={{ width: `${String(ratio * 100)}%` }} />
+            <div
+              className={[styles.barFill, TIER_CLASS[tier.tone]].filter(Boolean).join(" ")}
+              style={{ width: `${String(ratio * 100)}%` }}
+            />
           </div>
 
           <div className={styles.readouts}>

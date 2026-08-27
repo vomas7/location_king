@@ -10,7 +10,8 @@
 .satellite {
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(45deg, #0c1219 0 12px, #0e1520 12px 24px);
+  /* Диагональная штриховка вместо пустоты, пока грузится первый тайл */
+  background: repeating-linear-gradient(45deg, var(--bg-deep) 0 12px, var(--surface) 12px 24px);
 }
 
 .badge {
@@ -78,7 +79,7 @@
 .hints kbd {
   padding: 1px 5px;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 3px;
   background: var(--surface-2);
   color: var(--text-dim);
   font-family: var(--mono);
@@ -147,7 +148,7 @@
   height: 28px;
   padding: 0;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   color: var(--text-dim);
   font-size: 13px;

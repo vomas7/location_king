@@ -6,6 +6,7 @@ import { game } from "~/api/endpoints";
 import type { SessionSummary } from "~/api/types";
 import styles from "~/components/home/HomeScreen.module.css";
 import { CardTitle } from "~/components/ui/Card";
+import { Skeleton } from "~/components/ui/Skeleton";
 import { formatDate, formatNumber, plural } from "~/domain/format";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -34,13 +35,13 @@ export function GameHistory({ refreshKey }: { refreshKey: number }) {
     };
   }, [refreshKey]);
 
-  if (sessions === null) return null;
-
   return (
     <section>
       <CardTitle>Последние партии</CardTitle>
 
-      {sessions.length === 0 ? (
+      {sessions === null ? (
+        <Skeleton rows={3} />
+      ) : sessions.length === 0 ? (
         <p className={styles.empty}>Ты ещё не сыграл ни одной партии</p>
       ) : (
         <div className={styles.history}>

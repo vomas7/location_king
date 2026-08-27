@@ -10,6 +10,7 @@ import type {
 } from "~/api/types";
 import styles from "~/components/home/Leaderboard.module.css";
 import { CardTitle } from "~/components/ui/Card";
+import { Skeleton } from "~/components/ui/Skeleton";
 import { formatDistance, formatNumber } from "~/domain/format";
 
 const METRICS: { value: LeaderboardMetric; label: string }[] = [
@@ -109,7 +110,9 @@ export function Leaderboard({ refreshKey }: { refreshKey: number }) {
 
       {failed && <p className={styles.empty}>Не удалось загрузить таблицу</p>}
 
-      {!failed && entries.length === 0 && (
+      {!failed && data === null && <Skeleton rows={4} />}
+
+      {!failed && data !== null && entries.length === 0 && (
         <p className={styles.empty}>Пока никто не сыграл ни одной партии. Займи первое место</p>
       )}
 

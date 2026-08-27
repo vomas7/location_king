@@ -7,8 +7,8 @@
   min-height: 0;
   padding: 28px 20px 48px;
   background:
-    radial-gradient(900px 500px at 15% -5%, rgb(56 189 248 / 10%), transparent 60%),
-    radial-gradient(700px 500px at 95% 105%, rgb(99 102 241 / 10%), transparent 60%), var(--bg);
+    radial-gradient(900px 500px at 15% -5%, var(--glow-warm), transparent 60%),
+    radial-gradient(700px 500px at 95% 105%, var(--glow-cool), transparent 60%), var(--bg);
   grid-template-columns: minmax(0, 480px) minmax(0, 340px);
   justify-content: center;
 }
@@ -110,7 +110,7 @@
   grid-row: 1 / span 2;
   grid-column: 2;
   align-self: center;
-  color: var(--gold);
+  color: var(--accent);
   font-family: var(--mono);
   font-size: 15px;
   font-weight: 700;
