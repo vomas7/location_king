@@ -52,6 +52,9 @@ unfixable = []
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
+# Каталог backend/alembic — это миграции, а не пакет alembic. Без явного
+# указания разные версии ruff относят его к разным группам импортов.
+known-third-party = ["alembic"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
@@ -69,3 +72,6 @@ line-ending = "auto"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# Без этого «app» импортируется только при запуске через python -m pytest:
+# он добавляет текущий каталог в sys.path, а консольный скрипт pytest — нет
+pythonpath = ["."]

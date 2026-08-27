@@ -5,6 +5,8 @@
 пределы показанной области.
 """
 
+from uuid import uuid4
+
 import httpx
 import pytest
 from httpx import AsyncClient
@@ -45,8 +47,31 @@ def no_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     async def noop(_key: str, _tile: bytes) -> None:
         return None
 
-    monkeypatch.setattr(tiles_service, "_cache_get", miss)
-    monkeypatch.setattr(tiles_service, "_cache_set", noop)
+    monkeypatch.setattr(tiles_service, "cache_get", miss)
+    monkeypatch.setattr(tiles_service, "cache_set", noop)
+
+
+@pytest.fixture
+def memory_cache(monkeypatch: pytest.MonkeyPatch) -> dict[str, bytes]:
+    """
+    Кэш в памяти теста.
+
+    Настоящий Redis переживает откат транзакции, поэтому тест на кэш,
+    работающий с ним напрямую, зависел бы от порядка запуска: тайл мог
+    оказаться сохранённым предыдущим тестом.
+    """
+    storage: dict[str, bytes] = {}
+
+    async def get(key: str) -> bytes | None:
+        return storage.get(key)
+
+    async def put(key: str, tile: bytes) -> None:
+        storage[key] = tile
+
+    monkeypatch.setattr(tiles_service, "cache_get", get)
+    monkeypatch.setattr(tiles_service, "cache_set", put)
+
+    return storage
 
 
 async def start(client: AsyncClient, headers: dict) -> dict:
@@ -336,6 +361,7 @@ async def test_second_request_is_served_from_cache(
     auth_headers: dict,
     zone: LocationZone,
     provider: list[str],
+    memory_cache: dict[str, bytes],
 ):
     """Кэш есть — значит, провайдера дёргаем один раз на тайл."""
     state = await start(client, auth_headers)
@@ -346,3 +372,17 @@ async def test_second_request_is_served_from_cache(
 
     assert first.content == second.content == FAKE_TILE
     assert len(provider) == 1
+    assert len(memory_cache) == 1
+
+
+async def test_redis_cache_stores_and_returns_the_tile():
+    """Обёртки над Redis действительно кладут и достают байты."""
+    key = f"tile:test:{uuid4().hex}"
+
+    try:
+        assert await tiles_service.cache_get(key) is None
+
+        await tiles_service.cache_set(key, FAKE_TILE)
+        assert await tiles_service.cache_get(key) == FAKE_TILE
+    finally:
+        await tiles_service.redis_client().delete(key)

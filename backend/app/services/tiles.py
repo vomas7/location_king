@@ -46,7 +46,7 @@ def _get_http_client() -> httpx.AsyncClient:
     return _http_client
 
 
-def _get_redis_client() -> Redis:
+def redis_client() -> Redis:
     global _redis_client
 
     if _redis_client is None:
@@ -77,7 +77,7 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
     source_z, source_x, source_y = local_to_source_tile(round_obj, z, x, y)
     cache_key = f"tile:{_provider_key}:{source_z}:{source_x}:{source_y}"
 
-    cached = await _cache_get(cache_key)
+    cached = await cache_get(cache_key)
     if cached is not None:
         return cached
 
@@ -91,23 +91,29 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
         raise UpstreamError("Провайдер снимков недоступен") from e
 
     tile = response.content
-    await _cache_set(cache_key, tile)
+    await cache_set(cache_key, tile)
     return tile
 
 
-async def _cache_get(key: str) -> bytes | None:
-    """Достать тайл из кэша. Недоступный Redis не должен ронять игру."""
+async def cache_get(key: str) -> bytes | None:
+    """
+    Достать тайл из кэша.
+
+    Вместе с cache_set образует единственный шов между прокси и хранилищем:
+    через него же тесты подставляют кэш в памяти.
+    Недоступный Redis не должен ронять игру.
+    """
     try:
-        return await _get_redis_client().get(key)
+        return await redis_client().get(key)
     except RedisError as e:
         logger.warning("Кэш тайлов недоступен на чтении: %s", e)
         return None
 
 
-async def _cache_set(key: str, tile: bytes) -> None:
+async def cache_set(key: str, tile: bytes) -> None:
     """Положить тайл в кэш. Недоступный Redis не должен ронять игру."""
     try:
-        await _get_redis_client().set(key, tile, ex=settings.tile_cache_ttl_seconds)
+        await redis_client().set(key, tile, ex=settings.tile_cache_ttl_seconds)
     except RedisError as e:
         logger.warning("Кэш тайлов недоступен на записи: %s", e)
 
