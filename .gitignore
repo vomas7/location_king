@@ -104,3 +104,7 @@ htmlcov/
 
 # Дамп Redis, если сервер запускали из каталога проекта
 dump.rdb
+
+# Собираются deploy.sh при развёртывании за Cloudflare
+nginx/snippets/cloudflare-real-ip.conf
+nginx/snippets/cloudflare-origin-pull.conf
