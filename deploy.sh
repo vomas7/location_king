@@ -128,7 +128,10 @@ write_cloudflare_origin_pull() {
     fi
 }
 
-case "$(env_value NGINX_PROFILE)" in
+profile="$(env_value NGINX_PROFILE)"
+[ -n "$profile" ] || profile=http
+
+case "$profile" in
     tls)
         [ -s ssl/fullchain.pem ] && [ -s ssl/privkey.pem ] ||
             die "профиль tls требует ssl/fullchain.pem и ssl/privkey.pem"
@@ -178,10 +181,24 @@ docker compose exec -T backend python scripts/seed.py
 
 # ─── Проверка ─────────────────────────────────────────────────────────
 step "Проверяю, что игра отвечает"
-if command -v curl > /dev/null 2>&1; then
-    curl --fail --silent --show-error http://localhost/api/health && echo
+
+site="$(env_value SITE_URL)"
+
+if [ "$profile" = "http" ]; then
+    if command -v curl > /dev/null 2>&1; then
+        curl --fail --silent --show-error http://localhost/api/health && echo
+    else
+        echo "curl не установлен, проверьте вручную: http://localhost/api/health"
+    fi
 else
-    echo "curl не установлен, проверьте вручную: http://localhost/api/health"
+    # Контуры с TLS отвечают по HTTPS, а за Cloudflare origin вдобавок требует
+    # клиентский сертификат — запросом с самого сервера это не проверить.
+    # Остаётся убедиться, что nginx принял конфигурацию, а игру открыть снаружи.
+    docker compose exec -T nginx nginx -t > /dev/null 2>&1 ||
+        die "nginx поднялся с нерабочей конфигурацией, смотрите docker compose logs nginx"
+
+    echo "Бэкенд здоров, nginx принял конфигурацию контура ${profile}."
+    echo "Откройте снаружи: ${site:-https://<ваш домен>}/api/health"
 fi
 
 echo
