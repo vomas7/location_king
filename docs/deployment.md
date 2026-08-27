@@ -8,7 +8,10 @@
 ## Что требуется
 
 - Linux-сервер с Docker и плагином Compose
-  ([инструкция](https://docs.docker.com/engine/install/))
+  ([инструкция](https://docs.docker.com/engine/install/)). Проверялось на
+  Ubuntu Server 24.04 LTS; `server-setup.sh` ставит Docker сам
+- От 2 ГБ оперативной памяти и 10 ГБ диска. Фронтенд собирается на сервере, и
+  на машине с гигабайтом сборка падает по нехватке памяти
 - DNS-запись на IP сервера
 
 ## Развёртывание

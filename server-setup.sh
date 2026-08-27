@@ -2,6 +2,8 @@
 # Первичная настройка чистого сервера под Location King.
 #
 # Ставит Docker, если его нет, забирает репозиторий и передаёт дело deploy.sh.
+# Рассчитан на Ubuntu Server 24.04 LTS; на любом другом дистрибутиве с apt
+# отработает так же, на остальных Docker придётся поставить руками.
 # Рассчитан на то, что его запускают с телефона: команд минимум, а всё, что
 # скрипт не может решить сам, он объясняет и печатает готовой строкой.
 #
@@ -34,16 +36,25 @@ step() {
 
 [ "$(id -u)" = "0" ] || die "запускать нужно от root: sudo bash вместо bash"
 
+# Скрипт запускают через pipe, поэтому на его stdin лежит он сам: любой
+# интерактивный вопрос apt прочитал бы оттуда мусор и завис. Заодно снимаем
+# диалог перезапуска служб — в Ubuntu 24.04 он появляется по умолчанию.
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
+
+# Сразу после первой загрузки apt занят автообновлением. Ждём его, а не падаем
+apt_install() {
+    apt-get -o DPkg::Lock::Timeout=300 update -qq
+    apt-get -o DPkg::Lock::Timeout=300 install -y -qq "$@"
+}
+
 # ─── Docker ───────────────────────────────────────────────────────────
 if docker compose version > /dev/null 2>&1; then
     echo "Docker уже стоит."
 else
     step "Ставлю Docker"
 
-    command -v curl > /dev/null 2>&1 || {
-        apt-get update -qq
-        apt-get install -y -qq curl
-    }
+    command -v curl > /dev/null 2>&1 || apt_install curl
 
     curl -fsSL https://get.docker.com | sh
     docker compose version > /dev/null 2>&1 ||
@@ -57,7 +68,7 @@ if [ -d "$TARGET/.git" ]; then
         die "в $TARGET есть локальные правки, git pull не прошёл. Разберитесь с ними и запустите снова"
 else
     step "Забираю код в $TARGET"
-    command -v git > /dev/null 2>&1 || apt-get install -y -qq git
+    command -v git > /dev/null 2>&1 || apt_install git
     git clone --depth 1 "$REPO" "$TARGET"
 fi
 
