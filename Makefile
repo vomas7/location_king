@@ -22,7 +22,7 @@ DEV := docker compose -f docker-compose.dev.yml
 
 dev:
 	$(DEV) up -d
-	@echo "Игра: http://localhost:8080   API: http://localhost:8000/api/docs"
+	@echo "Игра: http://localhost:5173   API: http://localhost:8000/api/docs"
 
 dev-build:
 	$(DEV) up -d --build
@@ -54,6 +54,7 @@ ps:
 # ─── Проверки (без Docker, из backend/) ───────────────────────────────
 lint:
 	$(MAKE) -C backend lint
+	cd frontend && npm run lint
 
 test:
 	$(MAKE) -C backend test

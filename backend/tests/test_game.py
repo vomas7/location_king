@@ -314,3 +314,10 @@ async def test_guess_coordinates_are_validated(
         headers=auth_headers,
     )
     assert response.status_code == 422
+
+
+async def test_malformed_session_id_is_not_found(client: AsyncClient, auth_headers: dict):
+    """Мусор в адресе — это «не найдено», а не пятисотка из драйвера БД."""
+    response = await client.get("/api/sessions/not-a-uuid", headers=auth_headers)
+
+    assert response.status_code == 404

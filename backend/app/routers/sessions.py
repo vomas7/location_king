@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.exceptions import NotFoundError
 from app.models.game_session import GameSession
 from app.models.user import User
 from app.schemas.game import (
@@ -60,15 +59,20 @@ async def list_sessions(
 
 
 # Объявлено до /{session_id}: иначе «current» попал бы в него как идентификатор
-@router.get("/current", response_model=SessionStateResponse)
+@router.get("/current", response_model=SessionStateResponse | None)
 async def get_current_session(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> SessionStateResponse:
-    """Незавершённая партия, чтобы продолжить её после перезагрузки страницы."""
+) -> SessionStateResponse | None:
+    """
+    Незавершённая партия, чтобы продолжить её после перезагрузки страницы.
+
+    Если её нет — это не ошибка, а обычное состояние нового игрока, поэтому
+    ответ 200 с null, а не 404.
+    """
     session = await game_service.current_session(db, user)
     if session is None:
-        raise NotFoundError("Незавершённых партий нет")
+        return None
 
     return await _session_state(db, session)
 

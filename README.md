@@ -30,8 +30,8 @@
   выбирается через `ST_GeneratePoints`
 - **Кэш:** Redis 7 — спутниковые тайлы
 - **Аутентификация:** свой JWT, пароли argon2id, есть гостевой вход
-- **Frontend:** статические HTML/CSS/JS на OpenLayers, без сборки и без
-  запросов на сторонние домены
+- **Frontend:** React 18 + TypeScript + Vite, карты на OpenLayers, ни одного
+  запроса на сторонние домены
 - **Инфраструктура:** Docker Compose, Nginx
 
 ## Запуск
@@ -40,12 +40,12 @@
 git clone https://github.com/vomas7/location_king
 cd location_king
 
-make dev        # поднимет postgres, redis, backend и nginx
+make dev        # postgres, redis, backend и dev-сервер фронтенда
 make migrate    # накатит миграции
 make seed       # загрузит 23 игровые зоны
 ```
 
-Игра: <http://localhost:8080>. Документация API: <http://localhost:8000/api/docs>.
+Игра: <http://localhost:5173>. Документация API: <http://localhost:8000/api/docs>.
 
 Остановить — `make down`, вместе с данными — `make down-v`.
 
@@ -61,21 +61,25 @@ python scripts/seed.py
 uvicorn app.main:app --reload
 ```
 
-Фронтенд — статика: раздайте каталог `frontend/` любым сервером, который
-проксирует `/api` на бэкенд (как это делает `nginx/snippets/site.conf`).
+Фронтенд отдельно:
+
+```bash
+cd frontend
+npm install
+npm run dev     # http://localhost:5173, /api проксируется на бэкенд
+```
 
 ## Разработка
 
-Перед коммитом, из каталога `backend/`:
+Перед коммитом:
 
 ```bash
-ruff check .
-ruff format --check .
-pytest
+cd backend && ruff check . && ruff format --check . && pytest
+cd frontend && npm run lint && npm run build
 ```
 
 CI выполняет то же самое и падает, если проверки не проходят или покрытие
-опускается ниже 60%.
+бэкенда опускается ниже 60%.
 
 Структура бэкенда:
 
@@ -86,6 +90,17 @@ app/
   models/     модели SQLAlchemy
   schemas/    схемы Pydantic
   utils/      чистые функции без зависимостей от БД
+```
+
+Структура фронтенда:
+
+```
+src/
+  api/        транспорт: fetch, токены, типы ответов
+  domain/     чистые функции форматирования и оценки
+  map/        карты OpenLayers
+  state/      контекст авторизации и состояние партии
+  components/ разметка и стили в CSS-модулях
 ```
 
 ## API
@@ -103,7 +118,10 @@ app/
 | `GET`  | `/api/rounds/{id}`                      | активный раунд, без координат          |
 | `POST` | `/api/rounds/{id}/guess`                | догадка, в ответе появляется цель      |
 | `GET`  | `/api/rounds/{id}/tiles/{z}/{x}/{y}.jpg`| тайл снимка по локальным координатам   |
+| `GET`  | `/api/sessions`                         | история партий игрока                  |
+| `GET`  | `/api/sessions/current`                 | незаконченная партия или null          |
 | `GET`  | `/api/zones`                            | список игровых зон                     |
+| `GET`  | `/api/leaderboard`                      | таблица лидеров, доступна без входа    |
 
 Полное описание — в `/api/docs`.
 

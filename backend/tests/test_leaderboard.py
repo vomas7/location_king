@@ -186,11 +186,15 @@ async def test_history_does_not_show_other_players_sessions(
 # ── Продолжение партии ───────────────────────────────────────────────
 
 
-async def test_current_session_is_absent_when_nothing_started(
+async def test_current_session_is_null_when_nothing_started(
     client: AsyncClient,
     auth_headers: dict,
 ):
-    assert (await client.get("/api/sessions/current", headers=auth_headers)).status_code == 404
+    """Отсутствие партии — обычное состояние, а не ошибка."""
+    response = await client.get("/api/sessions/current", headers=auth_headers)
+
+    assert response.status_code == 200
+    assert response.json() is None
 
 
 async def test_current_session_returns_unfinished_game(
@@ -224,7 +228,7 @@ async def test_current_session_is_gone_after_finish(
     session_id = started.json()["session"]["id"]
     await client.post(f"/api/sessions/{session_id}/finish", headers=auth_headers)
 
-    assert (await client.get("/api/sessions/current", headers=auth_headers)).status_code == 404
+    assert (await client.get("/api/sessions/current", headers=auth_headers)).json() is None
 
 
 async def test_current_session_carries_no_target_coordinates(
@@ -238,3 +242,7 @@ async def test_current_session_carries_no_target_coordinates(
 
     assert "target" not in body
     assert zone.name not in body
+
+
+async def test_current_session_requires_authorization(client: AsyncClient):
+    assert (await client.get("/api/sessions/current")).status_code == 401

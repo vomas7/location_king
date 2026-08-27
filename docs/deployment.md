@@ -1,8 +1,9 @@
 # Деплой
 
-Прод-контур поднимается одним `docker compose` из корня репозитория. Образ
-бэкенда собирается локально из `backend/Dockerfile.prod`, ничего никуда не
-публикуется.
+Прод-контур поднимается одним `docker compose` из корня репозитория. Образы
+собираются локально: бэкенд из `backend/Dockerfile.prod`, фронтенд из
+`frontend/Dockerfile` — там же он и собирается Vite, а результат кладётся в
+образ nginx. Ничего никуда не публикуется.
 
 ## Что требуется
 
@@ -15,7 +16,7 @@
 
 | Сервис     | Образ                             | Сеть        | Назначение                        |
 |------------|-----------------------------------|-------------|-----------------------------------|
-| `nginx`    | `nginx:alpine`                    | edge        | статика фронтенда и прокси к API  |
+| `nginx`    | сборка `frontend/Dockerfile`      | edge        | статика фронтенда и прокси к API  |
 | `backend`  | сборка `backend/Dockerfile.prod`  | edge + data | FastAPI                           |
 | `postgres` | `postgis/postgis:16-3.4-alpine`   | data        | основная база                     |
 | `redis`    | `redis:7-alpine`                  | data        | кэш спутниковых тайлов            |
@@ -68,6 +69,13 @@
    docker compose exec backend python scripts/seed.py
    ```
 
+   Конфигурацию клиента (`config.js`) можно подменить, не пересобирая образ:
+
+   ```yaml
+   volumes:
+     - ./config.js:/usr/share/nginx/html/config.js:ro
+   ```
+
 5. Проверить:
 
    ```bash
@@ -92,8 +100,8 @@ docker compose exec backend alembic upgrade head
 `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` и
 `Content-Security-Policy`; в контуре `tls` добавляется `Strict-Transport-Security`.
 
-CSP строгая: страница не загружает ничего со сторонних доменов — OpenLayers
-лежит в `frontend/vendor/`, шрифты системные. Единственное исключение —
+CSP строгая: страница не загружает ничего со сторонних доменов — весь код
+попадает в бандл, шрифты системные. Единственное исключение —
 `img-src` для тайлов OpenStreetMap на карте догадки. Если меняете фронтенд и
 добавляете внешний ресурс, политику придётся расширить осознанно.
 

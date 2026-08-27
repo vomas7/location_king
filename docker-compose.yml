@@ -8,7 +8,8 @@ services:
   # NGINX — статика фронтенда и прокси к API
   # ─────────────────────────────────────────
   nginx:
-    image: nginx:alpine
+    build:
+      context: ./frontend
     container_name: location_king_nginx
     restart: unless-stopped
     ports:
@@ -18,7 +19,6 @@ services:
       # NGINX_PROFILE=http — TLS терминирует хостинг; tls — сертификаты свои
       - ./nginx/${NGINX_PROFILE:-http}:/etc/nginx/conf.d:ro
       - ./nginx/snippets:/etc/nginx/snippets:ro
-      - ./frontend:/usr/share/nginx/html:ro
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
       backend:

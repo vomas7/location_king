@@ -6,6 +6,7 @@
 """
 
 import logging
+import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -193,6 +194,13 @@ async def finish_session(db: AsyncSession, session: GameSession) -> GameSession:
 
 async def get_session_for_user(db: AsyncSession, user: User, session_id: str) -> GameSession:
     """Сессия пользователя. Чужая сессия — 403, несуществующая — 404."""
+    # Идентификатор из адреса может быть каким угодно. Не проверив формат, мы
+    # уронили бы запрос в драйвере с пятисоткой вместо честного «не найдено».
+    try:
+        uuid.UUID(session_id)
+    except ValueError as e:
+        raise NotFoundError(f"Сессия {session_id} не найдена") from e
+
     stmt = (
         select(GameSession)
         .where(GameSession.id == session_id)
