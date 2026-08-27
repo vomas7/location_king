@@ -6,16 +6,32 @@
     <title>Location King — геогессер по спутниковым снимкам</title>
     <meta
       name="description"
-      content="Показываем участок спутникового снимка без подписей и координат. Найди это место на карте мира — чем ближе, тем больше очков."
+      content="Геогессер по спутниковым снимкам: квадрат съёмки без подписей и координат, а вы ищете это место на карте мира. Челлендж дня, комнаты на компанию и таблица лидеров. Бесплатно, без рекламы."
     />
     <meta name="theme-color" content="#070d0c" />
 
-    <meta property="og:title" content="Location King" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+
+    <!-- og:url, og:image и canonical добавляет сборка, если задан SITE_URL:
+         неверный абсолютный адрес хуже отсутствующего -->
+    <meta property="og:site_name" content="Location King" />
+    <meta property="og:title" content="Location King — геогессер по спутниковым снимкам" />
     <meta
       property="og:description"
-      content="Геогессер по спутниковым снимкам. Челлендж дня, комнаты на компанию, таблица лидеров."
+      content="Квадрат спутниковой съёмки без подписей и координат. Найди это место на карте мира — чем ближе, тем больше очков."
     />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Location King: перекрестие на сетке тайлов" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Location King — геогессер по спутниковым снимкам" />
+    <meta
+      name="twitter:description"
+      content="Квадрат спутниковой съёмки без подписей и координат. Найди это место на карте мира."
+    />
 
     <!-- Перекрестие: тот же знак, что стоит в центре снимка. Инлайном, чтобы
          страница не ходила даже за иконкой -->
@@ -29,6 +45,20 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Приложение рисуется скриптом. Тем, у кого он выключен, полагается
+         внятный текст, а не пустая страница -->
+    <noscript>
+      <h1>Location King — геогессер по спутниковым снимкам</h1>
+      <p>
+        Вам показывают квадрат спутниковой съёмки без подписей, указателей и координат. Нужно найти
+        это место на карте мира: чем ближе поставите точку к центру участка, тем больше очков. Есть
+        челлендж дня, комнаты для игры с друзьями и таблица лидеров. Игра бесплатная, без рекламы и
+        счётчиков.
+      </p>
+      <p>Чтобы играть, включите JavaScript.</p>
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

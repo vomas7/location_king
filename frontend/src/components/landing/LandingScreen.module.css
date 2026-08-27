@@ -1,0 +1,322 @@
+/* Прокручивается сам экран, а не документ: у игры высота фиксирована по
+   вьюпорту, и переходы по якорям должны работать внутри этой колонки */
+.screen {
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  scroll-behavior: smooth;
+  background:
+    radial-gradient(900px 520px at 12% -8%, var(--glow-warm), transparent 62%),
+    radial-gradient(760px 520px at 92% 18%, var(--glow-cool), transparent 62%), var(--bg);
+}
+
+/* ── Первый экран ─────────────────────────────────────────────────── */
+
+.hero {
+  position: relative;
+  display: grid;
+  align-items: center;
+  gap: 56px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(48px, 9vh, 96px) 24px clamp(56px, 10vh, 104px);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+}
+
+.pitch {
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  margin-bottom: 16px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin-bottom: 20px;
+  font-family: var(--font-display);
+  font-size: clamp(38px, 5.4vw, 62px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+}
+
+.lead {
+  max-width: 48ch;
+  margin-bottom: 30px;
+  color: var(--text-dim);
+  font-size: 16.5px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 22px;
+}
+
+.cta {
+  padding: 14px 28px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
+  color: var(--accent-ink);
+  font-size: 15px;
+  font-weight: 650;
+  text-decoration: none;
+  transition:
+    background 0.16s var(--ease),
+    transform 0.08s var(--ease);
+}
+
+.cta:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 82%, white) 0%,
+    var(--accent) 100%
+  );
+}
+
+.cta:active {
+  transform: translateY(1px);
+}
+
+.secondary {
+  color: var(--text-dim);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.secondary:hover {
+  color: var(--text);
+}
+
+.honest {
+  margin-top: 22px;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+}
+
+/* Знак игры лежит за текстом: он задаёт настроение, а не спорит за внимание */
+.decor {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: -90px;
+  width: 460px;
+  height: 460px;
+  color: var(--accent);
+  opacity: 0.16;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* ── Полосы содержания ────────────────────────────────────────────── */
+
+.band {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(40px, 7vh, 72px) 24px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.bandTitle {
+  margin-bottom: 28px;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* ── Шаги раунда ──────────────────────────────────────────────────── */
+
+.steps {
+  display: grid;
+  gap: 2px;
+}
+
+.step {
+  display: grid;
+  align-items: start;
+  gap: 20px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--line-soft);
+  grid-template-columns: 56px minmax(0, 1fr);
+}
+
+.step:last-child {
+  border-bottom: 0;
+}
+
+.stepNumber {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.stepTitle {
+  margin-bottom: 6px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.stepText {
+  max-width: 62ch;
+  color: var(--text-dim);
+  font-size: 14.5px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+/* ── Режимы ───────────────────────────────────────────────────────── */
+
+.modes {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.mode {
+  padding: 22px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+.modeTitle {
+  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.modeText {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+/* ── Честная игра ─────────────────────────────────────────────────── */
+
+.fair {
+  display: grid;
+  align-items: center;
+  gap: 44px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.6fr);
+}
+
+.fairText {
+  max-width: 62ch;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.number {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.number:last-child {
+  border-bottom: 0;
+}
+
+.number dt {
+  color: var(--text-faint);
+  font-size: 13px;
+}
+
+.number dd {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* ── Вопросы ──────────────────────────────────────────────────────── */
+
+.faq {
+  display: grid;
+  gap: 26px 44px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.questionTitle {
+  margin-bottom: 8px;
+  font-size: 15.5px;
+  font-weight: 700;
+}
+
+.answer {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+/* ── Последний экран ──────────────────────────────────────────────── */
+
+.finish {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: clamp(56px, 9vh, 96px) 24px clamp(64px, 10vh, 104px);
+  border-top: 1px solid var(--line-soft);
+  text-align: center;
+}
+
+.finishTitle {
+  max-width: 20ch;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3.4vw, 36px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    gap: 36px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .decor {
+    top: 0;
+    left: auto;
+    right: -120px;
+    width: 320px;
+    height: 320px;
+    transform: none;
+  }
+
+  .fair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+}

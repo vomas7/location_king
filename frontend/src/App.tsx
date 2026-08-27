@@ -8,11 +8,11 @@
 import { useCallback, useState } from "react";
 
 import type { SessionState, StartSessionOptions } from "~/api/types";
-import { AuthScreen } from "~/components/auth/AuthScreen";
 import { GameScreen } from "~/components/game/GameScreen";
 import { RoundResult } from "~/components/game/RoundResult";
 import { SummaryScreen } from "~/components/game/SummaryScreen";
 import { HomeScreen } from "~/components/home/HomeScreen";
+import { LandingScreen } from "~/components/landing/LandingScreen";
 import { LegalDialog } from "~/components/legal/LegalDialog";
 import { StorageNotice } from "~/components/legal/StorageNotice";
 import { Footer } from "~/components/layout/Footer";
@@ -75,7 +75,7 @@ export function App() {
   if (status === "anonymous" || user === null) {
     return (
       <>
-        <AuthScreen onOpenLegal={setLegal} />
+        <LandingScreen onOpenLegal={setLegal} />
         <StorageNotice
           onDetails={() => {
             setLegal("storage");

@@ -1,0 +1,54 @@
+.card {
+  width: 100%;
+}
+
+.tabs {
+  display: flex;
+  margin-bottom: 22px;
+  padding: 4px;
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+}
+
+.tab {
+  flex: 1;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 14px;
+  font-weight: 550;
+  cursor: pointer;
+  transition:
+    background 0.16s var(--ease),
+    color 0.16s var(--ease);
+}
+
+.tabActive {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.note {
+  margin-top: 18px;
+  color: var(--text-faint);
+  font-size: 12px;
+  text-align: center;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

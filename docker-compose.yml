@@ -10,6 +10,9 @@ services:
   nginx:
     build:
       context: ./frontend
+      args:
+        # Пусто — canonical, og:url и sitemap.xml в сборку не попадут
+        SITE_URL: ${SITE_URL:-}
     container_name: location_king_nginx
     restart: unless-stopped
     ports:
