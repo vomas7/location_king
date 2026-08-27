@@ -275,7 +275,7 @@ button {
 
 .card--profile {
     flex: 0 1 260px;
-    align-self: stretch;
+    align-self: flex-start;
     width: 100%;
     max-width: 300px;
 }
