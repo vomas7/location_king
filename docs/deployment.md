@@ -10,7 +10,28 @@
 - Linux-сервер с Docker и плагином Compose
   ([инструкция](https://docs.docker.com/engine/install/))
 - DNS-запись на IP сервера
-- Заполненный `.env` в корне репозитория
+
+## Развёртывание
+
+```bash
+git clone https://github.com/vomas7/location_king.git
+cd location_king
+./deploy.sh
+```
+
+Всё. Скрипт проверяет Docker, создаёт `.env` со сгенерированными паролями,
+собирает образы, поднимает контур, дожидается здорового бэкенда, накатывает
+миграции, загружает игровые зоны и стучится в `/api/health`. То же самое —
+`make deploy`.
+
+Обновление ничем не отличается:
+
+```bash
+git pull && ./deploy.sh
+```
+
+Если бэкенд не поднимется за три минуты, скрипт покажет его логи и завершится
+с ошибкой, а не пойдёт накатывать миграции в пустоту.
 
 ## Сервисы
 
@@ -27,62 +48,45 @@
 Фронтенд и API отдаются с одного origin, поэтому CORS в прод-контуре не
 используется вовсе.
 
-## Порядок
+## Что стоит настроить
 
-1. Клонировать репозиторий на сервер.
+Значения по умолчанию рабочие, но три вещи обычно правят руками в `.env`.
 
-2. Подготовить конфигурацию:
+**Контур TLS.** Переменная `NGINX_PROFILE`:
 
-   ```bash
-   cp .env.example .env
-   $EDITOR .env
-   ```
+- `http` (по умолчанию) — сертификаты терминирует хостинг или балансировщик,
+  nginx слушает только 80;
+- `tls` — сертификаты свои. Положите их в `./ssl` как `fullchain.pem` и
+  `privkey.pem`; nginx поднимет 443, включит HSTS и будет редиректить с 80.
+  Без этих файлов `deploy.sh` откажется продолжать.
 
-   Обязательные переменные: `POSTGRES_PASSWORD`, `REDIS_PASSWORD`,
-   `JWT_SECRET`. Секрет генерируется так:
+**Провайдер снимков.** `SATELLITE_TILE_URL` — см. раздел ниже.
 
-   ```bash
-   python3 -c "import secrets; print(secrets.token_urlsafe(48))"
-   ```
+**Прогрев кэша.** `TILE_PREWARM=false` выключает предзагрузку верхних тайлов
+раунда: игрок будет дольше ждать первый экран, зато запросов к провайдеру
+станет меньше.
 
-   Без `JWT_SECRET` бэкенд не стартует — это сделано намеренно.
+Секреты `POSTGRES_PASSWORD`, `REDIS_PASSWORD` и `JWT_SECRET` скрипт генерирует
+сам при первом запуске. Заполненные вручную значения он не трогает. Без
+`JWT_SECRET` бэкенд не стартует — это сделано намеренно.
 
-3. Выбрать контур TLS переменной `NGINX_PROFILE`:
+Конфигурацию клиента (`config.js`) можно подменить, не пересобирая образ:
 
-   - `http` (по умолчанию) — сертификаты терминирует хостинг или
-     балансировщик, nginx слушает только 80;
-   - `tls` — сертификаты свои. Положите их в `./ssl` как `fullchain.pem` и
-     `privkey.pem`; nginx поднимет 443, включит HSTS и будет редиректить с 80.
+```yaml
+volumes:
+  - ./config.js:/usr/share/nginx/html/config.js:ro
+```
 
-4. Запустить:
+Если нужно сделать шаг вручную:
 
-   ```bash
-   ./deploy.sh
-   ```
+```bash
+docker compose up -d --build
+docker compose exec backend alembic upgrade head
+docker compose exec backend python scripts/seed.py
+```
 
-   Скрипт собирает образы, поднимает контейнеры, ждёт готовности бэкенда,
-   накатывает миграции и загружает игровые зоны. То же вручную:
-
-   ```bash
-   docker compose up -d --build
-   docker compose exec backend alembic upgrade head
-   docker compose exec backend python scripts/seed.py
-   ```
-
-   Конфигурацию клиента (`config.js`) можно подменить, не пересобирая образ:
-
-   ```yaml
-   volumes:
-     - ./config.js:/usr/share/nginx/html/config.js:ro
-   ```
-
-5. Проверить:
-
-   ```bash
-   curl http://<домен>/api/health
-   ```
-
-Полезные команды — в корневом `Makefile`: `make prod`, `make prod-down`.
+Остальные команды — в корневом `Makefile`: `make prod`, `make prod-down`,
+`make prod-logs`.
 
 ## Расписание
 
@@ -93,15 +97,10 @@
 0 * * * * cd /path/to/location_king && docker compose exec -T backend python scripts/cleanup.py
 ```
 
-## Обновление
+## Миграции
 
-```bash
-git pull
-docker compose up -d --build
-docker compose exec backend alembic upgrade head
-```
-
-Миграции применяются только вперёд; уже применённые ревизии не редактируются.
+Применяются только вперёд; уже применённые ревизии не редактируются.
+`deploy.sh` накатывает их сам после каждого обновления.
 
 ## Заголовки безопасности
 
@@ -110,11 +109,15 @@ docker compose exec backend alembic upgrade head
 `Content-Security-Policy`; в контуре `tls` добавляется `Strict-Transport-Security`.
 
 CSP строгая: страница не загружает ничего со сторонних доменов — весь код
-попадает в бандл, шрифты системные. Единственное исключение —
-`img-src` для тайлов OpenStreetMap на карте догадки. Если меняете фронтенд и
+попадает в бандл, шрифты лежат в `frontend/public/fonts` и отдаются с того же
+origin. Единственное исключение — `img-src` для тайлов OpenStreetMap на карте
+догадки. Если меняете фронтенд и
 добавляете внешний ресурс, политику придётся расширить осознанно.
 
 Директива `http2 on` требует nginx 1.25.1 и новее; в `nginx:alpine` он новее.
+Оба контура слушают только IPv4: наружу порты публикует Docker, он же
+принимает IPv6-соединения хоста, а внутри контейнера IPv6 обычно выключен и
+`listen [::]` уронил бы nginx на старте.
 
 ## Провайдер спутниковых снимков
 

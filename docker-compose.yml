@@ -1,5 +1,5 @@
 # Location King — прод-контур.
-# Запуск: cp .env.example .env && docker compose up --build -d
+# Запуск: ./deploy.sh — он же создаст .env, накатит миграции и загрузит зоны.
 #
 # Dev-окружение поднимается отдельным файлом: make dev.
 
@@ -46,6 +46,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?переменная обязательна, приложение без неё не стартует}
       SATELLITE_TILE_URL: ${SATELLITE_TILE_URL:-https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}}
       SATELLITE_ATTRIBUTION: ${SATELLITE_ATTRIBUTION:-Esri, Maxar, Earthstar Geographics}
+      TILE_PREWARM: ${TILE_PREWARM:-true}
       DEBUG: "false"
     depends_on:
       postgres:

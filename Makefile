@@ -1,5 +1,5 @@
 .PHONY: help dev dev-build down down-v logs ps migrate seed shell-backend shell-db \
-        prod prod-down lint test cov
+        deploy prod prod-down prod-logs lint test cov
 
 help:
 	@echo "Разработка:"
@@ -13,8 +13,10 @@ help:
 	@echo "  down         — остановить (down-v — вместе с данными)"
 	@echo ""
 	@echo "Прод:"
-	@echo "  prod         — собрать и поднять прод-контур"
+	@echo "  deploy       — развернуть целиком: образы, миграции, зоны, проверка"
+	@echo "  prod         — только пересобрать и поднять контейнеры"
 	@echo "  prod-down    — остановить прод-контур"
+	@echo "  prod-logs    — логи прод-контура"
 	@echo "  logs, ps     — логи и статус"
 
 # ─── Разработка ───────────────────────────────────────────────────────
@@ -63,8 +65,16 @@ cov:
 	$(MAKE) -C backend cov
 
 # ─── Прод ─────────────────────────────────────────────────────────────
+# Полное развёртывание: образы, миграции, зоны и проверка. Первый запуск
+# сам создаёт .env со сгенерированными паролями.
+deploy:
+	./deploy.sh
+
 prod:
 	docker compose up -d --build
 
 prod-down:
 	docker compose down
+
+prod-logs:
+	docker compose logs -f

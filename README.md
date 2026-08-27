@@ -66,8 +66,8 @@
   выбирается через `ST_GeneratePoints`
 - **Кэш:** Redis 7 — спутниковые тайлы
 - **Аутентификация:** свой JWT, пароли argon2id
-- **Frontend:** React 18 + TypeScript + Vite, карты на OpenLayers, ни одного
-  запроса на сторонние домены
+- **Frontend:** React 18 + TypeScript + Vite, карты на OpenLayers, шрифты
+  свои — ни одного запроса на сторонние домены
 - **Инфраструктура:** Docker Compose, Nginx
 
 ## Запуск
@@ -170,7 +170,18 @@ src/
 
 ## Деплой
 
-См. [docs/deployment.md](docs/deployment.md).
+На сервере с Docker — одна команда:
+
+```bash
+./deploy.sh
+```
+
+Она создаёт `.env` со сгенерированными паролями, собирает образы, поднимает
+контур, накатывает миграции, загружает зоны и проверяет, что игра отвечает.
+Обновление — `git pull && ./deploy.sh`.
+
+Подробности, TLS и провайдеры снимков — в
+[docs/deployment.md](docs/deployment.md).
 
 ## Лицензия
 
