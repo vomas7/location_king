@@ -41,6 +41,12 @@ export function formatDate(iso: string): string {
   });
 }
 
+/** Ограничение времени на раунд. */
+export function formatTimeLimit(seconds: number | null): string {
+  if (seconds === null) return "Без лимита";
+  return seconds < 60 ? `${String(seconds)} сек` : `${String(seconds / 60)} мин`;
+}
+
 /** Правильная форма слова после числительного. */
 export function plural(count: number, one: string, few: string, many: string): string {
   const mod10 = count % 10;

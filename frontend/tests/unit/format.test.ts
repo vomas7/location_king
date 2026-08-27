@@ -6,6 +6,7 @@ import {
   formatExtent,
   formatNumber,
   formatPercent,
+  formatTimeLimit,
   plural,
 } from "~/domain/format";
 
@@ -80,5 +81,20 @@ describe("plural", () => {
     [104, "раунда"],
   ])("для %i выбирает «%s»", (count, expected) => {
     expect(plural(count, "раунд", "раунда", "раундов")).toBe(expected);
+  });
+});
+
+describe("formatTimeLimit", () => {
+  it("без ограничения", () => {
+    expect(formatTimeLimit(null)).toBe("Без лимита");
+  });
+
+  it("меньше минуты показывает секунды", () => {
+    expect(formatTimeLimit(30)).toBe("30 сек");
+  });
+
+  it("от минуты показывает минуты", () => {
+    expect(formatTimeLimit(60)).toBe("1 мин");
+    expect(formatTimeLimit(120)).toBe("2 мин");
   });
 });

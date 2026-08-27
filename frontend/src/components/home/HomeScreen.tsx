@@ -8,11 +8,12 @@ import { DailyChallenge } from "~/components/home/DailyChallenge";
 import { GameHistory } from "~/components/home/GameHistory";
 import styles from "~/components/home/HomeScreen.module.css";
 import { Leaderboard } from "~/components/home/Leaderboard";
+import { MatchRoom } from "~/components/home/MatchRoom";
 import { Alert } from "~/components/ui/Alert";
 import { Button } from "~/components/ui/Button";
 import { Card, CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { Segmented } from "~/components/ui/Segmented";
-import { formatDistance, formatNumber } from "~/domain/format";
+import { formatDistance, formatNumber, formatTimeLimit } from "~/domain/format";
 import { useAuth } from "~/state/authContext";
 
 const ROUNDS = [3, 5, 10].map((value) => ({ value, label: String(value) }));
@@ -24,12 +25,10 @@ const EXTENTS = [
   { value: 60, label: "60 км" },
 ];
 
-const TIME_LIMITS = [
-  { value: null, label: "Без лимита" },
-  { value: 120, label: "2 мин" },
-  { value: 60, label: "1 мин" },
-  { value: 30, label: "30 сек" },
-];
+const TIME_LIMITS = [null, 120, 60, 30].map((value) => ({
+  value,
+  label: formatTimeLimit(value),
+}));
 
 /**
  * Части света. Список фиксирован: он должен совпадать с тем, что понимает
@@ -203,6 +202,19 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
 
       <div className={styles.column}>
         <DailyChallenge refreshKey={refreshKey} onStarted={onResume} onError={onError} />
+
+        <MatchRoom
+          options={{
+            rounds_total: rounds,
+            view_extent_km: extent,
+            difficulty,
+            continent,
+            time_limit_seconds: timeLimit,
+          }}
+          refreshKey={refreshKey}
+          onJoined={onResume}
+          onError={onError}
+        />
 
         <Card>
           <CardTitle>Твоя статистика</CardTitle>

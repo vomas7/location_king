@@ -1,10 +1,9 @@
-/** Кнопка «поделиться»: системное окно, если оно есть, иначе буфер обмена. */
-
-import { useState } from "react";
+/** Кнопка «поделиться результатом». */
 
 import type { RoundResult, SessionView } from "~/api/types";
 import { Button } from "~/components/ui/Button";
 import { buildShareText } from "~/domain/share";
+import { type ShareState, useShare } from "~/state/useShare";
 
 interface ShareButtonProps {
   session: SessionView;
@@ -12,53 +11,29 @@ interface ShareButtonProps {
   challengeDay?: string;
 }
 
-type State = "idle" | "copied" | "failed";
-
-const LABELS: Record<State, string> = {
+const LABELS: Record<ShareState, string> = {
   idle: "Поделиться результатом",
+  shared: "Поделиться результатом",
   copied: "Скопировано в буфер",
   failed: "Не получилось скопировать",
 };
 
 export function ShareButton({ session, results, challengeDay }: ShareButtonProps) {
-  const [state, setState] = useState<State>("idle");
-
-  const handleShare = async () => {
-    const text = buildShareText({
-      session,
-      results,
-      ...(challengeDay === undefined ? {} : { challengeDay }),
-      url: window.location.origin,
-    });
-
-    // Системное окно есть на телефонах и в части десктопных браузеров
-    if (typeof navigator.share === "function") {
-      try {
-        await navigator.share({ text });
-        return;
-      } catch {
-        // Игрок закрыл окно или браузер отказал — пробуем буфер
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(text);
-      setState("copied");
-    } catch {
-      setState("failed");
-    }
-
-    window.setTimeout(() => {
-      setState("idle");
-    }, 3000);
-  };
+  const { state, share } = useShare();
 
   return (
     <Button
       variant="ghost"
       block
       onClick={() => {
-        void handleShare();
+        share(
+          buildShareText({
+            session,
+            results,
+            ...(challengeDay === undefined ? {} : { challengeDay }),
+            url: window.location.origin,
+          }),
+        );
       }}
     >
       {LABELS[state]}

@@ -1,0 +1,198 @@
+.card {
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--gold) 100%);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.leave {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.leave:hover {
+  color: var(--text);
+}
+
+/* Код диктуют голосом и набирают руками — он должен читаться издалека */
+.code {
+  margin: 10px 0 6px;
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.meta {
+  margin-bottom: 16px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.joinForm {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.codeInput {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+  font-family: var(--mono);
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.codeInput::placeholder {
+  color: var(--text-faint);
+  letter-spacing: 0.16em;
+}
+
+.recent {
+  margin-top: 18px;
+}
+
+.recentLabel {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.recentList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.recentItem {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+  cursor: pointer;
+}
+
+.recentItem:hover:not(:disabled) {
+  border-color: var(--line);
+  background: var(--surface-3);
+}
+
+.recentItem:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.recentCode {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.recentPlayers {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 16px 0;
+}
+
+.row {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  grid-template-columns: 24px 1fr auto;
+}
+
+.rowMe {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.rank {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 13px;
+  text-align: right;
+}
+
+.player {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.myScore {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+}
+
+.myScoreLabel {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.myScoreValue {
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.empty {
+  padding: 14px 0;
+  color: var(--text-faint);
+  font-size: 13px;
+  text-align: center;
+}

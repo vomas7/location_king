@@ -167,3 +167,41 @@ export interface DailyChallenge {
   finished_players: number;
   results: DailyResult[];
 }
+
+/** Строка таблицы комнаты. Чужих идентификаторов сервер не отдаёт. */
+export interface MatchStanding {
+  rank: number;
+  display_name: string;
+  total_score: number;
+  rounds_done: number;
+  is_finished: boolean;
+  /** Своя строка — её и подсвечиваем. */
+  is_you: boolean;
+  finished_at: string | null;
+}
+
+export interface MatchView {
+  code: string;
+  status: string;
+  host_name: string;
+  is_host: boolean;
+  rounds_total: number;
+  time_limit_seconds: number | null;
+  players: number;
+  created_at: string;
+  /** Партия игрока в этой комнате, если он уже входил. */
+  my_session: SessionSummary | null;
+  standings: MatchStanding[];
+}
+
+export interface MatchSummary {
+  code: string;
+  status: string;
+  rounds_total: number;
+  players: number;
+  created_at: string;
+}
+
+export interface MatchList {
+  matches: MatchSummary[];
+}

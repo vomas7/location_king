@@ -4,47 +4,9 @@
  * Ожидает поднятые бэкенд и фронтенд с загруженными зонами.
  */
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-/** Уникальный игрок на каждый прогон: база между запусками не чистится. */
-function newPlayer() {
-  const suffix = Math.random().toString(36).slice(2, 8);
-  return {
-    email: `e2e-${suffix}@example.com`,
-    password: "e2e password long enough",
-    name: `Игрок ${suffix.slice(0, 3).toUpperCase()}`,
-  };
-}
-
-async function register(page: Page) {
-  const player = newPlayer();
-
-  await page.goto("/");
-  await page.getByRole("tab", { name: "Регистрация" }).click();
-  await page.getByPlaceholder("you@example.com").fill(player.email);
-  await page.getByPlaceholder(/Не короче/).fill(player.password);
-  await page.getByPlaceholder("Как тебя показывать").fill(player.name);
-  await page.getByRole("button", { name: "Создать аккаунт" }).click();
-
-  await expect(page.getByRole("button", { name: "Начать игру" })).toBeVisible();
-  return player;
-}
-
-/** Поставить точку на карте догадки и ответить. */
-async function answerRound(page: Page) {
-  const guessMap = page.locator(".ol-viewport").nth(1);
-
-  // Наведение раскрывает панель, после чего меняются её размеры
-  await guessMap.hover();
-  await page.waitForTimeout(500);
-
-  const box = await guessMap.boundingBox();
-  expect(box).not.toBeNull();
-  await page.mouse.click(box!.x + box!.width * 0.5, box!.y + box!.height * 0.45);
-
-  await page.getByRole("button", { name: "Ответить" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-}
+import { answerRound, playRounds, register } from "./helpers";
 
 test("партия от регистрации до итогов", async ({ page }) => {
   await register(page);
@@ -102,11 +64,7 @@ test("после партии игрок появляется в таблице 
   await page.getByRole("button", { name: "Начать игру" }).click();
   await expect(page.locator("canvas").first()).toBeVisible();
 
-  for (let round = 1; round <= 3; round += 1) {
-    await answerRound(page);
-    const next = round === 3 ? "Посмотреть итоги" : "Следующий раунд";
-    await page.getByRole("dialog").getByRole("button", { name: next }).click();
-  }
+  await playRounds(page, 3);
 
   await page.getByRole("button", { name: "В меню" }).click();
 
@@ -151,11 +109,7 @@ test("челлендж дня играется один раз в сутки", a
   // Челлендж всегда из пяти раундов
   await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "5");
 
-  for (let round = 1; round <= 5; round += 1) {
-    await answerRound(page);
-    const next = round === 5 ? "Посмотреть итоги" : "Следующий раунд";
-    await page.getByRole("dialog").getByRole("button", { name: next }).click();
-  }
+  await playRounds(page, 5);
 
   await page.getByRole("button", { name: "В меню" }).click();
 
@@ -171,11 +125,7 @@ test("результатом можно поделиться", async ({ context,
   await page.getByRole("button", { name: "Начать игру" }).click();
   await expect(page.locator("canvas").first()).toBeVisible();
 
-  for (let round = 1; round <= 3; round += 1) {
-    await answerRound(page);
-    const next = round === 3 ? "Посмотреть итоги" : "Следующий раунд";
-    await page.getByRole("dialog").getByRole("button", { name: next }).click();
-  }
+  await playRounds(page, 3);
 
   await page.getByRole("button", { name: "Поделиться результатом" }).click();
   await expect(page.getByRole("button", { name: "Скопировано в буфер" })).toBeVisible();

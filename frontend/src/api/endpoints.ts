@@ -8,6 +8,8 @@ import type {
   GuessResponse,
   Leaderboard,
   LeaderboardMetric,
+  MatchList,
+  MatchView,
   SessionHistory,
   SessionState,
   StartSessionOptions,
@@ -61,6 +63,22 @@ export const challenge = {
   today: () => request<DailyChallenge>("/api/challenge/today"),
 
   start: () => request<SessionState>("/api/challenge/today/start", { method: "POST" }),
+};
+
+export const matches = {
+  create: (options: StartSessionOptions) =>
+    request<MatchView>("/api/matches", { method: "POST", body: options }),
+
+  /** Комнаты, созданные игроком. */
+  mine: () => request<MatchList>("/api/matches/mine"),
+
+  get: (code: string) => request<MatchView>(`/api/matches/${encodeURIComponent(code)}`),
+
+  join: (code: string) =>
+    request<SessionState>(`/api/matches/${encodeURIComponent(code)}/join`, { method: "POST" }),
+
+  close: (code: string) =>
+    request<MatchView>(`/api/matches/${encodeURIComponent(code)}/close`, { method: "POST" }),
 };
 
 export const leaderboard = {
