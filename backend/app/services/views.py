@@ -8,13 +8,22 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.models.enums import RoundStatus, category_name, continent_name, difficulty_name
+from app.models.enums import (
+    RoundStatus,
+    SessionStatus,
+    category_name,
+    continent_name,
+    difficulty_name,
+)
 from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
+from app.models.match import Match
 from app.models.round import Round
+from app.models.user import User
 from app.schemas.daily import DailyResult
 from app.schemas.game import RoundResult, RoundView, SessionSummary, SessionView, ZoneView
 from app.schemas.leaderboard import LeaderboardEntry
+from app.schemas.match import MatchStanding, MatchSummary, MatchView
 from app.services import game as game_service
 from app.services import tiles
 from app.services.leaderboard import LeaderboardRow
@@ -116,6 +125,11 @@ def session_summary(session: GameSession) -> SessionSummary:
     )
 
 
+def player_name(session: GameSession) -> str:
+    """Как показывать игрока в таблицах: своё имя, иначе логин."""
+    return session.user.display_name or session.user.username
+
+
 def leaderboard_entry(row: LeaderboardRow) -> LeaderboardEntry:
     """Строка таблицы лидеров."""
     return LeaderboardEntry(
@@ -139,7 +153,59 @@ def daily_result(rank: int, session: GameSession) -> DailyResult:
     """Строка таблицы челленджа дня."""
     return DailyResult(
         rank=rank,
-        display_name=session.user.display_name or session.user.username,
+        display_name=player_name(session),
         total_score=session.total_score,
         finished_at=session.finished_at,
+    )
+
+
+def match_standing(rank: int, session: GameSession, viewer: User) -> MatchStanding:
+    """
+    Строка таблицы комнаты.
+
+    Идентификатора игрока в ответе нет: клиенту достаточно знать, какая строка
+    его собственная.
+    """
+    return MatchStanding(
+        rank=rank,
+        display_name=player_name(session),
+        total_score=session.total_score,
+        rounds_done=session.rounds_done,
+        is_finished=session.status == SessionStatus.FINISHED,
+        is_you=session.user_id == viewer.id,
+        finished_at=session.finished_at,
+    )
+
+
+def match_view(
+    match: Match,
+    sessions: list[GameSession],
+    viewer: User,
+    my_session: GameSession | None,
+) -> MatchView:
+    """Комната вместе с таблицей результатов."""
+    return MatchView(
+        code=match.code,
+        status=match.status,
+        host_name=match.host.display_name or match.host.username,
+        is_host=match.host_user_id == viewer.id,
+        rounds_total=match.rounds_total,
+        time_limit_seconds=match.time_limit_seconds,
+        players=len(sessions),
+        created_at=match.created_at,
+        my_session=session_summary_or_none(my_session),
+        standings=[
+            match_standing(rank, session, viewer) for rank, session in enumerate(sessions, start=1)
+        ],
+    )
+
+
+def match_summary(match: Match, players: int) -> MatchSummary:
+    """Комната в списке созданных игроком."""
+    return MatchSummary(
+        code=match.code,
+        status=match.status,
+        rounds_total=match.rounds_total,
+        players=players,
+        created_at=match.created_at,
     )

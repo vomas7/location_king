@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from app.config import settings
 from app.exceptions import AppError
 from app.observability import ObservabilityMiddleware, configure_logging, metrics
-from app.routers import auth, daily, leaderboard, rounds, sessions, zones
+from app.routers import auth, daily, leaderboard, matches, rounds, sessions, zones
 from app.services.tiles import close_clients
 
 configure_logging(settings.debug)
@@ -58,6 +58,7 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
 app.include_router(auth.router)
 app.include_router(sessions.router)
 app.include_router(daily.router)
+app.include_router(matches.router)
 app.include_router(rounds.router)
 app.include_router(zones.router)
 app.include_router(leaderboard.router)

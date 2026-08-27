@@ -12,12 +12,18 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.enums import Continent
 from app.services.round_timer import ALLOWED_TIME_LIMITS
+from app.services.series import MAX_ROUNDS, MIN_ROUNDS
 
 
-class StartSessionRequest(BaseModel):
-    """Параметры новой партии."""
+class RoundsRequest(BaseModel):
+    """
+    Условия набора раундов.
 
-    rounds_total: int = Field(default=5, ge=1, le=20)
+    Одинаковы для обычной партии и для комнаты мультиплеера, поэтому описаны
+    один раз.
+    """
+
+    rounds_total: int = Field(default=5, ge=MIN_ROUNDS, le=MAX_ROUNDS)
     view_extent_km: float = Field(
         default=5.0,
         gt=0.2,
@@ -27,7 +33,6 @@ class StartSessionRequest(BaseModel):
     difficulty: int | None = Field(default=None, ge=1, le=5)
     category: str | None = None
     continent: Continent | None = None
-    zone_id: int | None = None
     time_limit_seconds: int | None = Field(
         default=None,
         description="Сколько секунд даётся на раунд. Пусто — без ограничения",
@@ -41,6 +46,13 @@ class StartSessionRequest(BaseModel):
             allowed = ", ".join(str(item) for item in ALLOWED_TIME_LIMITS)
             raise ValueError(f"Допустимые значения: {allowed}")
         return value
+
+
+class StartSessionRequest(RoundsRequest):
+    """Параметры новой партии."""
+
+    #: Играть именно в этой зоне. Пусто — зоны выбираются случайно
+    zone_id: int | None = None
 
 
 class GuessRequest(BaseModel):

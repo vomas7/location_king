@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.enums import GameMode, SessionStatus
+from app.models.enums import SessionStatus
 
 
 class GameSession(Base):
@@ -25,11 +25,20 @@ class GameSession(Base):
         index=True,
     )
 
-    mode: Mapped[str] = mapped_column(String(20), nullable=False, default=GameMode.SOLO)
+    # Заполнено — партия идёт по заготовленной серии, а не по случайным зонам
+    series_id: Mapped[int | None] = mapped_column(
+        ForeignKey("round_series.id", ondelete="SET NULL"),
+    )
 
     # Заполнено — партия относится к челленджу этого дня. Уникальный индекс не
     # даёт сыграть челлендж дважды.
     challenge_day: Mapped[date | None] = mapped_column(Date, index=True)
+
+    # Заполнено — партия сыграна в комнате мультиплеера
+    match_code: Mapped[str | None] = mapped_column(
+        ForeignKey("matches.code", ondelete="SET NULL"),
+        index=True,
+    )
     status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,

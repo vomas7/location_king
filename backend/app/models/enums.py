@@ -3,13 +3,6 @@
 from enum import StrEnum
 
 
-class GameMode(StrEnum):
-    """Режимы игры."""
-
-    SOLO = "solo"
-    PRACTICE = "practice"
-
-
 class SessionStatus(StrEnum):
     """Статусы игровой сессии."""
 
@@ -24,6 +17,13 @@ class RoundStatus(StrEnum):
     ACTIVE = "active"
     GUESSED = "guessed"
     TIMED_OUT = "timed_out"
+
+
+class MatchStatus(StrEnum):
+    """Состояние комнаты мультиплеера."""
+
+    OPEN = "open"  # можно присоединиться
+    CLOSED = "closed"  # хост закрыл набор
 
 
 class Continent(StrEnum):

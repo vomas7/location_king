@@ -21,9 +21,11 @@ from app.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models.enums import RoundStatus, SessionStatus
 from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
+from app.models.match import Match
 from app.models.round import Round
 from app.models.user import User
-from app.services import daily, tiles
+from app.services import daily, matches, tiles
+from app.services import series as series_service
 from app.services import zones as zones_service
 from app.services.round_timer import deadline_for, is_late, time_left_fraction
 from app.services.scoring import MAX_ROUND_SCORE, evaluate_guess
@@ -98,6 +100,30 @@ async def start_daily_challenge(
         # челлендж в другой вкладке
         await db.rollback()
         raise ConflictError("Челлендж этого дня уже сыгран") from e
+
+
+async def start_match(
+    db: AsyncSession,
+    user: User,
+    match: Match,
+) -> tuple[GameSession, Round]:
+    """
+    Войти в комнату мультиплеера.
+
+    Правило «одна незавершённая партия» общее для всех режимов, поэтому
+    предыдущая партия закрывается так же, как при обычном старте.
+    """
+    previous = await current_session(db, user)
+    if previous is not None:
+        await finish_session(db, previous)
+
+    try:
+        return await matches.join(db, match, user)
+    except IntegrityError as e:
+        # Частичный уникальный индекс на (user_id, match_code): игрок успел
+        # войти в комнату из другой вкладки
+        await db.rollback()
+        raise ConflictError("Ты уже играл в этой комнате") from e
 
 
 async def create_round(
@@ -264,9 +290,8 @@ async def _advance(db: AsyncSession, session: GameSession) -> Round | None:
         await finish_session(db, session)
         return None
 
-    if session.challenge_day is not None:
-        challenge = await daily.get_or_create(db, session.challenge_day)
-        return await daily.open_round(db, session, challenge, session.rounds_done + 1)
+    if session.series_id is not None:
+        return await series_service.open_round(db, session, session.rounds_done + 1)
 
     previous = await _first_round(db, session)
     return await create_round(db, session, view_extent_km=float(previous.view_extent_km))

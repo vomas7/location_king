@@ -6,26 +6,13 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.daily import DailyChallenge, DailyRound
+from app.models.daily import DailyChallenge
+from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
+from app.models.round import Round
+from app.models.series import SeriesRound
 from app.services import daily as daily_service
-
-
-async def play_through(client: AsyncClient, headers: dict, state: dict) -> dict:
-    """Доиграть партию до конца, отвечая наугад."""
-    current = state["current_round"]
-
-    while current is not None:
-        answer = await client.post(
-            f"/api/rounds/{current['id']}/guess",
-            json={"longitude": 37.6, "latitude": 55.7},
-            headers=headers,
-        )
-        assert answer.status_code == 200, answer.text
-        body = answer.json()
-        current = body["next_round"]
-
-    return body
+from tests.helpers import play_through
 
 
 async def test_today_is_available_before_playing(
@@ -64,15 +51,13 @@ async def test_challenge_is_built_once_and_shared(
     challenges = (await db.execute(select(DailyChallenge))).scalars().all()
     assert len(challenges) == 1
 
-    rounds = (await db.execute(select(DailyRound).order_by(DailyRound.position))).scalars().all()
+    rounds = (await db.execute(select(SeriesRound).order_by(SeriesRound.position))).scalars().all()
     assert [item.position for item in rounds] == [1, 2, 3, 4, 5]
 
     # Раунды игроков скопированы из одной заготовки
     first_round_id = first.json()["current_round"]["id"]
     second_round_id = second.json()["current_round"]["id"]
     assert first_round_id != second_round_id
-
-    from app.models.round import Round
 
     mine = await db.get(Round, first_round_id)
     theirs = await db.get(Round, second_round_id)
@@ -110,7 +95,9 @@ async def test_challenge_rounds_follow_the_template_order(
     assert finished["is_session_finished"] is True
     assert finished["session"]["rounds_done"] == daily_service.ROUNDS_TOTAL
 
-    templates = (await db.execute(select(DailyRound).order_by(DailyRound.position))).scalars().all()
+    templates = (
+        (await db.execute(select(SeriesRound).order_by(SeriesRound.position))).scalars().all()
+    )
     session_id = finished["session"]["id"]
 
     state = (await client.get(f"/api/sessions/{session_id}", headers=auth_headers)).json()
@@ -182,8 +169,6 @@ async def test_yesterday_challenge_does_not_block_today(
     """Сыграв вчера, сегодня играть можно."""
     started = await client.post("/api/challenge/today/start", headers=auth_headers)
     await play_through(client, auth_headers, started.json())
-
-    from app.models.game_session import GameSession
 
     session = await db.get(GameSession, started.json()["session"]["id"])
     assert session is not None
