@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     satellite_attribution: str = "Esri, Maxar, Earthstar Geographics"
     satellite_max_zoom: int = 18
     tile_cache_ttl_seconds: int = 7 * 24 * 3600
+    # Заранее тянуть верхние тайлы раунда, чтобы игрок не ждал первый экран.
+    # Стоит лишних запросов к провайдеру — тем, кто платит за тайлы, можно
+    # выключить.
+    tile_prewarm: bool = True
     tile_request_timeout_seconds: float = 15.0
 
     # ── Приложение ───────────────────────────────────────────────────────

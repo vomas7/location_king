@@ -17,6 +17,7 @@ from httpx import ASGITransport, AsyncClient
 from redis.exceptions import RedisError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.config import settings
 from app.database import get_db
 from app.main import app
 from app.models.location_zone import LocationZone
@@ -38,6 +39,17 @@ def migrated_database() -> None:
 
     command.downgrade(config, "base")
     command.upgrade(config, "head")
+
+
+@pytest.fixture(autouse=True)
+def no_tile_prewarm(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Выключить прогрев кэша тайлов.
+
+    Это фоновая оптимизация: она ходит к провайдеру за спиной теста и мешает
+    считать обращения. Отдельный тест включает её обратно.
+    """
+    monkeypatch.setattr(settings, "tile_prewarm", False)
 
 
 @pytest.fixture(autouse=True)

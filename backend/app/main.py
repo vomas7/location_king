@@ -5,17 +5,15 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from app.config import settings
 from app.exceptions import AppError
+from app.observability import ObservabilityMiddleware, configure_logging, metrics
 from app.routers import auth, daily, leaderboard, rounds, sessions, zones
 from app.services.tiles import close_clients
 
-logging.basicConfig(
-    level=logging.DEBUG if settings.debug else logging.INFO,
-    format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
-)
+configure_logging(settings.debug)
 logger = logging.getLogger(__name__)
 
 
@@ -35,6 +33,8 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     lifespan=lifespan,
 )
+
+app.add_middleware(ObservabilityMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -67,3 +67,13 @@ app.include_router(leaderboard.router)
 async def health() -> dict[str, str]:
     """Проверка живости сервиса."""
     return {"status": "ok", "service": "location-king-backend", "version": app.version}
+
+
+@app.get("/api/metrics", tags=["service"], response_class=PlainTextResponse)
+async def prometheus_metrics() -> str:
+    """
+    Показатели процесса в формате Prometheus.
+
+    Наружу этот путь отдавать не нужно: в nginx он закрыт.
+    """
+    return metrics.render()

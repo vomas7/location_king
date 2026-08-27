@@ -26,6 +26,7 @@ from app.models.enums import SessionStatus
 from app.models.game_session import GameSession
 from app.models.round import Round
 from app.models.user import User
+from app.services import tiles
 from app.services import zones as zones_service
 from app.services.round_timer import deadline_for
 from app.services.scoring import MAX_ROUND_SCORE
@@ -119,6 +120,8 @@ async def open_round(
 
     await db.flush()
     await db.refresh(round_obj, ["zone"])
+
+    tiles.schedule_prewarm(round_obj)
 
     return round_obj
 

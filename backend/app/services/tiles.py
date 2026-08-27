@@ -11,6 +11,7 @@
 пересобирать, а выйти за пределы показанной области клиент не может.
 """
 
+import asyncio
 import hashlib
 import logging
 
@@ -21,11 +22,15 @@ from redis.exceptions import RedisError
 from app.config import settings
 from app.exceptions import NotFoundError, UpstreamError
 from app.models.round import Round
-from app.services.game import max_local_zoom
+from app.observability import metrics
 
 logger = logging.getLogger(__name__)
 
 TILE_CONTENT_TYPE = "image/jpeg"
+
+# Сколько уровней зума вглубь доступно игроку от тайла раунда.
+# Больше уровней — детальнее снимок и тяжелее прокси.
+MAX_LOCAL_ZOOM = 4
 
 _http_client: httpx.AsyncClient | None = None
 _redis_client: Redis | None = None
@@ -54,6 +59,11 @@ def redis_client() -> Redis:
     return _redis_client
 
 
+def max_local_zoom(round_obj: Round) -> int:
+    """До какого локального зума игрок может приблизить снимок."""
+    return max(0, min(MAX_LOCAL_ZOOM, settings.satellite_max_zoom - round_obj.tile_zoom))
+
+
 def local_to_source_tile(round_obj: Round, z: int, x: int, y: int) -> tuple[int, int, int]:
     """Перевести локальные координаты тайла раунда в координаты провайдера."""
     limit = max_local_zoom(round_obj)
@@ -79,7 +89,10 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
 
     cached = await cache_get(cache_key)
     if cached is not None:
+        metrics.count("tile_cache_hit")
         return cached
+
+    metrics.count("tile_cache_miss")
 
     url = settings.satellite_tile_url.format(z=source_z, x=source_x, y=source_y)
 
@@ -93,6 +106,43 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
     tile = response.content
     await cache_set(cache_key, tile)
     return tile
+
+
+async def prewarm(round_obj: Round) -> None:
+    """
+    Заранее сходить за верхними тайлами раунда.
+
+    Первый тайл игрок ждёт живьём, пока сервер ходит к провайдеру — это
+    заметная пауза в начале раунда. Прогрев снимает её для самого первого
+    экрана; остальные тайлы подтянутся по ходу.
+    """
+    limit = min(1, max_local_zoom(round_obj))
+    coordinates = [(0, 0, 0)] + [(1, x, y) for x in range(2**limit) for y in range(2**limit)]
+
+    async def fetch(z: int, x: int, y: int) -> None:
+        try:
+            await get_tile(round_obj, z, x, y)
+        except (NotFoundError, UpstreamError) as e:
+            # Прогрев — необязательная оптимизация: не вышло, значит игрок
+            # подождёт как раньше
+            logger.debug("Прогрев тайла %s/%s/%s не удался: %s", z, x, y, e)
+
+    await asyncio.gather(*(fetch(z, x, y) for z, x, y in coordinates))
+
+
+def schedule_prewarm(round_obj: Round) -> None:
+    """Запустить прогрев в фоне, не задерживая ответ игроку."""
+    if not settings.tile_prewarm:
+        return
+
+    task = asyncio.create_task(prewarm(round_obj))
+
+    # Ссылку нужно держать, иначе сборщик мусора может убить задачу на полпути
+    _background.add(task)
+    task.add_done_callback(_background.discard)
+
+
+_background: set[asyncio.Task[None]] = set()
 
 
 async def cache_get(key: str) -> bytes | None:

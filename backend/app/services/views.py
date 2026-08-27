@@ -16,6 +16,7 @@ from app.schemas.daily import DailyResult
 from app.schemas.game import RoundResult, RoundView, SessionSummary, SessionView, ZoneView
 from app.schemas.leaderboard import LeaderboardEntry
 from app.services import game as game_service
+from app.services import tiles
 from app.services.leaderboard import LeaderboardRow
 
 
@@ -42,7 +43,7 @@ def round_view(round_obj: Round) -> RoundView:
         index=round_obj.position,
         status=round_obj.status,
         view_extent_km=round_obj.view_extent_km,
-        max_zoom=game_service.max_local_zoom(round_obj),
+        max_zoom=tiles.max_local_zoom(round_obj),
         tiles_url=f"/api/rounds/{round_obj.id}/tiles/{{z}}/{{x}}/{{y}}.jpg",
         attribution=settings.satellite_attribution,
         created_at=round_obj.created_at,

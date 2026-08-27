@@ -5,6 +5,7 @@
 пределы показанной области.
 """
 
+import asyncio
 from uuid import uuid4
 
 import httpx
@@ -16,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.location_zone import LocationZone
 from app.models.round import Round
 from app.services import tiles as tiles_service
-from app.services.game import max_local_zoom
+from app.services.tiles import max_local_zoom
 
 # Минимальный валидный JPEG-заголовок — содержимое тайла для теста
 FAKE_TILE = b"\xff\xd8\xff\xe0" + b"tile-bytes" * 8
@@ -387,3 +388,25 @@ async def test_redis_cache_stores_and_returns_the_tile():
         assert await tiles_service.cache_get(key) == FAKE_TILE
     finally:
         await tiles_service.redis_client().delete(key)
+
+
+async def test_prewarm_fetches_the_first_screen(
+    client: AsyncClient,
+    auth_headers: dict,
+    zone: LocationZone,
+    provider: list[str],
+    memory_cache: dict[str, bytes],
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """С включённым прогревом верхние тайлы оказываются в кэше сразу."""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "tile_prewarm", True)
+
+    await start(client, auth_headers)
+
+    # Прогрев идёт фоновой задачей — даём ей завершиться
+    await asyncio.sleep(0.2)
+
+    assert len(provider) > 0
+    assert len(memory_cache) == len(provider)

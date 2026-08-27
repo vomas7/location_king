@@ -23,17 +23,13 @@ from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
 from app.models.round import Round
 from app.models.user import User
-from app.services import daily
+from app.services import daily, tiles
 from app.services import zones as zones_service
 from app.services.round_timer import deadline_for, is_late, time_left_fraction
 from app.services.scoring import MAX_ROUND_SCORE, evaluate_guess
 from app.utils.geo import lonlat_to_tile, tile_center, tile_width_km, zoom_for_extent
 
 logger = logging.getLogger(__name__)
-
-# Сколько уровней зума вглубь доступно игроку от тайла раунда.
-# Больше уровней — детальнее снимок и тяжелее прокси.
-MAX_LOCAL_ZOOM = 4
 
 
 async def start_session(
@@ -142,13 +138,10 @@ async def create_round(
     await db.flush()
     await db.refresh(round_obj, ["zone"])
 
+    tiles.schedule_prewarm(round_obj)
+
     logger.info("Раунд %s создан в зоне %s (зум %s)", round_obj.id, zone.id, zoom)
     return round_obj
-
-
-def max_local_zoom(round_obj: Round) -> int:
-    """До какого локального зума игрок может приблизить снимок."""
-    return max(0, min(MAX_LOCAL_ZOOM, settings.satellite_max_zoom - round_obj.tile_zoom))
 
 
 async def submit_guess(
