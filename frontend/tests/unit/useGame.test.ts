@@ -41,6 +41,7 @@ function session(overrides: Partial<SessionView> = {}): SessionView {
   return {
     id: "s-1",
     status: "active",
+    challenge_day: null,
     rounds_total: 2,
     rounds_done: 0,
     total_score: 0,

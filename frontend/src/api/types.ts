@@ -76,6 +76,8 @@ export interface RoundResult {
 export interface SessionView {
   id: string;
   status: string;
+  /** Заполнено, если партия относится к челленджу этого дня. */
+  challenge_day: string | null;
   rounds_total: number;
   rounds_done: number;
   total_score: number;
@@ -100,6 +102,7 @@ export interface GuessResponse {
 export interface SessionSummary {
   id: string;
   status: string;
+  challenge_day: string | null;
   rounds_total: number;
   rounds_done: number;
   total_score: number;

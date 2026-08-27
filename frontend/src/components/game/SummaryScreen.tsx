@@ -2,6 +2,7 @@
 
 import type { RoundResult, SessionView } from "~/api/types";
 import styles from "~/components/game/SummaryScreen.module.css";
+import { ShareButton } from "~/components/game/ShareButton";
 import { Button } from "~/components/ui/Button";
 import { Card, Eyebrow } from "~/components/ui/Card";
 import { formatDistance, formatNumber, plural } from "~/domain/format";
@@ -12,6 +13,8 @@ interface SummaryScreenProps {
   results: RoundResult[];
   /** Лучший результат игрока до этой партии — чтобы отметить рекорд. */
   previousBest: number;
+  /** Заполнено, если это была партия челленджа. */
+  challengeDay?: string;
   onPlayAgain: () => void;
   onHome: () => void;
 }
@@ -20,6 +23,7 @@ export function SummaryScreen({
   session,
   results,
   previousBest,
+  challengeDay,
   onPlayAgain,
   onHome,
 }: SummaryScreenProps) {
@@ -65,6 +69,13 @@ export function SummaryScreen({
           <Button variant="primary" size="large" block onClick={onPlayAgain}>
             Играть снова
           </Button>
+          {played > 0 && (
+            <ShareButton
+              session={session}
+              results={results}
+              {...(challengeDay === undefined ? {} : { challengeDay })}
+            />
+          )}
           <Button variant="ghost" block onClick={onHome}>
             В меню
           </Button>

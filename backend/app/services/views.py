@@ -75,6 +75,7 @@ def session_view(session: GameSession) -> SessionView:
     return SessionView(
         id=session.id,
         status=session.status,
+        challenge_day=session.challenge_day,
         rounds_total=session.rounds_total,
         rounds_done=session.rounds_done,
         total_score=session.total_score,
@@ -98,6 +99,7 @@ def session_summary(session: GameSession) -> SessionSummary:
     return SessionSummary(
         id=session.id,
         status=session.status,
+        challenge_day=session.challenge_day,
         rounds_total=session.rounds_total,
         rounds_done=session.rounds_done,
         total_score=session.total_score,

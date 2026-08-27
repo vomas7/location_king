@@ -5,7 +5,7 @@
 цели. Они появляются только в RoundResult, то есть после принятой догадки.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -89,6 +89,8 @@ class SessionView(BaseModel):
 
     id: str
     status: str
+    #: Заполнено, если партия относится к челленджу этого дня
+    challenge_day: date | None
     rounds_total: int
     rounds_done: int
     total_score: int
@@ -119,6 +121,7 @@ class SessionSummary(BaseModel):
 
     id: str
     status: str
+    challenge_day: date | None
     rounds_total: int
     rounds_done: int
     total_score: int

@@ -162,3 +162,27 @@ test("челлендж дня играется один раз в сутки", a
   await expect(page.getByText("Твой результат сегодня")).toBeVisible();
   await expect(page.getByRole("button", { name: "Играть челлендж" })).toHaveCount(0);
 });
+
+test("результатом можно поделиться", async ({ context, page }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await register(page);
+
+  await page.getByRole("radio", { name: "3", exact: true }).first().click();
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+
+  for (let round = 1; round <= 3; round += 1) {
+    await answerRound(page);
+    const next = round === 3 ? "Посмотреть итоги" : "Следующий раунд";
+    await page.getByRole("dialog").getByRole("button", { name: next }).click();
+  }
+
+  await page.getByRole("button", { name: "Поделиться результатом" }).click();
+  await expect(page.getByRole("button", { name: "Скопировано в буфер" })).toBeVisible();
+
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copied).toContain("Location King");
+  expect(copied).toMatch(/[⭐🟩🟨🟧🟥⬛]/u);
+  // В тексте не должно быть названий мест: он уходит тем, кто ещё не играл
+  expect(copied).not.toContain("Москва");
+});
