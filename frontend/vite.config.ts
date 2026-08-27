@@ -1,7 +1,7 @@
 import { fileURLToPath, URL } from "node:url";
 
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
 /** Куда dev-сервер проксирует /api. В docker-compose это имя сервиса. */
 const API_PROXY = process.env.VITE_API_PROXY ?? "http://localhost:8000";
@@ -23,6 +23,12 @@ export default defineConfig({
         manualChunks: { ol: ["ol"] },
       },
     },
+  },
+
+  test: {
+    environment: "jsdom",
+    include: ["tests/unit/**/*.test.{ts,tsx}"],
+    globals: true,
   },
 
   server: {

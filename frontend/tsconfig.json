@@ -5,7 +5,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "types": ["vite/client"],
+    "types": ["vite/client", "vitest/globals"],
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -25,5 +25,5 @@
     "baseUrl": ".",
     "paths": { "~/*": ["src/*"] }
   },
-  "include": ["src"]
+  "include": ["src", "tests"]
 }

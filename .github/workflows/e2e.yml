@@ -1,0 +1,117 @@
+name: E2E
+
+# Сквозной сценарий поднимает всё вместе: базу, кэш, бэкенд и фронтенд.
+# Это единственная проверка, которая ловит расхождение контрактов между ними.
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  game:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: locationking
+          POSTGRES_PASSWORD: locationking
+          POSTGRES_DB: location_king
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://locationking:locationking@localhost:5432/location_king
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SECRET: e2e-secret-for-tests-only
+      DEBUG: "false"
+      # Настоящий провайдер снимков в CI не дёргаем: сценарии проверяют игру,
+      # а не картинку. Тайлы отдаёт заглушка, поднятая рядом.
+      SATELLITE_TILE_URL: http://127.0.0.1:8899/tile/{z}/{y}/{x}
+      SATELLITE_ATTRIBUTION: Тестовый тайл-сервер
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: backend/requirements.txt
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt pillow
+
+    - name: Prepare database
+      working-directory: ./backend
+      run: |
+        alembic upgrade head
+        python scripts/seed.py
+
+    - name: Start tile stub and backend
+      working-directory: ./backend
+      run: |
+        python scripts/tile_stub.py &
+        uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+        for _ in $(seq 1 30); do
+          curl -sf http://127.0.0.1:8000/api/health && break
+          sleep 1
+        done
+
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Install Playwright browser
+      working-directory: ./frontend
+      run: npx playwright install --with-deps chromium
+
+    - name: Start frontend
+      working-directory: ./frontend
+      run: |
+        npm run dev -- --host 127.0.0.1 --port 5173 &
+        for _ in $(seq 1 30); do
+          curl -sf http://127.0.0.1:5173/ > /dev/null && break
+          sleep 1
+        done
+
+    - name: Run scenarios
+      working-directory: ./frontend
+      run: npm run test:e2e
+
+    - name: Upload report on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: frontend/playwright-report/
+        retention-days: 7

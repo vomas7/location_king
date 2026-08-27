@@ -35,6 +35,9 @@ jobs:
     - name: Lint
       run: npm run lint
 
+    - name: Unit tests
+      run: npm run test
+
     # Сборка запускает и проверку типов: tsc --noEmit по обоим конфигам
     - name: Build
       run: npm run build

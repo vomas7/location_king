@@ -5,6 +5,7 @@
 ruff==0.9.4
 
 # Тесты
+pillow==10.4.0
 pytest==8.1.1
 pytest-asyncio==0.23.5
 pytest-cov==5.0.0
