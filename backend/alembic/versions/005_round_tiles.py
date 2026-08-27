@@ -73,6 +73,10 @@ def upgrade() -> None:
     )
     op.alter_column("rounds", "distance_km", type_=sa.Numeric(10, 3), existing_type=sa.Numeric(10, 2))
 
+    # Раунд создаётся сразу активным: состояния «ожидает начала» больше нет
+    op.execute("UPDATE rounds SET status = 'active' WHERE status = 'pending'")
+    op.alter_column("rounds", "status", server_default="active")
+
     for name, _type, _default in UNUSED_ROUND_COLUMNS:
         op.drop_column("rounds", name)
     for name, _type, _default in UNUSED_SESSION_COLUMNS:
@@ -82,6 +86,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.alter_column("rounds", "status", server_default="pending")
     op.alter_column("game_sessions", "average_score", type_=sa.Integer(), existing_type=sa.Float())
 
     for name, type_, default in reversed(UNUSED_SESSION_COLUMNS):
