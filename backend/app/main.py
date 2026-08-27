@@ -48,7 +48,11 @@ app.add_middleware(
 @app.exception_handler(AppError)
 async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     """Ошибки бизнес-логики отдаются в том же формате, что и ошибки FastAPI."""
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=exc.headers,
+    )
 
 
 app.include_router(auth.router)

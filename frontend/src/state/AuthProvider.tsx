@@ -55,10 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         accept(await auth.register(email, password, displayName));
       },
 
-      loginAsGuest: async () => {
-        accept(await auth.guest());
-      },
-
       logout: () => {
         setTokens(null);
         setUser(null);

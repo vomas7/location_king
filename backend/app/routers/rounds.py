@@ -5,12 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, limit_by_user
 from app.models.user import User
 from app.schemas.game import GuessRequest, GuessResponse, RoundView
 from app.services import game as game_service
 from app.services import tiles as tiles_service
 from app.services import views
+from app.services.rate_limit import Limit
 
 router = APIRouter(prefix="/api/rounds", tags=["rounds"])
 
@@ -61,6 +62,7 @@ async def submit_guess(
     "/{round_id}/tiles/{z}/{x}/{y}.jpg",
     response_class=Response,
     responses={200: {"content": {"image/jpeg": {}}}},
+    dependencies=[Depends(limit_by_user(Limit.TILES))],
 )
 async def get_tile(
     round_id: int,

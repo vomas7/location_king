@@ -10,8 +10,7 @@ export interface UserProfile {
   id: number;
   username: string;
   display_name: string | null;
-  email: string | null;
-  is_guest: boolean;
+  email: string;
   total_score: number;
   games_played: number;
   total_rounds: number;

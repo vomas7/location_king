@@ -7,18 +7,17 @@ from app.database import Base
 
 
 class User(Base):
-    """Игрок. Гость — такой же пользователь, только без email и пароля."""
+    """Игрок."""
 
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
     username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
-    email: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
-    password_hash: Mapped[str | None] = mapped_column(String(255))
+    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     display_name: Mapped[str | None] = mapped_column(String(100))
 
-    is_guest: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
 
     # Статистика — пересчитывается сервисом после каждой завершённой сессии

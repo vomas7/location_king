@@ -15,6 +15,11 @@ class AppError(Exception):
         super().__init__(detail)
         self.detail = detail
 
+    @property
+    def headers(self) -> dict[str, str]:
+        """Дополнительные заголовки ответа."""
+        return {}
+
 
 class AuthError(AppError):
     """Не удалось подтвердить личность: неверные данные или токен."""
@@ -44,3 +49,17 @@ class UpstreamError(AppError):
     """Внешний сервис не ответил или ответил ошибкой."""
 
     status_code = 502
+
+
+class TooManyRequestsError(AppError):
+    """Запросов слишком много: сработало ограничение частоты."""
+
+    status_code = 429
+
+    def __init__(self, detail: str, retry_after: int):
+        super().__init__(detail)
+        self.retry_after = retry_after
+
+    @property
+    def headers(self) -> dict[str, str]:
+        return {"Retry-After": str(self.retry_after)}

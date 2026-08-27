@@ -42,7 +42,17 @@ async def start_session(
     category: str | None = None,
     zone_id: int | None = None,
 ) -> tuple[GameSession, Round]:
-    """Создать сессию и первый раунд."""
+    """
+    Создать сессию и первый раунд.
+
+    Незавершённая партия у игрока может быть только одна: начиная новую, он
+    бросает предыдущую. Иначе сессии копились бы в базе, а «продолжить» не
+    знало бы, какую именно продолжать.
+    """
+    previous = await current_session(db, user)
+    if previous is not None:
+        await finish_session(db, previous)
+
     session = GameSession(user_id=user.id, rounds_total=rounds_total)
     db.add(session)
     await db.flush()

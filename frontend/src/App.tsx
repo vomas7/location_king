@@ -123,7 +123,6 @@ export function App() {
           session={state.session}
           results={state.results}
           previousBest={bestBeforeGame}
-          isGuest={user.is_guest}
           onPlayAgain={() => {
             game.reset();
             show("Настрой партию и жми «Начать»");

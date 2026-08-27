@@ -15,8 +15,8 @@ type Mode = "login" | "register";
 const MIN_PASSWORD_LENGTH = 8;
 
 const POINTS = [
-  "Бесплатно и без ограничений",
-  "Можно играть сразу, регистрация нужна только для таблицы лидеров",
+  "Бесплатно, без рекламы и без ограничений",
+  "Статистика, история партий и место в таблице лидеров",
   "Ответ не подсмотреть: сервер не отдаёт координаты до конца раунда",
 ];
 
@@ -25,7 +25,7 @@ function describe(error: unknown): string {
 }
 
 export function AuthScreen() {
-  const { login, register, loginAsGuest } = useAuth();
+  const { login, register } = useAuth();
 
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
@@ -59,19 +59,6 @@ export function AuthScreen() {
       } else {
         await register(email.trim(), password, displayName.trim());
       }
-    } catch (caught) {
-      setError(describe(caught));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleGuest = async () => {
-    setError(null);
-    setBusy(true);
-
-    try {
-      await loginAsGuest();
     } catch (caught) {
       setError(describe(caught));
     } finally {
@@ -177,16 +164,24 @@ export function AuthScreen() {
           </Button>
         </form>
 
-        <div className={styles.divider}>
-          <span>или</span>
-        </div>
-
-        <Button variant="ghost" block disabled={busy} onClick={() => void handleGuest()}>
-          Играть без регистрации
-        </Button>
-
-        <p className={styles.guestNote}>
-          Гостевой прогресс сохраняется в этом браузере, но в таблицу лидеров не попадает
+        <p className={styles.note}>
+          {mode === "login" ? (
+            <>
+              Ещё нет аккаунта?{" "}
+              <button
+                type="button"
+                className={styles.link}
+                onClick={() => {
+                  switchMode("register");
+                }}
+              >
+                Зарегистрируйся
+              </button>
+              {" — это полминуты"}
+            </>
+          ) : (
+            "Нужны только email и пароль. Почту мы никуда не отправляем"
+          )}
         </p>
       </Card>
     </section>

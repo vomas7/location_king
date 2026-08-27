@@ -12,7 +12,6 @@ export interface AuthContextValue {
 
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
-  loginAsGuest: () => Promise<void>;
   logout: () => void;
 
   /** Перечитать профиль, не трогая текущий экран. */

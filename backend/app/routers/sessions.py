@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, limit_by_user
 from app.models.game_session import GameSession
 from app.models.user import User
 from app.schemas.game import (
@@ -14,11 +14,17 @@ from app.schemas.game import (
 )
 from app.services import game as game_service
 from app.services import views
+from app.services.rate_limit import Limit
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
 
-@router.post("", response_model=SessionStateResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=SessionStateResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(limit_by_user(Limit.START_SESSION))],
+)
 async def start_session(
     payload: StartSessionRequest,
     user: User = Depends(get_current_user),

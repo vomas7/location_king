@@ -153,13 +153,6 @@ export function HomeScreen({ error, onStart, onResume, refreshKey }: HomeScreenP
               <dd>{formatDistance(user.average_distance)}</dd>
             </div>
           </dl>
-
-          {user.is_guest && (
-            <p className={styles.guestBanner}>
-              Ты играешь гостем. Зарегистрируйся, чтобы попасть в таблицу лидеров и не потерять
-              статистику при смене браузера.
-            </p>
-          )}
         </Card>
 
         <Card>

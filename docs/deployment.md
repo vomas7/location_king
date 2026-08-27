@@ -84,6 +84,15 @@
 
 Полезные команды — в корневом `Makefile`: `make prod`, `make prod-down`.
 
+## Расписание
+
+Партии, брошенные посреди игры, остаются активными и мешают статистике.
+Закрывать их стоит по расписанию, например раз в час:
+
+```cron
+0 * * * * cd /path/to/location_king && docker compose exec -T backend python scripts/cleanup.py
+```
+
 ## Обновление
 
 ```bash

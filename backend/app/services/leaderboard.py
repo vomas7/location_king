@@ -2,8 +2,7 @@
 Таблица лидеров.
 
 Статистика уже посчитана в таблице users сервисом игры, поэтому здесь только
-сортировка и позиция игрока. Гости в таблицу не попадают: их учётки одноразовые
-и засоряли бы её именами вида «Гость 1A2B».
+сортировка и позиция игрока.
 """
 
 from dataclasses import dataclass
@@ -38,7 +37,6 @@ def _base_query(metric: LeaderboardMetric) -> Select:
     """Запрос игроков, отсортированный по выбранной метрике."""
     query = select(User).where(
         User.is_active.is_(True),
-        User.is_guest.is_(False),
         User.games_played > 0,
     )
 
@@ -73,7 +71,7 @@ async def place_of(
     Считается как «сколько игроков строго лучше» плюс один — так позиция не
     зависит от размера выборки.
     """
-    if user.is_guest or not user.is_active or user.games_played == 0:
+    if not user.is_active or user.games_played == 0:
         return None
 
     ranked = _base_query(metric).subquery()

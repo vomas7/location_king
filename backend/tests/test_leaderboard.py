@@ -85,17 +85,6 @@ async def test_accuracy_ranking_ignores_players_with_too_few_rounds(
     assert [e["display_name"] for e in entries] == ["veteran"]
 
 
-async def test_guests_are_not_listed(client: AsyncClient, db: AsyncSession, guest: dict):
-    guest_user = await db.get(User, guest["user"]["id"])
-    guest_user.games_played = 10
-    guest_user.best_score = 5000
-    await db.flush()
-
-    entries = (await client.get("/api/leaderboard")).json()["entries"]
-
-    assert entries == []
-
-
 async def test_players_without_games_are_not_listed(client: AsyncClient, registered_user: User):
     assert (await client.get("/api/leaderboard")).json()["entries"] == []
 
@@ -120,7 +109,8 @@ async def test_own_place_is_returned_even_outside_the_top(
     assert body["me"]["rank"] == 6
 
 
-async def test_guest_has_no_place(client: AsyncClient, auth_headers: dict):
+async def test_player_without_games_has_no_place(client: AsyncClient, auth_headers: dict):
+    """Пока не сыграл ни одной партии — места в таблице нет."""
     body = (await client.get("/api/leaderboard", headers=auth_headers)).json()
     assert body["me"] is None
 

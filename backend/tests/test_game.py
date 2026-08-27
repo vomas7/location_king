@@ -321,3 +321,47 @@ async def test_malformed_session_id_is_not_found(client: AsyncClient, auth_heade
     response = await client.get("/api/sessions/not-a-uuid", headers=auth_headers)
 
     assert response.status_code == 404
+
+
+async def test_starting_a_new_game_abandons_the_previous_one(
+    client: AsyncClient,
+    auth_headers: dict,
+    zone: LocationZone,
+):
+    """Незавершённая партия у игрока может быть только одна."""
+    first = await start_session(client, auth_headers, rounds_total=5)
+    first_id = first["session"]["id"]
+
+    await start_session(client, auth_headers, rounds_total=5)
+
+    abandoned = await client.get(f"/api/sessions/{first_id}", headers=auth_headers)
+    assert abandoned.json()["session"]["status"] == "abandoned"
+
+    history = (await client.get("/api/sessions", headers=auth_headers)).json()
+    assert sum(1 for s in history["sessions"] if s["status"] == "active") == 1
+
+
+async def test_cleanup_closes_stale_sessions(
+    client: AsyncClient,
+    auth_headers: dict,
+    db: AsyncSession,
+    zone: LocationZone,
+):
+    """Партия, брошенная давно, перестаёт быть активной."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.models.game_session import GameSession
+    from app.services.game import finish_session
+
+    state = await start_session(client, auth_headers, rounds_total=5)
+    session = await db.get(GameSession, state["session"]["id"])
+    assert session is not None
+
+    session.started_at = datetime.now(UTC) - timedelta(hours=12)
+    await db.flush()
+
+    # Скрипт уборки делает ровно это, но со своей сессией БД
+    await finish_session(db, session)
+
+    assert session.status == "abandoned"
+    assert session.finished_at is not None

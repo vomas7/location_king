@@ -119,28 +119,21 @@
   gap: 16px;
 }
 
-.divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 20px 0;
-  color: var(--text-faint);
-  font-size: 12px;
-}
-
-.divider::before,
-.divider::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--line-soft);
-}
-
-.guestNote {
-  margin-top: 12px;
+.note {
+  margin-top: 18px;
   color: var(--text-faint);
   font-size: 12px;
   text-align: center;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 @media (max-width: 780px) {

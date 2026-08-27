@@ -43,8 +43,7 @@ class UserProfile(BaseModel):
     id: int
     username: str
     display_name: str | None
-    email: EmailStr | None
-    is_guest: bool
+    email: EmailStr
 
     total_score: int
     games_played: int
@@ -57,7 +56,7 @@ class UserProfile(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    """Ответ на регистрацию, вход и создание гостя."""
+    """Ответ на регистрацию и вход."""
 
     user: UserProfile
     tokens: TokenPair

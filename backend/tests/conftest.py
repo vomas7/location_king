@@ -14,13 +14,15 @@ from alembic import command
 from alembic.config import Config
 from geoalchemy2 import WKTElement
 from httpx import ASGITransport, AsyncClient
+from redis.exceptions import RedisError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.database import get_db
 from app.main import app
 from app.models.location_zone import LocationZone
 from app.models.user import User
-from app.services.auth import register
+from app.services.auth import create_token, register
+from app.services.tiles import close_clients, redis_client
 
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
 
@@ -36,6 +38,34 @@ def migrated_database() -> None:
 
     command.downgrade(config, "base")
     command.upgrade(config, "head")
+
+
+@pytest.fixture(autouse=True)
+async def isolate_shared_state() -> AsyncGenerator[None, None]:
+    """
+    Развязать тесты по общему состоянию вне базы.
+
+    Клиенты Redis и HTTP — синглтоны на процесс, а pytest-asyncio даёт каждому
+    тесту свой цикл событий: соединение, открытое в одном, ломается в
+    следующем. Счётчики лимитов тоже общие и переживают откат транзакции,
+    поэтому чистятся перед каждым тестом.
+    """
+    await _drop_rate_limit_counters()
+    yield
+    await close_clients()
+
+
+async def _drop_rate_limit_counters() -> None:
+    """Убрать счётчики лимитов, оставшиеся от предыдущего теста."""
+    client = redis_client()
+
+    try:
+        keys = [key async for key in client.scan_iter(match="ratelimit:*")]
+        if keys:
+            await client.delete(*keys)
+    except RedisError:
+        # Без Redis лимиты не срабатывают вовсе — чистить нечего
+        pass
 
 
 @pytest.fixture
@@ -95,29 +125,28 @@ async def zone(db: AsyncSession) -> LocationZone:
 
 
 @pytest.fixture
-async def guest(client: AsyncClient) -> dict:
-    """Гость и его токены."""
-    response = await client.post("/api/auth/guest")
-    assert response.status_code == 201
-    return response.json()
-
-
-@pytest.fixture
-def auth_headers(guest: dict) -> dict[str, str]:
-    """Заголовок авторизации гостя."""
-    return {"Authorization": f"Bearer {guest['tokens']['access_token']}"}
-
-
-@pytest.fixture
-async def other_user_headers(client: AsyncClient) -> dict[str, str]:
-    """Заголовок авторизации второго игрока — для проверок чужого доступа."""
-    response = await client.post("/api/auth/guest")
-    return {"Authorization": f"Bearer {response.json()['tokens']['access_token']}"}
-
-
-@pytest.fixture
 async def registered_user(db: AsyncSession) -> User:
-    """Пользователь с паролем."""
+    """Игрок с паролем."""
     user = await register(db, "player@example.com", "correct horse battery", "Игрок")
     await db.flush()
     return user
+
+
+@pytest.fixture
+def auth_headers(registered_user: User) -> dict[str, str]:
+    """Заголовок авторизации игрока."""
+    return {"Authorization": f"Bearer {create_token(registered_user.id, 'access')}"}
+
+
+@pytest.fixture
+async def other_user(db: AsyncSession) -> User:
+    """Второй игрок — для проверок доступа к чужому."""
+    user = await register(db, "someone-else@example.com", "another password", "Второй")
+    await db.flush()
+    return user
+
+
+@pytest.fixture
+def other_user_headers(other_user: User) -> dict[str, str]:
+    """Заголовок авторизации второго игрока."""
+    return {"Authorization": f"Bearer {create_token(other_user.id, 'access')}"}

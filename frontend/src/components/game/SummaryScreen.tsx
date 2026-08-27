@@ -12,7 +12,6 @@ interface SummaryScreenProps {
   results: RoundResult[];
   /** Лучший результат игрока до этой партии — чтобы отметить рекорд. */
   previousBest: number;
-  isGuest: boolean;
   onPlayAgain: () => void;
   onHome: () => void;
 }
@@ -21,7 +20,6 @@ export function SummaryScreen({
   session,
   results,
   previousBest,
-  isGuest,
   onPlayAgain,
   onHome,
 }: SummaryScreenProps) {
@@ -71,13 +69,6 @@ export function SummaryScreen({
             В меню
           </Button>
         </div>
-
-        {isGuest && played > 0 && (
-          <p className={styles.guestNote}>
-            Результат гостя в таблицу лидеров не попадает. Регистрация занимает полминуты и
-            сохраняет всю статистику.
-          </p>
-        )}
       </Card>
     </div>
   );

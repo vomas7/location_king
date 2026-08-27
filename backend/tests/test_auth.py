@@ -21,7 +21,6 @@ async def test_register_returns_profile_and_tokens(client: AsyncClient):
     assert response.status_code == 201
     body = response.json()
     assert body["user"]["email"] == "new@example.com"
-    assert body["user"]["is_guest"] is False
     assert body["tokens"]["access_token"]
     assert body["tokens"]["refresh_token"]
     assert body["tokens"]["expires_in"] == settings.access_token_ttl_minutes * 60
@@ -101,24 +100,19 @@ async def test_login_rejects_unknown_email(client: AsyncClient):
     assert response.status_code == 401
 
 
-async def test_guest_can_play_without_registration(client: AsyncClient):
-    response = await client.post("/api/auth/guest")
-
-    assert response.status_code == 201
-    body = response.json()
-    assert body["user"]["is_guest"] is True
-    assert body["user"]["email"] is None
-
-
 async def test_me_requires_token(client: AsyncClient):
     assert (await client.get("/api/auth/me")).status_code == 401
 
 
-async def test_me_returns_current_user(client: AsyncClient, auth_headers: dict, guest: dict):
+async def test_me_returns_current_user(
+    client: AsyncClient,
+    auth_headers: dict,
+    registered_user: User,
+):
     response = await client.get("/api/auth/me", headers=auth_headers)
 
     assert response.status_code == 200
-    assert response.json()["id"] == guest["user"]["id"]
+    assert response.json()["id"] == registered_user.id
 
 
 async def test_expired_access_token_is_rejected(client: AsyncClient, registered_user: User):
@@ -164,20 +158,20 @@ async def test_refresh_token_is_not_accepted_as_access_token(
     assert response.status_code == 401
 
 
-async def test_refresh_returns_new_pair(client: AsyncClient, guest: dict):
+async def test_refresh_returns_new_pair(client: AsyncClient, registered_user: User):
     response = await client.post(
         "/api/auth/refresh",
-        json={"refresh_token": guest["tokens"]["refresh_token"]},
+        json={"refresh_token": create_token(registered_user.id, "refresh")},
     )
 
     assert response.status_code == 200
     assert response.json()["access_token"]
 
 
-async def test_refresh_rejects_access_token(client: AsyncClient, guest: dict):
+async def test_refresh_rejects_access_token(client: AsyncClient, registered_user: User):
     response = await client.post(
         "/api/auth/refresh",
-        json={"refresh_token": guest["tokens"]["access_token"]},
+        json={"refresh_token": create_token(registered_user.id, "access")},
     )
 
     assert response.status_code == 401
@@ -213,3 +207,8 @@ def test_password_hash_roundtrip(password: str):
 
 def test_verify_password_rejects_broken_hash():
     assert verify_password("anything", "не хеш вовсе") is False
+
+
+async def test_guest_endpoint_is_gone(client: AsyncClient):
+    """Играть без учётной записи нельзя: эндпоинта гостя больше нет."""
+    assert (await client.post("/api/auth/guest")).status_code == 404

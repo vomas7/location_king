@@ -14,7 +14,7 @@ import type {
   Zone,
 } from "~/api/types";
 
-async function authenticate(path: string, body?: unknown): Promise<UserProfile> {
+async function authenticate(path: string, body: unknown): Promise<UserProfile> {
   const result = await request<AuthResponse>(path, { method: "POST", body, skipRefresh: true });
   setTokens(result.tokens);
   return result.user;
@@ -29,8 +29,6 @@ export const auth = {
     }),
 
   login: (email: string, password: string) => authenticate("/api/auth/login", { email, password }),
-
-  guest: () => authenticate("/api/auth/guest"),
 
   me: () => request<UserProfile>("/api/auth/me"),
 };

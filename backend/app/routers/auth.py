@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, limit_by_address
 from app.models.user import User
 from app.schemas.auth import (
     AuthResponse,
@@ -16,6 +16,7 @@ from app.schemas.auth import (
     UserProfile,
 )
 from app.services import auth as auth_service
+from app.services.rate_limit import Limit
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -28,24 +29,26 @@ def _tokens_for(user: User) -> TokenPair:
     )
 
 
-@router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=AuthResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(limit_by_address(Limit.REGISTER))],
+)
 async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db)) -> AuthResponse:
     """Зарегистрировать пользователя и сразу выдать токены."""
     user = await auth_service.register(db, payload.email, payload.password, payload.display_name)
     return AuthResponse(user=UserProfile.model_validate(user), tokens=_tokens_for(user))
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post(
+    "/login",
+    response_model=AuthResponse,
+    dependencies=[Depends(limit_by_address(Limit.LOGIN))],
+)
 async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> AuthResponse:
     """Войти по email и паролю."""
     user = await auth_service.authenticate(db, payload.email, payload.password)
-    return AuthResponse(user=UserProfile.model_validate(user), tokens=_tokens_for(user))
-
-
-@router.post("/guest", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-async def guest(db: AsyncSession = Depends(get_db)) -> AuthResponse:
-    """Начать играть без регистрации."""
-    user = await auth_service.create_guest(db)
     return AuthResponse(user=UserProfile.model_validate(user), tokens=_tokens_for(user))
 
 

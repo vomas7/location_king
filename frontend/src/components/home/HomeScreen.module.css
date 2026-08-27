@@ -76,15 +76,6 @@
   font-weight: 700;
 }
 
-.guestBanner {
-  margin-top: 16px;
-  padding: 12px 14px;
-  border: 1px dashed var(--line);
-  border-radius: var(--radius-sm);
-  color: var(--text-dim);
-  font-size: 12px;
-}
-
 .history {
   display: flex;
   flex-direction: column;

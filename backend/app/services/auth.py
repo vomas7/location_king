@@ -100,7 +100,6 @@ async def register(db: AsyncSession, email: str, password: str, display_name: st
         email=email,
         password_hash=hash_password(password),
         display_name=display_name or email.split("@")[0],
-        is_guest=False,
         last_login_at=datetime.now(UTC),
     )
     db.add(user)
@@ -125,22 +124,6 @@ async def authenticate(db: AsyncSession, email: str, password: str) -> User:
         raise AuthError("Учётная запись отключена")
 
     user.last_login_at = datetime.now(UTC)
-    return user
-
-
-async def create_guest(db: AsyncSession) -> User:
-    """Создать гостя — играть можно без регистрации."""
-    suffix = secrets.token_hex(4)
-    user = User(
-        username=f"guest_{suffix}",
-        display_name=f"Гость {suffix[:4].upper()}",
-        is_guest=True,
-        last_login_at=datetime.now(UTC),
-    )
-    db.add(user)
-    await db.flush()
-
-    logger.info("Создан гость %s", user.id)
     return user
 
 
