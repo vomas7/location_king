@@ -10,6 +10,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.models.enums import Continent
 from app.services.round_timer import ALLOWED_TIME_LIMITS
 
 
@@ -25,6 +26,7 @@ class StartSessionRequest(BaseModel):
     )
     difficulty: int | None = Field(default=None, ge=1, le=5)
     category: str | None = None
+    continent: Continent | None = None
     zone_id: int | None = None
     time_limit_seconds: int | None = Field(
         default=None,
@@ -60,6 +62,8 @@ class ZoneView(BaseModel):
     difficulty_name: str
     category: str
     category_name: str
+    continent: str | None
+    continent_name: str
     country: str | None
     region: str | None
     tags: list[str] = Field(default_factory=list)

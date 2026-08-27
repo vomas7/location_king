@@ -39,6 +39,7 @@ async def start_session(
     view_extent_km: float,
     difficulty: int | None = None,
     category: str | None = None,
+    continent: str | None = None,
     zone_id: int | None = None,
     time_limit_seconds: int | None = None,
 ) -> tuple[GameSession, Round]:
@@ -61,7 +62,15 @@ async def start_session(
     db.add(session)
     await db.flush()
 
-    round_obj = await create_round(db, session, view_extent_km, difficulty, category, zone_id)
+    round_obj = await create_round(
+        db,
+        session,
+        view_extent_km,
+        difficulty,
+        category,
+        continent,
+        zone_id,
+    )
 
     logger.info("Сессия %s начата пользователем %s", session.id, user.id)
     return session, round_obj
@@ -97,6 +106,7 @@ async def create_round(
     view_extent_km: float,
     difficulty: int | None = None,
     category: str | None = None,
+    continent: str | None = None,
     zone_id: int | None = None,
 ) -> Round:
     """
@@ -109,7 +119,7 @@ async def create_round(
     zone = (
         await zones_service.get_zone(db, zone_id)
         if zone_id is not None
-        else await zones_service.pick_random_zone(db, difficulty, category)
+        else await zones_service.pick_random_zone(db, difficulty, category, continent)
     )
 
     lon, lat = await zones_service.random_point_in_zone(db, zone)

@@ -26,6 +26,18 @@ class RoundStatus(StrEnum):
     TIMED_OUT = "timed_out"
 
 
+class Continent(StrEnum):
+    """Части света. Нужны для фильтра в меню."""
+
+    EUROPE = "europe"
+    ASIA = "asia"
+    AFRICA = "africa"
+    NORTH_AMERICA = "north_america"
+    SOUTH_AMERICA = "south_america"
+    OCEANIA = "oceania"
+    ANTARCTICA = "antarctica"
+
+
 class ZoneCategory(StrEnum):
     """Категории игровых зон."""
 
@@ -42,6 +54,16 @@ class ZoneCategory(StrEnum):
     POLAR = "polar"
     MIXED = "mixed"
 
+
+CONTINENT_NAMES = {
+    Continent.EUROPE: "Европа",
+    Continent.ASIA: "Азия",
+    Continent.AFRICA: "Африка",
+    Continent.NORTH_AMERICA: "Северная Америка",
+    Continent.SOUTH_AMERICA: "Южная Америка",
+    Continent.OCEANIA: "Австралия и Океания",
+    Continent.ANTARCTICA: "Антарктида",
+}
 
 DIFFICULTY_NAMES = {
     1: "Очень легко",
@@ -77,3 +99,10 @@ def category_name(category: str | None) -> str:
     if category is None:
         return CATEGORY_NAMES[ZoneCategory.MIXED]
     return CATEGORY_NAMES.get(ZoneCategory(category), category)
+
+
+def continent_name(continent: str | None) -> str:
+    """Читаемое название части света."""
+    if continent is None:
+        return "Не указано"
+    return CONTINENT_NAMES.get(Continent(continent), continent)

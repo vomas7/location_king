@@ -8,7 +8,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.models.enums import RoundStatus, category_name, difficulty_name
+from app.models.enums import RoundStatus, category_name, continent_name, difficulty_name
 from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
 from app.models.round import Round
@@ -30,6 +30,8 @@ def zone_view(zone: LocationZone) -> ZoneView:
         difficulty_name=difficulty_name(zone.difficulty),
         category=zone.category,
         category_name=category_name(zone.category),
+        continent=zone.continent,
+        continent_name=continent_name(zone.continent),
         country=zone.country,
         region=zone.region,
         tags=zone.tag_list,

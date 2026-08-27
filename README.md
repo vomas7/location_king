@@ -65,7 +65,7 @@ cd location_king
 
 make dev        # postgres, redis, backend и dev-сервер фронтенда
 make migrate    # накатит миграции
-make seed       # загрузит 23 игровые зоны
+make seed       # загрузит 99 игровых зон
 ```
 
 Игра: <http://localhost:5173>. Документация API: <http://localhost:8000/api/docs>.
@@ -143,7 +143,7 @@ src/
 | `GET`  | `/api/rounds/{id}/tiles/{z}/{x}/{y}.jpg`| тайл снимка по локальным координатам   |
 | `GET`  | `/api/sessions`                         | история партий игрока                  |
 | `GET`  | `/api/sessions/current`                 | незаконченная партия или null          |
-| `GET`  | `/api/zones`                            | список игровых зон                     |
+| `GET`  | `/api/zones`                            | зоны с фильтрами по части света и сложности |
 | `GET`  | `/api/leaderboard`                      | таблица лидеров, доступна без входа    |
 | `GET`  | `/api/challenge/today`                  | челлендж дня и таблица дня             |
 | `POST` | `/api/challenge/today/start`            | начать челлендж дня                    |

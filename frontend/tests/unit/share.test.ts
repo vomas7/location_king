@@ -24,6 +24,8 @@ function result(score: number, distanceKm: string | null = "12.500"): RoundResul
       difficulty_name: "Очень легко",
       category: "city",
       category_name: "Город",
+      continent: "europe",
+      continent_name: "Европа",
       country: null,
       region: null,
       tags: [],

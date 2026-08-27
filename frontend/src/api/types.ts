@@ -40,6 +40,8 @@ export interface Zone {
   difficulty_name: string;
   category: string;
   category_name: string;
+  continent: string | null;
+  continent_name: string;
   country: string | null;
   region: string | null;
   tags: string[];
@@ -143,6 +145,8 @@ export interface StartSessionOptions {
   rounds_total: number;
   view_extent_km: number;
   difficulty: number | null;
+  /** Часть света, из которой берутся зоны. null — со всего мира. */
+  continent: string | null;
   /** Сколько секунд даётся на раунд. null — без ограничения. */
   time_limit_seconds: number | null;
 }

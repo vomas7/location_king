@@ -75,6 +75,8 @@ function result(index: number, score: number): RoundResult {
       difficulty_name: "Очень легко",
       category: "city",
       category_name: "Город",
+      continent: "europe",
+      continent_name: "Европа",
       country: "Россия",
       region: null,
       tags: [],
@@ -87,6 +89,7 @@ const OPTIONS = {
   rounds_total: 2,
   view_extent_km: 5,
   difficulty: null,
+  continent: null,
   time_limit_seconds: null,
 };
 

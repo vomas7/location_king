@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { game } from "~/api/endpoints";
+import { game, zones } from "~/api/endpoints";
 import type { SessionState, StartSessionOptions } from "~/api/types";
 import { DailyChallenge } from "~/components/home/DailyChallenge";
 import { GameHistory } from "~/components/home/GameHistory";
@@ -31,6 +31,20 @@ const TIME_LIMITS = [
   { value: 30, label: "30 сек" },
 ];
 
+/**
+ * Части света. Список фиксирован: он должен совпадать с тем, что понимает
+ * сервер, и не зависеть от того, какие зоны сейчас загружены.
+ */
+const CONTINENTS = [
+  { value: null, label: "Весь мир" },
+  { value: "europe", label: "Европа" },
+  { value: "asia", label: "Азия" },
+  { value: "africa", label: "Африка" },
+  { value: "north_america", label: "Сев. Америка" },
+  { value: "south_america", label: "Юж. Америка" },
+  { value: "oceania", label: "Океания" },
+];
+
 const DIFFICULTIES = [
   { value: null, label: "Любая" },
   ...[1, 2, 3, 4, 5].map((value) => ({ value, label: String(value) })),
@@ -52,7 +66,32 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
   const [extent, setExtent] = useState(5);
   const [difficulty, setDifficulty] = useState<number | null>(null);
   const [timeLimit, setTimeLimit] = useState<number | null>(null);
+  const [continent, setContinent] = useState<string | null>(null);
+  const [zoneCount, setZoneCount] = useState<number | null>(null);
   const [unfinished, setUnfinished] = useState<SessionState | null>(null);
+
+  // Сколько зон под выбранными фильтрами: без этого игрок не понимает, почему
+  // «Начать» отвечает, что зон нет
+  useEffect(() => {
+    let cancelled = false;
+
+    const query = new URLSearchParams();
+    if (continent !== null) query.set("continent", continent);
+    if (difficulty !== null) query.set("difficulty", String(difficulty));
+
+    void (async () => {
+      try {
+        const found = await zones.list(query.toString());
+        if (!cancelled) setZoneCount(found.length);
+      } catch {
+        if (!cancelled) setZoneCount(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [continent, difficulty]);
 
   // Незавершённая партия — предлагаем продолжить, а не начинать заново
   useEffect(() => {
@@ -117,6 +156,17 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
               onChange={setDifficulty}
             />
             <Segmented
+              label="Часть света"
+              options={CONTINENTS}
+              value={continent}
+              onChange={setContinent}
+              {...(zoneCount === null
+                ? {}
+                : {
+                    hint: `Подходящих зон: ${String(zoneCount)}`,
+                  })}
+            />
+            <Segmented
               label="Время на раунд"
               options={TIME_LIMITS}
               value={timeLimit}
@@ -131,11 +181,13 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
             variant="primary"
             size="large"
             block
+            disabled={zoneCount === 0}
             onClick={() => {
               onStart({
                 rounds_total: rounds,
                 view_extent_km: extent,
                 difficulty,
+                continent,
                 time_limit_seconds: timeLimit,
               });
             }}

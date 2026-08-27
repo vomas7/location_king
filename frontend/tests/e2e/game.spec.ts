@@ -207,3 +207,23 @@ test("в режиме на время идёт обратный отсчёт", a
   await answerRound(page);
   await expect(page.getByRole("dialog")).toBeVisible();
 });
+
+test("часть света ограничивает выбор зон", async ({ page }) => {
+  await register(page);
+
+  await expect(page.getByText(/Подходящих зон: \d+/)).toBeVisible();
+  const worldwide = await page.getByText(/Подходящих зон: \d+/).textContent();
+
+  await page.getByRole("radio", { name: "Океания" }).click();
+  await expect(page.getByText(/Подходящих зон: \d+/)).not.toHaveText(worldwide ?? "");
+
+  await page.getByRole("radio", { name: "3", exact: true }).first().click();
+  await page.getByRole("button", { name: "Начать игру" }).click();
+
+  await answerRound(page);
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+
+  // Зона раунда действительно из выбранной части света
+  await expect(dialog.getByText(/Австралия|Новая Зеландия|Полинезия|Папуа/).first()).toBeVisible();
+});

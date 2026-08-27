@@ -365,3 +365,58 @@ async def test_cleanup_closes_stale_sessions(
 
     assert session.status == "abandoned"
     assert session.finished_at is not None
+
+
+async def test_zones_can_be_filtered_by_continent(
+    client: AsyncClient,
+    db: AsyncSession,
+    zone: LocationZone,
+):
+    zone.continent = "europe"
+    await db.flush()
+
+    europe = await client.get("/api/zones?continent=europe")
+    asia = await client.get("/api/zones?continent=asia")
+
+    assert [item["name"] for item in europe.json()] == [zone.name]
+    assert asia.json() == []
+
+
+async def test_zone_view_carries_continent_name(
+    client: AsyncClient,
+    db: AsyncSession,
+    zone: LocationZone,
+):
+    zone.continent = "south_america"
+    await db.flush()
+
+    body = (await client.get("/api/zones")).json()
+    assert body[0]["continent_name"] == "Южная Америка"
+
+
+async def test_unknown_continent_is_rejected(client: AsyncClient):
+    assert (await client.get("/api/zones?continent=atlantis")).status_code == 422
+
+
+async def test_session_can_be_limited_to_a_continent(
+    client: AsyncClient,
+    auth_headers: dict,
+    db: AsyncSession,
+    zone: LocationZone,
+):
+    zone.continent = "europe"
+    await db.flush()
+
+    ok = await client.post(
+        "/api/sessions",
+        json={"rounds_total": 1, "continent": "europe"},
+        headers=auth_headers,
+    )
+    assert ok.status_code == 201
+
+    empty = await client.post(
+        "/api/sessions",
+        json={"rounds_total": 1, "continent": "africa"},
+        headers=auth_headers,
+    )
+    assert empty.status_code == 404

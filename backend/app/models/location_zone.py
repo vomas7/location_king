@@ -35,6 +35,7 @@ class LocationZone(Base):
         nullable=False,
     )
 
+    continent: Mapped[str | None] = mapped_column(String(20), index=True)
     country: Mapped[str | None] = mapped_column(String(100))
     region: Mapped[str | None] = mapped_column(String(100))
     tags: Mapped[str | None] = mapped_column(Text)  # JSON-список строк

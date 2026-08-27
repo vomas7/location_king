@@ -69,5 +69,6 @@ export const leaderboard = {
 };
 
 export const zones = {
-  list: () => request<Zone[]>("/api/zones"),
+  /** query — строка вида "continent=europe&difficulty=3". */
+  list: (query = "") => request<Zone[]>(`/api/zones${query === "" ? "" : `?${query}`}`),
 };
