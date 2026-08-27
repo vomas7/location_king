@@ -159,7 +159,7 @@ async def test_only_host_can_close_the_room(
 
     response = await client.post(f"/api/matches/{room['code']}/close", headers=other_user_headers)
 
-    assert response.status_code == 409
+    assert response.status_code == 403
     assert (await client.get(f"/api/matches/{room['code']}", headers=auth_headers)).json()[
         "status"
     ] == "open"

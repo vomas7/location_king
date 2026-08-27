@@ -18,7 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.exceptions import ConflictError, NotFoundError
+from app.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models.enums import MatchStatus, SessionStatus
 from app.models.game_session import GameSession
 from app.models.match import Match
@@ -126,7 +126,7 @@ async def join(db: AsyncSession, match: Match, user: User) -> tuple[GameSession,
 async def close(db: AsyncSession, match: Match, user: User) -> Match:
     """Закрыть набор. Может только хост."""
     if match.host_user_id != user.id:
-        raise ConflictError("Закрыть комнату может только тот, кто её создал")
+        raise ForbiddenError("Закрыть комнату может только тот, кто её создал")
 
     match.status = MatchStatus.CLOSED
     await db.flush()
