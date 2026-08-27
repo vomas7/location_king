@@ -43,10 +43,7 @@ export function StorageNotice({ onDetails }: StorageNoticeProps) {
 
   return (
     <aside className={styles.notice} role="note" aria-label="О хранилище браузера">
-      <p className={styles.text}>
-        Куки мы не ставим. В браузере остаётся только токен входа — чтобы не просить пароль на
-        каждой странице.
-      </p>
+      <p className={styles.text}>Куки мы не ставим — в браузере остаётся только токен входа.</p>
 
       <div className={styles.actions}>
         <button type="button" className={styles.details} onClick={onDetails}>

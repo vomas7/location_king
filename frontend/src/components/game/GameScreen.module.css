@@ -58,12 +58,14 @@
   transform: translate(-50%, -50%);
 }
 
+/* Подсказки о клавишах бессмысленны на телефоне, поэтому по умолчанию их нет,
+   а появляются они только там, где есть курсор */
 .hints {
+  display: none;
   position: absolute;
   z-index: 10;
   top: 14px;
   right: 14px;
-  display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 8px 12px;
@@ -106,23 +108,40 @@
     opacity 0.22s var(--ease);
 }
 
-/* Наведение раскрывает карту: лишний клик каждый раунд не нужен */
-.panel:hover,
-.panel:focus-within,
 .panelPinned {
   width: min(460px, calc(100vw - 32px));
 }
 
 .map {
-  height: 180px;
+  height: 0;
   background: var(--surface-2);
   transition: height 0.22s var(--ease);
 }
 
-.panel:hover .map,
-.panel:focus-within .map,
 .panelPinned .map {
   height: min(320px, 40vh);
+}
+
+/* Курсор раскрывает карту наведением: лишний клик каждый раунд не нужен.
+   Пальцем навести нельзя, поэтому там панель открывается кнопкой */
+@media (hover: hover) and (pointer: fine) {
+  .hints {
+    display: flex;
+  }
+
+  .map {
+    height: 180px;
+  }
+
+  .panel:hover,
+  .panel:focus-within {
+    width: min(460px, calc(100vw - 32px));
+  }
+
+  .panel:hover .map,
+  .panel:focus-within .map {
+    height: min(320px, 40vh);
+  }
 }
 
 .actions {
@@ -161,10 +180,6 @@
 }
 
 @media (max-width: 780px) {
-  .hints {
-    display: none;
-  }
-
   .panel {
     right: 12px;
     bottom: 12px;
@@ -178,13 +193,11 @@
     width: auto;
   }
 
-  .map {
-    height: 34vh;
-  }
-
+  /* Раскрытая карта занимает столько, сколько нужно, чтобы по ней попасть
+     пальцем, но снимок под ней всё ещё виден */
+  .panelPinned .map,
   .panel:hover .map,
-  .panel:focus-within .map,
-  .panelPinned .map {
-    height: 34vh;
+  .panel:focus-within .map {
+    height: min(46vh, 420px);
   }
 }

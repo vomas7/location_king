@@ -46,3 +46,14 @@
 .details:hover {
   color: var(--text);
 }
+
+@media (max-width: 560px) {
+  .notice {
+    justify-content: space-between;
+    padding: 10px 14px;
+  }
+
+  .text {
+    font-size: 12.5px;
+  }
+}

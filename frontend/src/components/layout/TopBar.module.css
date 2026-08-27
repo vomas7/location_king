@@ -110,12 +110,26 @@
 }
 
 @media (max-width: 780px) {
+  /* Знак, кнопки и полоса прогресса в одну строку не помещаются: прогресс
+     уходит вниз, а высота шапки перестаёт быть фиксированной */
   .topbar {
-    padding: 0 12px;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding: 10px 12px;
   }
 
   .name,
   .player {
     display: none;
+  }
+
+  .progress {
+    order: 3;
+    flex: 1 0 100%;
+  }
+
+  .user {
+    gap: 8px;
   }
 }

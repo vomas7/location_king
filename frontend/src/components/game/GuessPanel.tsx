@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import styles from "~/components/game/GameScreen.module.css";
 import { Button } from "~/components/ui/Button";
 import { createGuessMap, type GuessMap, type LonLat } from "~/map/guess";
+import { useHoverPointer } from "~/state/usePointer";
 
 interface GuessPanelProps {
   /** Меняется при смене раунда: по нему сбрасывается поставленная точка. */
@@ -32,6 +33,10 @@ export function GuessPanel({
   onPickRef.current = onPick;
 
   const [ready, setReady] = useState(false);
+  const hoverPointer = useHoverPointer();
+
+  // Мышью карта раскрывается подводом курсора, пальцем — нажатием
+  const open = pinned || hoverPointer;
 
   // Карта мира одна на всю партию: пересоздавать её на каждый раунд незачем
   useEffect(() => {
@@ -64,27 +69,45 @@ export function GuessPanel({
 
   return (
     <div className={[styles.panel, pinned ? styles.panelPinned : ""].filter(Boolean).join(" ")}>
-      <button
-        type="button"
-        className={styles.pin}
-        aria-pressed={pinned}
-        title={pinned ? "Свернуть карту" : "Закрепить карту раскрытой"}
-        onClick={() => {
-          onPin(!pinned);
-        }}
-      >
-        {pinned ? "▾" : "▴"}
-      </button>
+      {/* Свёрнутой панелью на телефоне управляет большая кнопка снизу:
+          маленькая стрелка рядом с ней только мешала бы */}
+      {open && (
+        <button
+          type="button"
+          className={styles.pin}
+          aria-pressed={pinned}
+          title={pinned ? "Свернуть карту" : "Закрепить карту раскрытой"}
+          onClick={() => {
+            onPin(!pinned);
+          }}
+        >
+          {pinned ? "▾" : "▴"}
+        </button>
+      )}
 
       <div className={styles.map} ref={container} />
 
       <div className={styles.actions}>
-        <p className={styles.hint}>
-          {guess === null ? "Кликни по карте, чтобы поставить точку" : "Точка поставлена"}
-        </p>
-        <Button variant="primary" block disabled={guess === null || busy} onClick={onSubmit}>
-          Ответить
-        </Button>
+        {open ? (
+          <>
+            <p className={styles.hint}>
+              {guess === null ? "Отметь место на карте мира" : "Точка поставлена"}
+            </p>
+            <Button variant="primary" block disabled={guess === null || busy} onClick={onSubmit}>
+              Ответить
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="primary"
+            block
+            onClick={() => {
+              onPin(true);
+            }}
+          >
+            {guess === null ? "Открыть карту" : "Изменить точку"}
+          </Button>
+        )}
       </div>
     </div>
   );
