@@ -208,6 +208,46 @@ async def get_session_for_user(db: AsyncSession, user: User, session_id: str) ->
     return session
 
 
+async def list_sessions(
+    db: AsyncSession,
+    user: User,
+    limit: int = 20,
+    offset: int = 0,
+) -> tuple[list[GameSession], int]:
+    """Партии игрока, новые сверху, вместе с общим количеством."""
+    condition = GameSession.user_id == user.id
+
+    total = (await db.execute(select(func.count(GameSession.id)).where(condition))).scalar_one()
+
+    sessions = (
+        (
+            await db.execute(
+                select(GameSession)
+                .where(condition)
+                .order_by(GameSession.started_at.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    return list(sessions), int(total)
+
+
+async def current_session(db: AsyncSession, user: User) -> GameSession | None:
+    """Незавершённая партия игрока, чтобы можно было продолжить с того же места."""
+    stmt = (
+        select(GameSession)
+        .where(GameSession.user_id == user.id, GameSession.status == SessionStatus.ACTIVE)
+        .options(selectinload(GameSession.rounds).selectinload(Round.zone))
+        .order_by(GameSession.started_at.desc())
+        .limit(1)
+    )
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
 async def get_round_for_user(db: AsyncSession, user: User, round_id: int) -> Round:
     """Раунд пользователя. Чужой раунд — 403, несуществующий — 404."""
     stmt = (

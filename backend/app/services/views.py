@@ -12,8 +12,10 @@ from app.models.enums import RoundStatus, category_name, difficulty_name
 from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
 from app.models.round import Round
-from app.schemas.game import RoundResult, RoundView, SessionView, ZoneView
+from app.schemas.game import RoundResult, RoundView, SessionSummary, SessionView, ZoneView
+from app.schemas.leaderboard import LeaderboardEntry
 from app.services import game as game_service
+from app.services.leaderboard import LeaderboardRow
 
 
 def zone_view(zone: LocationZone) -> ZoneView:
@@ -94,3 +96,30 @@ def round_index(session: GameSession, round_obj: Round) -> int:
     """Порядковый номер раунда в сессии, начиная с единицы."""
     ordered = sorted(session.rounds, key=lambda r: r.id)
     return next(i for i, r in enumerate(ordered, start=1) if r.id == round_obj.id)
+
+
+def session_summary(session: GameSession) -> SessionSummary:
+    """Партия в списке истории."""
+    return SessionSummary(
+        id=session.id,
+        status=session.status,
+        rounds_total=session.rounds_total,
+        rounds_done=session.rounds_done,
+        total_score=session.total_score,
+        started_at=session.started_at,
+        finished_at=session.finished_at,
+    )
+
+
+def leaderboard_entry(row: LeaderboardRow) -> LeaderboardEntry:
+    """Строка таблицы лидеров."""
+    return LeaderboardEntry(
+        rank=row.rank,
+        user_id=row.user.id,
+        display_name=row.user.display_name or row.user.username,
+        games_played=row.user.games_played,
+        total_rounds=row.user.total_rounds,
+        best_score=row.user.best_score,
+        total_score=row.user.total_score,
+        average_distance=row.user.average_distance,
+    )

@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.exceptions import AppError
-from app.routers import auth, rounds, sessions, zones
+from app.routers import auth, leaderboard, rounds, sessions, zones
 from app.services.tiles import close_clients
 
 logging.basicConfig(
@@ -55,6 +55,7 @@ app.include_router(auth.router)
 app.include_router(sessions.router)
 app.include_router(rounds.router)
 app.include_router(zones.router)
+app.include_router(leaderboard.router)
 
 
 @app.get("/api/health", tags=["service"])

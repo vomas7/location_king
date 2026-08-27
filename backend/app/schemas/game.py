@@ -112,3 +112,22 @@ class GuessResponse(BaseModel):
     session: SessionView
     next_round: RoundView | None
     is_session_finished: bool
+
+
+class SessionSummary(BaseModel):
+    """Партия в списке истории — без раундов."""
+
+    id: str
+    status: str
+    rounds_total: int
+    rounds_done: int
+    total_score: int
+    started_at: datetime
+    finished_at: datetime | None
+
+
+class SessionHistoryResponse(BaseModel):
+    """Страница истории партий игрока."""
+
+    sessions: list[SessionSummary]
+    total: int

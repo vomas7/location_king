@@ -23,3 +23,23 @@ async def get_current_user(
 
     user_id = auth_service.decode_token(token, "access")
     return await auth_service.get_active_user(db, user_id)
+
+
+async def get_optional_user(
+    token: str | None = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
+    """
+    Текущий пользователь, если токен есть и он валиден.
+
+    Для страниц, которые открыты всем, но показывают больше авторизованному —
+    например, таблица лидеров с местом самого игрока.
+    """
+    if not token:
+        return None
+
+    try:
+        user_id = auth_service.decode_token(token, "access")
+        return await auth_service.get_active_user(db, user_id)
+    except AuthError:
+        return None

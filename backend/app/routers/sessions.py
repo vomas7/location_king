@@ -1,12 +1,18 @@
 """HTTP-слой игровых сессий."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user
+from app.exceptions import NotFoundError
+from app.models.game_session import GameSession
 from app.models.user import User
-from app.schemas.game import SessionStateResponse, StartSessionRequest
+from app.schemas.game import (
+    SessionHistoryResponse,
+    SessionStateResponse,
+    StartSessionRequest,
+)
 from app.services import game as game_service
 from app.services import views
 
@@ -37,6 +43,36 @@ async def start_session(
     )
 
 
+@router.get("", response_model=SessionHistoryResponse)
+async def list_sessions(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> SessionHistoryResponse:
+    """История партий игрока, новые сверху."""
+    sessions, total = await game_service.list_sessions(db, user, limit, offset)
+
+    return SessionHistoryResponse(
+        sessions=[views.session_summary(session) for session in sessions],
+        total=total,
+    )
+
+
+# Объявлено до /{session_id}: иначе «current» попал бы в него как идентификатор
+@router.get("/current", response_model=SessionStateResponse)
+async def get_current_session(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> SessionStateResponse:
+    """Незавершённая партия, чтобы продолжить её после перезагрузки страницы."""
+    session = await game_service.current_session(db, user)
+    if session is None:
+        raise NotFoundError("Незавершённых партий нет")
+
+    return await _session_state(db, session)
+
+
 @router.get("/{session_id}", response_model=SessionStateResponse)
 async def get_session(
     session_id: str,
@@ -45,6 +81,11 @@ async def get_session(
 ) -> SessionStateResponse:
     """Текущее состояние партии: активный раунд и история завершённых."""
     session = await game_service.get_session_for_user(db, user, session_id)
+    return await _session_state(db, session)
+
+
+async def _session_state(db: AsyncSession, session: GameSession) -> SessionStateResponse:
+    """Состояние партии: активный раунд и история завершённых."""
     current = await game_service.active_round(db, session)
 
     return SessionStateResponse(
