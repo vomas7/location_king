@@ -6,6 +6,7 @@
  */
 
 import { authHeaders, getTokens, setTokens } from "~/api/tokens";
+import type { TokenPair } from "~/api/types";
 
 const runtime = window.__CONFIG__ ?? {};
 
@@ -49,7 +50,16 @@ async function readError(response: Response): Promise<string> {
   }
 }
 
-async function refreshTokens(): Promise<boolean> {
+/**
+ * Обновление токена, идущее прямо сейчас.
+ *
+ * При открытии страницы запросы уходят пачкой, и с истёкшим токеном каждый
+ * получил бы 401. Без этой ссылки они полезли бы обновляться наперегонки и
+ * записали бы друг поверх друга разные пары токенов.
+ */
+let refreshing: Promise<boolean> | null = null;
+
+async function requestNewTokens(): Promise<boolean> {
   const current = getTokens();
   if (current === null) return false;
 
@@ -64,8 +74,16 @@ async function refreshTokens(): Promise<boolean> {
     return false;
   }
 
-  setTokens((await response.json()) as never);
+  setTokens((await response.json()) as TokenPair);
   return true;
+}
+
+function refreshTokens(): Promise<boolean> {
+  refreshing ??= requestNewTokens().finally(() => {
+    refreshing = null;
+  });
+
+  return refreshing;
 }
 
 /** Запрос к API. При 401 один раз пробует обновить токен и повторить. */

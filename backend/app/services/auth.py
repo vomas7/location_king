@@ -15,6 +15,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import Argon2Error, InvalidHashError
 from jose import JWTError, jwt
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -26,6 +27,10 @@ logger = logging.getLogger(__name__)
 TokenType = Literal["access", "refresh"]
 
 _hasher = PasswordHasher()
+
+# Хеш-пустышка: с ним сверяется пароль, когда такого email нет. Без этого
+# несуществующий email отвечал бы заметно быстрее существующего.
+_DUMMY_HASH = _hasher.hash(secrets.token_hex(16))
 
 
 def hash_password(password: str) -> str:
@@ -79,7 +84,10 @@ def decode_token(token: str, expected_type: TokenType) -> int:
     if subject is None:
         raise AuthError("Токен не содержит идентификатор пользователя")
 
-    return int(subject)
+    try:
+        return int(subject)
+    except (TypeError, ValueError) as e:
+        raise AuthError("Идентификатор пользователя в токене испорчен") from e
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
@@ -103,7 +111,14 @@ async def register(db: AsyncSession, email: str, password: str, display_name: st
         last_login_at=datetime.now(UTC),
     )
     db.add(user)
-    await db.flush()
+
+    try:
+        await db.flush()
+    except IntegrityError as e:
+        # Проверка выше видит только уже записанное: двое могли отправить форму
+        # одновременно. Последнее слово за уникальным индексом.
+        await db.rollback()
+        raise ConflictError("Пользователь с таким email уже зарегистрирован") from e
 
     logger.info("Зарегистрирован пользователь %s", user.id)
     return user
@@ -144,7 +159,3 @@ async def _unique_username(db: AsyncSession, base: str) -> str:
         candidate = f"{base}_{secrets.token_hex(2)}"
 
     return candidate
-
-
-# Хеш-пустышка для сравнения при неизвестном email
-_DUMMY_HASH = hash_password(secrets.token_hex(16))

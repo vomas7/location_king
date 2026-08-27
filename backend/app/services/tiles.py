@@ -104,6 +104,14 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
         raise UpstreamError("Провайдер снимков недоступен") from e
 
     tile = response.content
+    content_type = response.headers.get("content-type", "")
+
+    # Провайдер может ответить двухсоткой и страницей с ошибкой. Положив её в
+    # кэш, мы бы неделю отдавали игроку HTML под видом снимка.
+    if not content_type.startswith("image/") or not tile:
+        logger.error("Провайдер снимков вернул не картинку (%s) для %s", content_type, url)
+        raise UpstreamError("Провайдер снимков вернул не картинку")
+
     await cache_set(cache_key, tile)
     return tile
 
@@ -116,8 +124,10 @@ async def prewarm(round_obj: Round) -> None:
     заметная пауза в начале раунда. Прогрев снимает её для самого первого
     экрана; остальные тайлы подтянутся по ходу.
     """
-    limit = min(1, max_local_zoom(round_obj))
-    coordinates = [(0, 0, 0)] + [(1, x, y) for x in range(2**limit) for y in range(2**limit)]
+    # Нулевой уровень — весь участок целиком, первый — те же четыре четверти
+    # покрупнее. Дальше игрок приближает сам, и там уже работает кэш.
+    levels = range(min(1, max_local_zoom(round_obj)) + 1)
+    coordinates = [(z, x, y) for z in levels for x in range(2**z) for y in range(2**z)]
 
     async def fetch(z: int, x: int, y: int) -> None:
         try:

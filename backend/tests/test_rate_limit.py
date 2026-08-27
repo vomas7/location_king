@@ -2,6 +2,7 @@
 
 import pytest
 from httpx import AsyncClient
+from redis.exceptions import ConnectionError as RedisConnectionError
 
 from app.models.location_zone import LocationZone
 from app.services import rate_limit
@@ -85,10 +86,21 @@ async def test_limiter_lets_requests_through_when_redis_is_down(
     monkeypatch: pytest.MonkeyPatch,
 ):
     """Недоступный Redis не должен закрывать игру."""
-    from redis.exceptions import ConnectionError as RedisConnectionError
 
     class BrokenRedis:
-        async def incr(self, _key: str) -> int:
+        """Клиент, у которого не выходит ни одна команда."""
+
+        def pipeline(self) -> "BrokenRedis":
+            return self
+
+        def incr(self, _key: str) -> "BrokenRedis":
+            # В конвейере команды только копятся и возвращают его же
+            return self
+
+        def expire(self, _key: str, _ttl: int, nx: bool = False) -> "BrokenRedis":
+            return self
+
+        async def execute(self) -> list[int]:
             raise RedisConnectionError("нет соединения")
 
     monkeypatch.setattr(rate_limit, "redis_client", lambda: BrokenRedis())

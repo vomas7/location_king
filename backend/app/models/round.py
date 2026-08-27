@@ -81,10 +81,6 @@ class Round(Base):
         return f"<Round id={self.id} status={self.status!r} score={self.score}>"
 
     @property
-    def is_guessed(self) -> bool:
-        return self.status == RoundStatus.GUESSED
-
-    @property
     def is_open(self) -> bool:
         """Раунд ещё ждёт ответа."""
         return self.status == RoundStatus.ACTIVE

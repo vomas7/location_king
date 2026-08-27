@@ -169,8 +169,6 @@ async def create_round(
     )
     db.add(round_obj)
 
-    zone.popularity += 1
-
     await db.flush()
     await db.refresh(round_obj, ["zone"])
 
@@ -391,13 +389,28 @@ async def current_session(db: AsyncSession, user: User) -> GameSession | None:
     return (await db.execute(stmt)).scalar_one_or_none()
 
 
-async def get_round_for_user(db: AsyncSession, user: User, round_id: int) -> Round:
-    """Раунд пользователя. Чужой раунд — 403, несуществующий — 404."""
+async def get_round_for_user(
+    db: AsyncSession,
+    user: User,
+    round_id: int,
+    *,
+    for_update: bool = False,
+) -> Round:
+    """
+    Раунд пользователя. Чужой раунд — 403, несуществующий — 404.
+
+    for_update блокирует строку раунда до конца транзакции. Это нужно там, где
+    раунд закрывается: две одновременные догадки по одному раунду иначе обе
+    прошли бы проверку «раунд ещё открыт» и очки засчитались бы дважды.
+    """
     stmt = (
         select(Round)
         .where(Round.id == round_id)
         .options(selectinload(Round.session), selectinload(Round.zone))
     )
+    if for_update:
+        stmt = stmt.with_for_update()
+
     round_obj = (await db.execute(stmt)).scalar_one_or_none()
 
     if round_obj is None:

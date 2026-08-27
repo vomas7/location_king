@@ -43,10 +43,8 @@ class LocationZone(Base):
     total_rounds: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     average_score: Mapped[float | None] = mapped_column(Float)
     average_distance: Mapped[float | None] = mapped_column(Float)
-    popularity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
-    is_featured: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

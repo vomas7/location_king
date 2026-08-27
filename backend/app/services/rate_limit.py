@@ -66,11 +66,17 @@ async def check(limit: Limit, identity: str) -> None:
 
     try:
         client = redis_client()
-        used = await client.incr(key)
 
-        if used == 1:
-            await client.expire(key, rule.window_seconds)
-        elif used > rule.limit:
+        # Счётчик и срок жизни ставятся одной посылкой: раздельными командами
+        # ключ мог остаться без срока — например, если соединение оборвалось
+        # между ними, — и тогда игрок оказался бы заблокирован навсегда.
+        # EXPIRE ... NX не сдвигает срок у уже начатого окна.
+        pipeline = client.pipeline()
+        pipeline.incr(key)
+        pipeline.expire(key, rule.window_seconds, nx=True)
+        used, _ = await pipeline.execute()
+
+        if used > rule.limit:
             ttl = max(await client.ttl(key), 1)
             raise TooManyRequestsError(
                 f"Слишком часто. Разрешено {rule.description}, попробуй позже",

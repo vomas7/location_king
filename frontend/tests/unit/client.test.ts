@@ -148,6 +148,35 @@ describe("request", () => {
     expect(tokens.hasSession()).toBe(false);
   });
 
+  it("несколько запросов с истёкшим токеном обновляют его один раз", async () => {
+    const { tokens, client } = await loadModules();
+    tokens.setTokens(TOKENS);
+
+    const refreshed: TokenPair = { ...TOKENS, access_token: "access-2" };
+    const fetchMock = vi.fn((url: string) => {
+      if (String(url).includes("/api/auth/refresh")) {
+        return Promise.resolve(jsonResponse(refreshed));
+      }
+      // Первая волна запросов уходит со старым токеном и получает 401
+      const expired = tokens.getTokens()?.access_token === TOKENS.access_token;
+      return Promise.resolve(
+        expired ? jsonResponse({ detail: "Токен истёк" }, 401) : jsonResponse({ ok: true }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await Promise.all([
+      client.request("/api/sessions/current"),
+      client.request("/api/challenge/today"),
+      client.request("/api/matches/mine"),
+    ]);
+
+    const refreshCalls = fetchMock.mock.calls.filter((call) =>
+      String(call[0]).includes("/api/auth/refresh"),
+    );
+    expect(refreshCalls).toHaveLength(1);
+  });
+
   it("на входе не пытается обновлять токен", async () => {
     const { client } = await loadModules();
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ detail: "Неверный пароль" }, 401));

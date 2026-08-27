@@ -181,7 +181,10 @@ export function useGame(onSessionEnd: () => void): GameController {
   }, []);
 
   const submit = useCallback(async () => {
-    if (state.round === null || state.guess === null) return;
+    // Ответ может прийти и от кнопки, и от истёкшего таймера. Раунд
+    // закрывается один раз: второй запрос сервер всё равно отклонит, а на
+    // экране вместо результата появилась бы ошибка.
+    if (state.phase !== "playing" || state.round === null || state.guess === null) return;
 
     dispatch({ type: "loading", text: "Считаем расстояние…" });
 
@@ -203,10 +206,10 @@ export function useGame(onSessionEnd: () => void): GameController {
     } catch (error) {
       dispatch({ type: "failed", error: describe(error) });
     }
-  }, [state.round, state.guess, onSessionEnd]);
+  }, [state.phase, state.round, state.guess, onSessionEnd]);
 
   const timeout = useCallback(async () => {
-    if (state.round === null) return;
+    if (state.phase !== "playing" || state.round === null) return;
 
     dispatch({ type: "loading", text: "Время вышло…" });
 
@@ -224,7 +227,7 @@ export function useGame(onSessionEnd: () => void): GameController {
     } catch (error) {
       dispatch({ type: "failed", error: describe(error) });
     }
-  }, [state.round, onSessionEnd]);
+  }, [state.phase, state.round, onSessionEnd]);
 
   const advance = useCallback(() => {
     dispatch({ type: "advanced" });

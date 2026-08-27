@@ -60,3 +60,33 @@ async def test_metrics_group_by_route_not_by_path(client: AsyncClient, auth_head
 
     assert 'route="/api/sessions/{session_id}"' in body
     assert "11111111" not in body
+
+
+async def test_forged_request_id_is_replaced(client: AsyncClient):
+    """
+    Значение из заголовка попадает в каждую строку лога и обратно в ответ.
+
+    Поэтому принимается только безобидный набор символов: иначе в логи можно
+    было бы дописывать собственные записи, а в ответ — что угодно.
+    """
+    response = await client.get(
+        "/api/health",
+        headers={REQUEST_ID_HEADER: 'abc INFO login as user "1"'},
+    )
+
+    assert response.headers[REQUEST_ID_HEADER].isalnum()
+
+
+async def test_too_long_request_id_is_replaced(client: AsyncClient):
+    response = await client.get("/api/health", headers={REQUEST_ID_HEADER: "x" * 500})
+
+    assert len(response.headers[REQUEST_ID_HEADER]) < 100
+
+
+async def test_histogram_has_upper_bucket_and_count(client: AsyncClient):
+    """Без них Prometheus не считает это гистограммой."""
+    await client.get("/api/health")
+    body = (await client.get("/api/metrics")).text
+
+    assert 'location_king_request_seconds_bucket{route="/api/health",le="+Inf"}' in body
+    assert 'location_king_request_seconds_count{route="/api/health"}' in body

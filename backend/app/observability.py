@@ -8,6 +8,7 @@ prometheus-client, и это будет отдельным решением.
 """
 
 import logging
+import re
 import time
 import uuid
 from collections import Counter
@@ -25,6 +26,11 @@ request_id: ContextVar[str] = ContextVar("request_id", default="-")
 
 REQUEST_ID_HEADER = "X-Request-ID"
 
+#: Идентификатор от клиента попадает в логи и в ответ, поэтому принимается
+#: только в безобидном виде: перевод строки в нём подделал бы соседнюю запись
+#: в логе, а длинное значение раздуло бы каждую строку.
+ALLOWED_REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+
 # Границы гистограммы задержек, секунды
 LATENCY_BUCKETS = (0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)
 
@@ -36,11 +42,13 @@ class Metrics:
     requests: Counter[tuple[str, str, int]] = field(default_factory=Counter)
     latency_buckets: Counter[tuple[str, float]] = field(default_factory=Counter)
     latency_sum: Counter[str] = field(default_factory=Counter)
+    latency_count: Counter[str] = field(default_factory=Counter)
     events: Counter[str] = field(default_factory=Counter)
 
     def observe_request(self, method: str, route: str, status: int, seconds: float) -> None:
         self.requests[method, route, status] += 1
         self.latency_sum[route] += seconds
+        self.latency_count[route] += 1
 
         for bucket in LATENCY_BUCKETS:
             if seconds <= bucket:
@@ -70,8 +78,16 @@ class Metrics:
             lines.append(
                 f'location_king_request_seconds_bucket{{route="{route}",le="{bucket}"}} {value}'
             )
+        # Без верхней корзины и общего числа наблюдений Prometheus не считает
+        # это гистограммой и не умеет брать по ней квантили
+        for route, count in sorted(self.latency_count.items()):
+            lines.append(
+                f'location_king_request_seconds_bucket{{route="{route}",le="+Inf"}} {count}'
+            )
         for route, total in sorted(self.latency_sum.items()):
             lines.append(f'location_king_request_seconds_sum{{route="{route}"}} {total:.3f}')
+        for route, count in sorted(self.latency_count.items()):
+            lines.append(f'location_king_request_seconds_count{{route="{route}"}} {count}')
 
         lines += [
             "# HELP location_king_events_total Внутренние события",
@@ -99,7 +115,7 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         incoming = request.headers.get(REQUEST_ID_HEADER, "")
-        current = incoming or uuid.uuid4().hex[:12]
+        current = incoming if ALLOWED_REQUEST_ID.match(incoming) else uuid.uuid4().hex[:12]
         token = request_id.set(current)
 
         started = time.perf_counter()

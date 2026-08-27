@@ -30,7 +30,7 @@ def provider(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 
     def handler(request: httpx.Request) -> httpx.Response:
         requested.append(str(request.url))
-        return httpx.Response(200, content=FAKE_TILE)
+        return httpx.Response(200, content=FAKE_TILE, headers={"Content-Type": "image/jpeg"})
 
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     monkeypatch.setattr(tiles_service, "_get_http_client", lambda: client)
@@ -356,6 +356,34 @@ async def test_provider_failure_becomes_bad_gateway(
     )
 
     assert response.status_code == 502
+
+
+async def test_provider_error_page_is_not_served_as_a_tile(
+    client: AsyncClient,
+    auth_headers: dict,
+    zone: LocationZone,
+    monkeypatch: pytest.MonkeyPatch,
+    memory_cache: dict[str, bytes],
+):
+    """Двухсотка со страницей ошибки — не картинка и в кэш попасть не должна."""
+
+    def html_error(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, html="<h1>Rate limit exceeded</h1>")
+
+    monkeypatch.setattr(
+        tiles_service,
+        "_get_http_client",
+        lambda: httpx.AsyncClient(transport=httpx.MockTransport(html_error)),
+    )
+
+    state = await start(client, auth_headers)
+    response = await client.get(
+        f"/api/rounds/{state['current_round']['id']}/tiles/0/0/0.jpg",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 502
+    assert memory_cache == {}
 
 
 async def test_second_request_is_served_from_cache(

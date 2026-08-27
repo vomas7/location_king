@@ -35,7 +35,7 @@ async def submit_guess(
     db: AsyncSession = Depends(get_db),
 ) -> GuessResponse:
     """Принять догадку и показать, где была цель."""
-    round_obj = await game_service.get_round_for_user(db, user, round_id)
+    round_obj = await game_service.get_round_for_user(db, user, round_id, for_update=True)
 
     finished_round, next_round = await game_service.submit_guess(
         db,
@@ -67,7 +67,7 @@ async def timeout_round(
     Сервер сам проверяет, что срок вышел: иначе это был бы бесплатный пропуск
     неудобного раунда.
     """
-    round_obj = await game_service.get_round_for_user(db, user, round_id)
+    round_obj = await game_service.get_round_for_user(db, user, round_id, for_update=True)
     finished_round, next_round = await game_service.timeout_round(db, round_obj)
 
     session = await game_service.get_session_for_user(db, user, round_obj.session_id)
