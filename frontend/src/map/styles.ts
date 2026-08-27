@@ -6,10 +6,25 @@ import RegularShape from "ol/style/RegularShape";
 import Stroke from "ol/style/Stroke";
 import Style from "ol/style/Style";
 
-export const COLOR_GUESS = "#38bdf8";
-export const COLOR_TARGET = "#fbbf24";
+/**
+ * Значение токена из tokens.css.
+ *
+ * OpenLayers принимает только готовые строки цвета, var() он не понимает.
+ * Дублировать значения в двух местах нельзя, поэтому читаем их из стилей.
+ * Запасной цвет нужен на случай, если модуль исполнится до применения CSS.
+ */
+function token(name: string, fallback: string): string {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value === "" ? fallback : value;
+}
 
-const OUTLINE = "#080b11";
+/** Цвет точки игрока. Тот же, что у акцента интерфейса. */
+export const COLOR_GUESS = token("--accent", "#38bdf8");
+
+/** Цвет цели. Тот же, что у очков. */
+export const COLOR_TARGET = token("--gold", "#fbbf24");
+
+const OUTLINE = token("--bg", "#080b11");
 
 function marker(color: string): Style {
   return new Style({

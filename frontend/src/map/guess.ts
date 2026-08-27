@@ -5,13 +5,12 @@ import MapBrowser from "ol/Map";
 import View from "ol/View";
 import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
-import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
-import OSM from "ol/source/OSM";
 import VectorSource from "ol/source/Vector";
 import { defaults as defaultControls } from "ol/control/defaults";
 import { fromLonLat, toLonLat } from "ol/proj";
 
+import { osmLayer } from "~/map/osm";
 import { STYLE_GUESS } from "~/map/styles";
 
 /** Точка на глобусе. */
@@ -28,16 +27,12 @@ export interface GuessMap {
   destroy: () => void;
 }
 
-export function baseLayer(): TileLayer<OSM> {
-  return new TileLayer({ source: new OSM({ attributions: "© OpenStreetMap" }) });
-}
-
 export function createGuessMap(target: HTMLElement, onPick: (point: LonLat) => void): GuessMap {
   const source = new VectorSource();
 
   const map = new MapBrowser({
     target,
-    layers: [baseLayer(), new VectorLayer({ source, style: STYLE_GUESS })],
+    layers: [osmLayer(), new VectorLayer({ source, style: STYLE_GUESS })],
     controls: defaultControls({ attribution: false, rotate: false }),
     view: new View({
       center: fromLonLat([20, 30]),

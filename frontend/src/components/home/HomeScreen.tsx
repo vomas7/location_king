@@ -135,7 +135,7 @@ export function HomeScreen({ error, onStart, onResume, refreshKey }: HomeScreenP
         <Card>
           <CardTitle>Твоя статистика</CardTitle>
 
-          <dl className={styles.metrics} style={{ marginTop: 16 }}>
+          <dl className={styles.metrics}>
             <div className={styles.metric}>
               <dt>Партий</dt>
               <dd>{formatNumber(user.games_played)}</dd>

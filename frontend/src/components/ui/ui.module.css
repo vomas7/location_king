@@ -150,6 +150,26 @@
 
 /* ── Сегментированный переключатель ───────────────────────────────── */
 
+.group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.groupLabel {
+  margin-bottom: 9px;
+  padding: 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.groupHint {
+  margin-top: 8px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
 .segmented {
   display: flex;
   flex-wrap: wrap;

@@ -22,10 +22,8 @@ export function Segmented<T extends string | number | null>({
   hint,
 }: SegmentedProps<T>) {
   return (
-    <fieldset style={{ border: 0, margin: 0, padding: 0 }}>
-      <legend className={styles.fieldLabel} style={{ marginBottom: 9 }}>
-        {label}
-      </legend>
+    <fieldset className={styles.group}>
+      <legend className={styles.groupLabel}>{label}</legend>
 
       <div className={styles.segmented} role="radiogroup" aria-label={label}>
         {options.map((option) => (
@@ -49,9 +47,7 @@ export function Segmented<T extends string | number | null>({
         ))}
       </div>
 
-      {hint !== undefined && (
-        <p style={{ marginTop: 8, color: "var(--text-faint)", fontSize: 12 }}>{hint}</p>
-      )}
+      {hint !== undefined && <p className={styles.groupHint}>{hint}</p>}
     </fieldset>
   );
 }

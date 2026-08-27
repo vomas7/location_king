@@ -12,7 +12,7 @@ import { defaults as defaultControls } from "ol/control/defaults";
 import { defaults as defaultInteractions } from "ol/interaction/defaults";
 import { fromLonLat } from "ol/proj";
 
-import { baseLayer } from "~/map/guess";
+import { osmLayer } from "~/map/osm";
 import { STYLE_GUESS, STYLE_LINE, STYLE_TARGET } from "~/map/styles";
 
 type Coordinates = [number, number];
@@ -29,7 +29,7 @@ export function createResultMap(target: HTMLElement): ResultMap {
   const map = new MapBrowser({
     target,
     layers: [
-      baseLayer(),
+      osmLayer(),
       new VectorLayer({
         source,
         style: (feature) => {
