@@ -19,6 +19,8 @@ interface GameScreenProps {
   /** Показывать ли подсказки: это первый раунд первой партии игрока. */
   coaching: boolean;
   onPick: (guess: LonLat) => void;
+  /** Взять подсказку по этому раунду. */
+  onHint: () => void;
   onSubmit: () => void;
   /** Время вышло, а точка не поставлена. */
   onTimeout: () => void;
@@ -31,6 +33,7 @@ export function GameScreen({
   timeLimitSeconds,
   coaching,
   onPick,
+  onHint,
   onSubmit,
   onTimeout,
 }: GameScreenProps) {
@@ -101,12 +104,13 @@ export function GameScreen({
       )}
 
       <GuessPanel
-        roundId={round.id}
+        round={round}
         guess={guess}
         busy={busy}
         pinned={pinned}
         onPin={setPinned}
         onPick={onPick}
+        onHint={onHint}
         onSubmit={onSubmit}
       />
     </div>

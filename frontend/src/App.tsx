@@ -133,6 +133,9 @@ export function App() {
             timeLimitSeconds={state.session?.time_limit_seconds ?? null}
             coaching={isNewPlayer(user) && state.round.index === 1}
             onPick={game.pick}
+            onHint={() => {
+              void game.hint();
+            }}
             onSubmit={() => {
               void game.submit();
             }}

@@ -45,6 +45,12 @@ export interface Zone {
   tags: string[];
 }
 
+/** Раскрытая подсказка: подпись поля и его значение. Координат в ней нет. */
+export interface HintView {
+  label: string;
+  value: string;
+}
+
 /** Активный раунд: снимок доступен только через tiles_url. */
 export interface RoundView {
   id: number;
@@ -55,6 +61,12 @@ export interface RoundView {
   tiles_url: string;
   attribution: string;
   created_at: string;
+  /** Сколько очков ещё можно взять за раунд. Подсказка это число уменьшает. */
+  max_score: number;
+  /** Заполнено, если игрок взял подсказку. */
+  hint: HintView | null;
+  /** Во сколько очков обойдётся подсказка. 0 — брать нечего или уже взята. */
+  hint_cost: number;
   /** До какого момента принимается ответ. null — время не ограничено. */
   deadline_at: string | null;
 }

@@ -49,6 +49,26 @@ test("новичку объясняют игру в первом раунде и
   await expect(page.getByText("Шаг 1 из 3")).toBeHidden();
 });
 
+test("подсказка раскрывает место и стоит очков", async ({ page }) => {
+  await register(page);
+
+  await page.getByRole("radio", { name: "3", exact: true }).first().click();
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+
+  const takeHint = page.getByRole("button", { name: /Подсказка/ });
+  await expect(takeHint).toBeVisible();
+  await takeHint.click();
+
+  // Партия по всему миру: раскрывать сервер начинает с части света
+  await expect(page.getByText("Часть света")).toBeVisible();
+  await expect(takeHint).toBeHidden();
+
+  // Максимум раунда упал — это видно в результате
+  await answerRound(page);
+  await expect(page.getByRole("dialog").getByText("из 3", { exact: false })).toBeVisible();
+});
+
 test("активный раунд не отдаёт координаты цели", async ({ page }) => {
   await register(page);
 

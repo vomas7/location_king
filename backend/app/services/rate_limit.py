@@ -40,6 +40,7 @@ class Limit(StrEnum):
     """Что именно ограничиваем. Значение попадает в ключ Redis."""
 
     DELETE_ACCOUNT = "delete-account"
+    HINT = "hint"
     LOGIN = "login"
     REGISTER = "register"
     RENAME = "rename"
@@ -64,6 +65,9 @@ RULES: dict[Limit, RateLimit] = {
     # Имя видно другим игрокам. Частая смена — способ запутать соперников в
     # комнате: только что был один игрок, а в таблице уже другой
     Limit.RENAME: RateLimit(limit=10, window_seconds=60 * 60),
+    # Подсказка пишет в раунд и стоит очков. Больше одной на раунд её всё
+    # равно не взять, так что лимит защищает базу от долбёжки, а не игру
+    Limit.HINT: RateLimit(limit=300, window_seconds=60 * 60),
     Limit.START_SESSION: RateLimit(limit=60, window_seconds=60 * 60),
     Limit.TILES: RateLimit(limit=3000, window_seconds=60 * 60),
 }

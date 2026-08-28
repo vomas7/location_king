@@ -55,6 +55,6 @@ async def start_today(
 
     return SessionStateResponse(
         session=views.session_view(session),
-        current_round=views.round_view(first_round),
+        current_round=await views.round_view(db, first_round),
         results=[],
     )

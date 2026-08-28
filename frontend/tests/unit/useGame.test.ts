@@ -13,18 +13,20 @@ import type { GuessResponse, RoundResult, RoundView, SessionState, SessionView }
 const start = vi.fn();
 const guess = vi.fn();
 const finish = vi.fn();
+const hint = vi.fn();
 
 vi.mock("~/api/endpoints", () => ({
   game: {
     start: (...args: unknown[]): unknown => start(...args) as unknown,
     guess: (...args: unknown[]): unknown => guess(...args) as unknown,
     finish: (...args: unknown[]): unknown => finish(...args) as unknown,
+    hint: (...args: unknown[]): unknown => hint(...args) as unknown,
   },
 }));
 
 const { useGame } = await import("~/state/useGame");
 
-function round(index: number): RoundView {
+function round(index: number, overrides: Partial<RoundView> = {}): RoundView {
   return {
     id: index,
     index,
@@ -34,7 +36,11 @@ function round(index: number): RoundView {
     tiles_url: `/api/rounds/${String(index)}/tiles/{z}/{x}/{y}.jpg`,
     attribution: "Провайдер",
     created_at: "2026-08-27T10:00:00Z",
+    max_score: 5000,
+    hint: null,
+    hint_cost: 1500,
     deadline_at: null,
+    ...overrides,
   };
 }
 
@@ -247,6 +253,44 @@ describe("useGame", () => {
     expect(hook.current.state.phase).toBe("finished");
     expect(hook.current.state.session?.status).toBe("abandoned");
     expect(onEnd).toHaveBeenCalledOnce();
+  });
+
+  it("подсказка заменяет раунд ответом сервера и не гасит экран", async () => {
+    start.mockResolvedValue({ session: session(), current_round: round(1), results: [] });
+    hint.mockResolvedValue(
+      round(1, { hint: { label: "Страна", value: "Франция" }, hint_cost: 0, max_score: 3500 }),
+    );
+
+    const { result: hook } = renderHook(() => useGame(vi.fn()));
+    await act(async () => {
+      await hook.current.start(OPTIONS);
+    });
+    await act(async () => {
+      await hook.current.hint();
+    });
+
+    expect(hint).toHaveBeenCalledWith(1);
+    expect(hook.current.state.phase).toBe("playing");
+    expect(hook.current.state.round?.hint?.value).toBe("Франция");
+    expect(hook.current.state.round?.max_score).toBe(3500);
+  });
+
+  it("вторую подсказку по тому же раунду не запрашивает", async () => {
+    start.mockResolvedValue({
+      session: session(),
+      current_round: round(1, { hint: { label: "Страна", value: "Франция" }, hint_cost: 0 }),
+      results: [],
+    });
+
+    const { result: hook } = renderHook(() => useGame(vi.fn()));
+    await act(async () => {
+      await hook.current.start(OPTIONS);
+    });
+    await act(async () => {
+      await hook.current.hint();
+    });
+
+    expect(hint).not.toHaveBeenCalled();
   });
 
   it("продолжает незаконченную партию с текущего раунда", () => {

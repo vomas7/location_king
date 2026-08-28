@@ -51,6 +51,7 @@ type Action =
       options: StartSessionOptions | null;
     }
   | { type: "picked"; guess: LonLat }
+  | { type: "hinted"; round: RoundView }
   | { type: "guessed"; session: SessionView; result: RoundResult; next: RoundView | null }
   | { type: "advanced" }
   | { type: "finished"; session: SessionView; results: RoundResult[] }
@@ -93,6 +94,9 @@ function reducer(state: GameState, action: Action): GameState {
 
     case "picked":
       return { ...state, guess: action.guess };
+
+    case "hinted":
+      return { ...state, round: action.round, error: null };
 
     case "guessed":
       return {
@@ -142,6 +146,8 @@ export interface GameController {
   start: (options: StartSessionOptions) => Promise<void>;
   resume: (session: SessionState) => void;
   pick: (guess: LonLat) => void;
+  /** Взять подсказку по текущему раунду. */
+  hint: () => Promise<void>;
   submit: () => Promise<void>;
   /** Закрыть раунд, на который не успели ответить. */
   timeout: () => Promise<void>;
@@ -193,6 +199,19 @@ export function useGame(onSessionEnd: () => void): GameController {
   const pick = useCallback((guess: LonLat) => {
     dispatch({ type: "picked", guess });
   }, []);
+
+  // Подсказка не перекрывает экран загрузкой: она меняет один блок в панели,
+  // а снимок и поставленная точка остаются на месте
+  const hint = useCallback(async () => {
+    const round = state.round;
+    if (state.phase !== "playing" || round === null || round.hint !== null) return;
+
+    try {
+      dispatch({ type: "hinted", round: await game.hint(round.id) });
+    } catch (error) {
+      dispatch({ type: "failed", error: describe(error) });
+    }
+  }, [state.phase, state.round]);
 
   const submit = useCallback(async () => {
     // Ответ может прийти и от кнопки, и от истёкшего таймера. Раунд
@@ -265,5 +284,5 @@ export function useGame(onSessionEnd: () => void): GameController {
     dispatch({ type: "reset" });
   }, []);
 
-  return { state, start, resume, pick, submit, timeout, advance, quit, reset };
+  return { state, start, resume, pick, hint, submit, timeout, advance, quit, reset };
 }

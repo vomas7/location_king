@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from geoalchemy2 import Geometry
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
     Integer,
@@ -61,7 +62,12 @@ class Round(Base):
     accuracy_percentage: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))
 
     view_extent_km: Mapped[Decimal] = mapped_column(Numeric(8, 3), nullable=False)
+    #: Максимум очков за раунд. Подсказка его уменьшает — навсегда для этого
+    #: раунда, поэтому цена подсказки видна прямо в результате
     max_score: Mapped[int] = mapped_column(Integer, nullable=False, default=5000)
+    #: Брал ли игрок подсказку. Текст подсказки не хранится: он выводится из
+    #: зоны и условий партии, а значит, не может с ними разойтись
+    hint_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

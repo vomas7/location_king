@@ -80,6 +80,18 @@ class ZoneView(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
 
+class HintView(BaseModel):
+    """
+    Раскрытая подсказка: подпись поля и его значение.
+
+    Координат здесь нет и быть не может — только название места, которое ещё
+    нужно найти на карте самому.
+    """
+
+    label: str
+    value: str
+
+
 class RoundView(BaseModel):
     """
     Активный раунд глазами клиента.
@@ -95,6 +107,13 @@ class RoundView(BaseModel):
     tiles_url: str
     attribution: str
     created_at: datetime
+    #: Сколько очков ещё можно взять за раунд. Подсказка это число уменьшает
+    max_score: int
+    #: Заполнено, если игрок взял подсказку
+    hint: HintView | None
+    #: Во сколько очков обойдётся подсказка. Ноль — брать её нечего или уже
+    #: взята: цену считает сервер, клиенту незачем знать формулу
+    hint_cost: int
     #: До какого момента принимается ответ. Пусто — время не ограничено
     deadline_at: datetime | None
 

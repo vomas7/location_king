@@ -10,6 +10,7 @@ import type {
   LeaderboardMetric,
   MatchList,
   MatchView,
+  RoundView,
   SessionHistory,
   SessionState,
   StartSessionOptions,
@@ -60,6 +61,10 @@ export const game = {
 
   timeout: (roundId: number) =>
     request<GuessResponse>(`/api/rounds/${String(roundId)}/timeout`, { method: "POST" }),
+
+  /** Взять подсказку: сервер раскроет место и уменьшит максимум раунда. */
+  hint: (roundId: number) =>
+    request<RoundView>(`/api/rounds/${String(roundId)}/hint`, { method: "POST" }),
 
   guess: (roundId: number, longitude: number, latitude: number) =>
     request<GuessResponse>(`/api/rounds/${String(roundId)}/guess`, {

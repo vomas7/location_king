@@ -20,12 +20,21 @@ from app.models.match import Match
 from app.models.round import Round
 from app.models.user import User
 from app.schemas.daily import DailyResult
-from app.schemas.game import RoundResult, RoundView, SessionSummary, SessionView, ZoneView
+from app.schemas.game import (
+    HintView,
+    RoundResult,
+    RoundView,
+    SessionSummary,
+    SessionView,
+    ZoneView,
+)
 from app.schemas.leaderboard import LeaderboardEntry
 from app.schemas.match import MatchStanding, MatchSummary, MatchView
 from app.services import game as game_service
+from app.services import hints as hints_service
 from app.services import tiles
 from app.services.leaderboard import LeaderboardRow
+from app.services.scoring import score_after_hint
 
 
 def zone_view(zone: LocationZone) -> ZoneView:
@@ -44,8 +53,18 @@ def zone_view(zone: LocationZone) -> ZoneView:
     )
 
 
-def round_view(round_obj: Round) -> RoundView:
-    """Активный раунд: адрес прокси тайлов вместо координат."""
+async def round_view(db: AsyncSession, round_obj: Round) -> RoundView:
+    """
+    Активный раунд: адрес прокси тайлов вместо координат.
+
+    Подсказка собирается заново на каждый ответ — так она переживает
+    перезагрузку страницы, а хранить её текст рядом с раундом не приходится.
+    Цена нужна и до того, как подсказку взяли: игрок должен знать, что платит,
+    а нулевая цена означает, что раскрывать нечего и предлагать её не надо.
+    """
+    available = await hints_service.for_round(db, round_obj)
+    taken = round_obj.hint_used
+
     return RoundView(
         id=round_obj.id,
         index=round_obj.position,
@@ -55,6 +74,17 @@ def round_view(round_obj: Round) -> RoundView:
         tiles_url=f"/api/rounds/{round_obj.id}/tiles/{{z}}/{{x}}/{{y}}.jpg",
         attribution=settings.satellite_attribution,
         created_at=round_obj.created_at,
+        max_score=round_obj.max_score,
+        hint=(
+            HintView(label=available.label, value=available.value)
+            if taken and available is not None
+            else None
+        ),
+        hint_cost=(
+            0
+            if taken or available is None
+            else round_obj.max_score - score_after_hint(round_obj.max_score)
+        ),
         deadline_at=round_obj.deadline_at,
     )
 

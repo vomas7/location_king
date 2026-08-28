@@ -2,29 +2,33 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import type { RoundView } from "~/api/types";
 import styles from "~/components/game/GameScreen.module.css";
 import { Button } from "~/components/ui/Button";
+import { formatNumber } from "~/domain/format";
 import { createGuessMap, type GuessMap, type LonLat } from "~/map/guess";
 import { useHoverPointer } from "~/state/usePointer";
 
 interface GuessPanelProps {
-  /** Меняется при смене раунда: по нему сбрасывается поставленная точка. */
-  roundId: number;
+  round: RoundView;
   guess: LonLat | null;
   busy: boolean;
   pinned: boolean;
   onPin: (pinned: boolean) => void;
   onPick: (guess: LonLat) => void;
+  /** Взять подсказку: чем именно платит игрок, знает сервер. */
+  onHint: () => void;
   onSubmit: () => void;
 }
 
 export function GuessPanel({
-  roundId,
+  round,
   guess,
   busy,
   pinned,
   onPin,
   onPick,
+  onHint,
   onSubmit,
 }: GuessPanelProps) {
   const container = useRef<HTMLDivElement>(null);
@@ -65,7 +69,7 @@ export function GuessPanel({
 
   useEffect(() => {
     if (ready) instance.current?.clear();
-  }, [roundId, ready]);
+  }, [round.id, ready]);
 
   return (
     <div className={[styles.panel, pinned ? styles.panelPinned : ""].filter(Boolean).join(" ")}>
@@ -88,6 +92,23 @@ export function GuessPanel({
       <div className={styles.map} ref={container} />
 
       <div className={styles.actions}>
+        {/* Подсказка видна и в свёрнутой панели: на телефоне карта закрыта
+            почти всё время раунда, а решать, платить ли за неё, нужно, глядя
+            на снимок */}
+        {round.hint !== null && (
+          <p className={styles.revealed}>
+            <span>{round.hint.label}</span>
+            <strong>{round.hint.value}</strong>
+          </p>
+        )}
+
+        {round.hint === null && round.hint_cost > 0 && (
+          <button type="button" className={styles.hintButton} disabled={busy} onClick={onHint}>
+            Подсказка
+            <span>−{formatNumber(round.hint_cost)} очков</span>
+          </button>
+        )}
+
         {open ? (
           <>
             <p className={styles.hint}>

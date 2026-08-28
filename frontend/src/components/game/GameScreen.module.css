@@ -158,6 +158,67 @@
   text-align: center;
 }
 
+/* ── Подсказка ────────────────────────────────────────────────────────
+   Кнопка намеренно не акцентная: подсказка — это отказ от очков, и звать
+   на неё ярче, чем на ответ, нечестно по отношению к игроку */
+.hintButton {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s var(--ease);
+}
+
+.hintButton:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.hintButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.hintButton span {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.revealed {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  text-align: center;
+}
+
+.revealed span {
+  color: var(--text-faint);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.revealed strong {
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .pin {
   position: absolute;
   z-index: 2;

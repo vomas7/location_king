@@ -132,8 +132,14 @@ async def test_active_round_response_carries_no_coordinates(
         "tiles_url",
         "attribution",
         "created_at",
+        "max_score",
+        "hint",
+        "hint_cost",
         "deadline_at",
     }
+
+    # Подсказку ещё не брали — раскрывать нечего
+    assert body["hint"] is None
 
 
 async def test_active_round_does_not_reveal_the_zone(

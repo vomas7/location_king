@@ -9,6 +9,7 @@ from app.dependencies import get_current_user, limit_by_user
 from app.models.user import User
 from app.schemas.game import GuessRequest, GuessResponse, RoundView
 from app.services import game as game_service
+from app.services import hints as hints_service
 from app.services import tiles as tiles_service
 from app.services import views
 from app.services.rate_limit import Limit
@@ -24,7 +25,7 @@ async def get_round(
 ) -> RoundView:
     """Активный раунд. Координат цели в ответе нет."""
     round_obj = await game_service.get_round_for_user(db, user, round_id)
-    return views.round_view(round_obj)
+    return await views.round_view(db, round_obj)
 
 
 @router.post("/{round_id}/guess", response_model=GuessResponse)
@@ -50,9 +51,31 @@ async def submit_guess(
     return GuessResponse(
         result=await views.round_result(db, finished_round),
         session=views.session_view(session),
-        next_round=(views.round_view(next_round) if next_round is not None else None),
+        next_round=(await views.round_view(db, next_round) if next_round is not None else None),
         is_session_finished=not session.is_active,
     )
+
+
+@router.post(
+    "/{round_id}/hint",
+    response_model=RoundView,
+    dependencies=[Depends(limit_by_user(Limit.HINT))],
+)
+async def take_hint(
+    round_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> RoundView:
+    """
+    Раскрыть, где искать, ценой части очков раунда.
+
+    Что именно раскрывается, решает сервер: подсказка, повторяющая условия
+    партии, ничего не добавляет, и такую он не выдаёт вовсе.
+    """
+    round_obj = await game_service.get_round_for_user(db, user, round_id, for_update=True)
+    await hints_service.take(db, round_obj)
+
+    return await views.round_view(db, round_obj)
 
 
 @router.post("/{round_id}/timeout", response_model=GuessResponse)
@@ -75,7 +98,7 @@ async def timeout_round(
     return GuessResponse(
         result=await views.round_result(db, finished_round),
         session=views.session_view(session),
-        next_round=(views.round_view(next_round) if next_round is not None else None),
+        next_round=(await views.round_view(db, next_round) if next_round is not None else None),
         is_session_finished=not session.is_active,
     )
 
