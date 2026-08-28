@@ -163,8 +163,14 @@ export function App() {
               ? {}
               : { challengeDay: state.session.challenge_day })}
             onPlayAgain={() => {
-              game.reset();
-              show("Настрой партию и жми «Начать»");
+              // Условия известны — повторяем их сразу: после партии человек
+              // хочет играть, а не настраивать то же самое заново
+              if (state.options === null) {
+                game.reset();
+                show("Настрой партию и жми «Начать»");
+                return;
+              }
+              startGame(state.options);
             }}
             onHome={game.reset}
           />

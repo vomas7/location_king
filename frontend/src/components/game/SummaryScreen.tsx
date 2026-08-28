@@ -20,7 +20,10 @@ interface SummaryScreenProps {
   previousBest: number;
   /** Заполнено, если это была партия челленджа. */
   challengeDay?: string;
-  /** Условия партии: по ним считается место в зачёте. Пусто у продолженной. */
+  /**
+   * Условия партии: по ним считается место в зачёте, и по ним же партия
+   * повторяется. Пусто у продолженной и у челленджа — их не переиграть.
+   */
   options: StartSessionOptions | null;
   onPlayAgain: () => void;
   onHome: () => void;
@@ -168,7 +171,7 @@ export function SummaryScreen({
 
         <div className={styles.actions}>
           <Button variant="primary" size="large" block onClick={onPlayAgain}>
-            Играть снова
+            {options === null ? "Настроить партию" : "Играть снова"}
           </Button>
           {played > 0 && (
             <ShareButton

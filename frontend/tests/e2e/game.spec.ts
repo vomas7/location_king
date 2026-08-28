@@ -28,7 +28,12 @@ test("партия от регистрации до итогов", async ({ page
   }
 
   await expect(page.getByText("Партия окончена")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Играть снова" })).toBeVisible();
+
+  // «Играть снова» повторяет те же условия, а не отправляет в меню
+  await page.getByRole("button", { name: "Играть снова" }).click();
+
+  await expect(page.getByText("Раунд 1 из 3")).toBeVisible();
+  await expect(page.locator("canvas").first()).toBeVisible();
 });
 
 test("новичку объясняют игру в первом раунде и только в нём", async ({ page }) => {
