@@ -17,6 +17,8 @@ function player(gamesPlayed: number): UserProfile {
     best_score: 0,
     average_score: null,
     average_distance: null,
+    rating: 1000,
+    duels_played: 0,
     created_at: "2026-08-28T10:00:00Z",
   };
 }

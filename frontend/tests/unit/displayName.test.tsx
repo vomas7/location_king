@@ -30,6 +30,8 @@ const user: UserProfile = {
   best_score: 0,
   average_score: null,
   average_distance: null,
+  rating: 1000,
+  duels_played: 0,
   created_at: "2026-01-01T00:00:00Z",
 };
 

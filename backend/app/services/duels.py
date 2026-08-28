@@ -54,11 +54,16 @@ class SearchState:
 
 
 async def enter(user: User) -> SearchState:
-    """Встать в очередь и сразу попробовать найти пару."""
+    """Встать в очередь."""
     await matchmaking.join(user.id, user.rating)
     await metrics.count("duel_search_started")
 
     return SearchState(searching=len(await matchmaking.searching()), code=None)
+
+
+async def count() -> int:
+    """Сколько человек ищет соперника прямо сейчас."""
+    return len(await matchmaking.searching())
 
 
 async def leave(user: User) -> None:

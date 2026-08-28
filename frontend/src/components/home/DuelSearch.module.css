@@ -1,0 +1,70 @@
+/* Рейтинг — главное число карточки, поэтому он крупный и моноширинный: его
+   сравнивают с чужим, а цифры сравнивают глазами по разрядам */
+.rating {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.value {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 34px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.label {
+  color: var(--text-faint);
+  font-size: 13px;
+}
+
+.rules {
+  margin-bottom: 16px;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-wrap: pretty;
+}
+
+.queue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--text-faint);
+  font-size: 13px;
+  min-height: 20px;
+}
+
+/* Пульс вместо крутилки: поиск может идти минуту, и вращающееся колесо всё
+   это время притворяется, будто вот-вот закончит */
+.pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  animation: breathe 1.6s var(--ease) infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+    opacity: 0.8;
+  }
+}

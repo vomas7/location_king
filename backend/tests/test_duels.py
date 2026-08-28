@@ -174,7 +174,7 @@ async def test_alone_in_the_queue_you_just_wait(
     assert entered.status_code == 201
     assert entered.json() == {"searching": 1, "code": None}
 
-    polled = await client.get("/api/duels/queue", headers=auth_headers)
+    polled = await client.post("/api/duels/queue/poll", headers=auth_headers)
     assert polled.json() == {"searching": 1, "code": None}
 
 
@@ -189,10 +189,10 @@ async def test_two_players_are_paired(
     await client.post("/api/duels/queue", headers=rival_headers)
 
     # Пару находит тот, кто спросил первым, второй забирает готовый код
-    first = (await client.get("/api/duels/queue", headers=auth_headers)).json()
+    first = (await client.post("/api/duels/queue/poll", headers=auth_headers)).json()
     assert first["code"] is not None
 
-    second = (await client.get("/api/duels/queue", headers=rival_headers)).json()
+    second = (await client.post("/api/duels/queue/poll", headers=rival_headers)).json()
     assert second["code"] == first["code"]
 
     match = (await db.execute(select(Match).where(Match.code == first["code"]))).scalar_one()
@@ -209,7 +209,7 @@ async def test_paired_players_leave_the_queue(
 ):
     await client.post("/api/duels/queue", headers=auth_headers)
     await client.post("/api/duels/queue", headers=rival_headers)
-    await client.get("/api/duels/queue", headers=auth_headers)
+    await client.post("/api/duels/queue/poll", headers=auth_headers)
 
     assert await matchmaking.searching() == []
 
@@ -248,7 +248,7 @@ async def play_duel(
     await client.post("/api/duels/queue", headers=auth_headers)
     await client.post("/api/duels/queue", headers=rival_headers)
 
-    found = (await client.get("/api/duels/queue", headers=auth_headers)).json()
+    found = (await client.post("/api/duels/queue/poll", headers=auth_headers)).json()
     code = found["code"]
     assert code is not None
 

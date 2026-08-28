@@ -41,8 +41,8 @@ async def enter_queue(
     return DuelSearchView(searching=state.searching, code=state.code)
 
 
-@router.get(
-    "/queue",
+@router.post(
+    "/queue/poll",
     response_model=DuelSearchView,
     dependencies=[Depends(limit_by_user(Limit.DUEL_POLL))],
 )
@@ -53,12 +53,24 @@ async def poll_queue(
     """
     Узнать, нашлась ли пара.
 
-    Этот же запрос продлевает запись в очереди: перестал опрашивать — выпал,
-    и счётчик ищущих остаётся честным.
+    Этот же запрос продлевает запись в очереди — перестал опрашивать, выпал, и
+    счётчик ищущих остаётся честным, — и он же подбирает пару. Поэтому POST, а
+    не GET: запрос меняет состояние очереди.
     """
     state = await duels_service.look(db, user)
 
     return DuelSearchView(searching=state.searching, code=state.code)
+
+
+@router.get("/searching", response_model=DuelSearchView)
+async def count_searching(user: User = Depends(get_current_user)) -> DuelSearchView:
+    """
+    Сколько человек ищет соперника. Ничего не меняет.
+
+    Нужно кнопке на главном экране: решать, вставать ли в очередь, игрок
+    должен до того, как встал.
+    """
+    return DuelSearchView(searching=await duels_service.count(), code=None)
 
 
 @router.delete("/queue", status_code=status.HTTP_204_NO_CONTENT)

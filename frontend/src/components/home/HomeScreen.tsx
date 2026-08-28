@@ -7,6 +7,7 @@ import type { SessionState, StartSessionOptions } from "~/api/types";
 import { DailyChallenge } from "~/components/home/DailyChallenge";
 import { DeleteAccount } from "~/components/home/DeleteAccount";
 import { DisplayName } from "~/components/home/DisplayName";
+import { DuelSearch } from "~/components/home/DuelSearch";
 import { GameHistory } from "~/components/home/GameHistory";
 import styles from "~/components/home/HomeScreen.module.css";
 import { Leaderboard } from "~/components/home/Leaderboard";
@@ -253,6 +254,8 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
       </div>
 
       <div className={styles.column}>
+        <DuelSearch onJoined={onResume} onError={onError} />
+
         <DailyChallenge refreshKey={refreshKey} onStarted={onResume} onError={onError} />
 
         <MatchRoom

@@ -254,8 +254,9 @@ src/
 | `GET`  | `/api/challenge/today`                  | челлендж дня и таблица дня             |
 | `POST` | `/api/challenge/today/start`            | начать челлендж дня                    |
 | `POST` | `/api/duels/queue`                      | встать в очередь на соперника          |
-| `GET`  | `/api/duels/queue`                      | нашлась ли пара и сколько сейчас ищут  |
+| `POST` | `/api/duels/queue/poll`                 | продлить поиск и узнать, нашлась ли пара |
 | `DELETE`| `/api/duels/queue`                     | прекратить поиск                       |
+| `GET`  | `/api/duels/searching`                  | сколько человек ищет соперника         |
 | `GET`  | `/api/duels/format`                     | условия дуэли: одни для всех           |
 | `POST` | `/api/matches`                          | создать комнату, получить её код       |
 | `GET`  | `/api/matches/mine`                     | комнаты, созданные игроком             |

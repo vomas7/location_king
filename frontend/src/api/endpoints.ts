@@ -5,6 +5,8 @@ import { setTokens } from "~/api/tokens";
 import type {
   AuthResponse,
   DailyChallenge,
+  DuelFormat,
+  DuelSearch,
   GuessResponse,
   Leaderboard,
   LeaderboardMetric,
@@ -79,6 +81,21 @@ export const challenge = {
   today: () => request<DailyChallenge>("/api/challenge/today"),
 
   start: () => request<SessionState>("/api/challenge/today/start", { method: "POST" }),
+};
+
+export const duels = {
+  /** Условия дуэли. Не меняются, поэтому запрашиваются один раз. */
+  format: () => request<DuelFormat>("/api/duels/format"),
+
+  /** Сколько человек ищет соперника. Ничего не меняет. */
+  searching: () => request<DuelSearch>("/api/duels/searching"),
+
+  start: () => request<DuelSearch>("/api/duels/queue", { method: "POST" }),
+
+  /** Продлить поиск и узнать, нашлась ли пара. */
+  poll: () => request<DuelSearch>("/api/duels/queue/poll", { method: "POST" }),
+
+  stop: () => request<void>("/api/duels/queue", { method: "DELETE" }),
 };
 
 export const matches = {

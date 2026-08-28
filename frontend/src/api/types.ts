@@ -17,6 +17,9 @@ export interface UserProfile {
   best_score: number;
   average_score: number | null;
   average_distance: number | null;
+  /** Рейтинг дуэлей. У того, кто ещё не дуэлился, он стартовый. */
+  rating: number;
+  duels_played: number;
   created_at: string;
 }
 
@@ -229,4 +232,20 @@ export interface MatchSummary {
 
 export interface MatchList {
   matches: MatchSummary[];
+}
+
+/** Состояние поиска соперника. */
+export interface DuelSearch {
+  /** Сколько человек ищет прямо сейчас. */
+  searching: number;
+  /** Код дуэли, если пара нашлась. Дальше в неё входят как в комнату. */
+  code: string | null;
+}
+
+/** Условия дуэли: одни и те же для всех, их решает сервер. */
+export interface DuelFormat {
+  rounds_total: number;
+  view_extent_km: number;
+  difficulty: string;
+  time_limit_seconds: number;
 }
