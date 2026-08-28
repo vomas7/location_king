@@ -1,0 +1,81 @@
+name: Uptime
+
+# Проверка снаружи. Сервер о собственном падении рассказать не может: Grafana
+# и сборщик логов лежат на нём же и падают вместе с ним. Единственный способ
+# узнать — постучаться со стороны.
+#
+# Упавшая проверка = письмо владельцу репозитория от GitHub. Отдельный канал
+# оповещений для этого не нужен.
+
+on:
+  schedule:
+    # Каждые пятнадцать минут. GitHub может задержать запуск на несколько
+    # минут при своей нагрузке — для проверки доступности это не важно
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+
+    env:
+      SITE: https://locationking.ru
+
+    steps:
+      - name: Игра отвечает
+        run: |
+          # Три попытки: одиночная сетевая ошибка у бегунка GitHub не повод
+          # будить человека среди ночи
+          for attempt in 1 2 3; do
+            code="$(curl --silent --show-error --location --max-time 20 \
+                --output /dev/null --write-out '%{http_code}' "$SITE/api/health" || echo 000)"
+
+            if [ "$code" = "200" ]; then
+              echo "Ответ $code — игра жива"
+              exit 0
+            fi
+
+            echo "::warning::Попытка $attempt: ответ $code"
+            sleep 20
+          done
+
+          echo "::error::$SITE/api/health не отвечает: последний код $code"
+          exit 1
+
+      - name: Страница открывается
+        run: |
+          # Здоровый бэкенд ещё не значит работающую игру: nginx мог остаться
+          # с пустой статикой после неудачной сборки фронтенда
+          body="$(curl --silent --show-error --location --max-time 20 "$SITE/")"
+
+          echo "$body" | grep -q "Location King" || {
+            echo "::error::Страница отдаётся, но в ней нет игры"
+            exit 1
+          }
+          echo "Страница на месте"
+
+      - name: Сертификату есть ещё сколько жить
+        run: |
+          # Продлением занимается certbot, но если оно однажды сломается,
+          # узнать об этом лучше не в день, когда сертификат истёк
+          host="${SITE#https://}"
+          expires="$(
+            echo | openssl s_client -connect "$host:443" -servername "$host" 2>/dev/null \
+              | openssl x509 -noout -enddate | cut -d= -f2
+          )"
+
+          [ -n "$expires" ] || {
+            echo "::error::Не удалось прочитать сертификат $host"
+            exit 1
+          }
+
+          left=$(( ( $(date -d "$expires" +%s) - $(date +%s) ) / 86400 ))
+          echo "Сертификат действует ещё $left дн. (до $expires)"
+
+          [ "$left" -gt 10 ] || {
+            echo "::error::Сертификату осталось $left дн. — продление не сработало"
+            exit 1
+          }
