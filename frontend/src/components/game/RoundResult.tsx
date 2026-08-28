@@ -54,7 +54,7 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
   const tier = scoreTier(result.score, result.max_score);
   const ratio = scoreRatio(result.score, result.max_score);
 
-  const place = [result.zone.country, result.zone.region, result.zone.difficulty_name]
+  const place = [result.zone.country, result.zone.region]
     .filter((value): value is string => value !== null && value !== "")
     .join(" · ");
 

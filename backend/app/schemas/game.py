@@ -30,7 +30,6 @@ class RoundsRequest(BaseModel):
         le=200.0,
         description="Желаемый размер показываемой области в километрах",
     )
-    difficulty: int | None = Field(default=None, ge=1, le=5)
     category: str | None = None
     continent: Continent | None = None
     country_group: CountryGroup | None = None

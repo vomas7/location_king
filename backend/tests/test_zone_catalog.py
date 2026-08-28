@@ -29,9 +29,28 @@ def test_coordinates_are_on_the_planet():
         assert -85 <= zone.latitude <= 85, zone.name
 
 
+#: Категории, в которых любая точка зоны застроена или хотя бы обжита.
+#: Лес, песок, горы и открытая вода из каталога убраны намеренно: игрок видит
+#: там однородный ковёр без единого ориентира и определить место не может
+#: никаким усилием. Остальные значения ZoneCategory остаются в перечислении —
+#: на них ссылаются уже сыгранные раунды.
+URBAN_CATEGORIES = {"city", "coast", "historical", "architecture", "industrial"}
+
+#: Точка раунда берётся из квадрата вокруг центра, поэтому в углу она отходит
+#: от него ещё в полтора раза дальше. Десять километров — это уже до
+#: пятнадцати от центра города, дальше начинаются поля.
+MAX_RADIUS_KM = 10
+
+
 def test_zone_is_big_enough_for_a_round():
     for zone in ZONES:
-        assert 3 <= zone.radius_km <= 200, zone.name
+        assert 3 <= zone.radius_km <= MAX_RADIUS_KM, zone.name
+
+
+def test_only_inhabited_places():
+    """Место, которое нельзя узнать, не должно попадаться игроку вовсе."""
+    for zone in ZONES:
+        assert zone.category in URBAN_CATEGORIES, f"{zone.name}: {zone.category}"
 
 
 def test_categories_and_continents_are_known():

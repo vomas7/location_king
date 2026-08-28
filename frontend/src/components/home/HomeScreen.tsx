@@ -61,11 +61,6 @@ const PLACES: { value: PlaceKey; label: string }[] = [
   { value: "continent:oceania", label: "Океания" },
 ];
 
-const DIFFICULTIES = [
-  { value: null, label: "Любая" },
-  ...[1, 2, 3, 4, 5].map((value) => ({ value, label: String(value) })),
-];
-
 interface HomeScreenProps {
   error: string | null;
   onStart: (options: StartSessionOptions) => void;
@@ -80,7 +75,6 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
 
   const [rounds, setRounds] = useState(5);
   const [extent, setExtent] = useState(15);
-  const [difficulty, setDifficulty] = useState<number | null>(null);
   const [timeLimit, setTimeLimit] = useState<number | null>(null);
   const [place, setPlace] = useState<PlaceKey>(null);
   const [zoneCount, setZoneCount] = useState<number | null>(null);
@@ -96,7 +90,6 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
     const query = new URLSearchParams();
     if (continent !== null) query.set("continent", continent);
     if (country_group !== null) query.set("country_group", country_group);
-    if (difficulty !== null) query.set("difficulty", String(difficulty));
 
     void (async () => {
       try {
@@ -110,7 +103,7 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
     return () => {
       cancelled = true;
     };
-  }, [place, difficulty]);
+  }, [place]);
 
   // Незавершённая партия — предлагаем продолжить, а не начинать заново
   useEffect(() => {
@@ -169,12 +162,6 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
               hint="Чем меньше участок, тем труднее узнать место"
             />
             <Segmented
-              label="Сложность зон"
-              options={DIFFICULTIES}
-              value={difficulty}
-              onChange={setDifficulty}
-            />
-            <Segmented
               label="Где играем"
               options={PLACES}
               value={place}
@@ -205,7 +192,6 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
               onStart({
                 rounds_total: rounds,
                 view_extent_km: extent,
-                difficulty,
                 ...placeFilter(place),
                 time_limit_seconds: timeLimit,
               });
@@ -227,7 +213,6 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
           options={{
             rounds_total: rounds,
             view_extent_km: extent,
-            difficulty,
             ...placeFilter(place),
             time_limit_seconds: timeLimit,
           }}

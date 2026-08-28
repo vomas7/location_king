@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 def _filtered(
-    difficulty: int | None,
     category: str | None,
     continent: str | None,
     country_group: str | None = None,
+    difficulty: int | None = None,
 ) -> Select:
     """Запрос активных зон с общими фильтрами."""
     stmt = select(LocationZone).where(LocationZone.is_active.is_(True))
@@ -42,7 +42,7 @@ async def list_zones(
     limit: int = 200,
 ) -> list[LocationZone]:
     """Активные зоны с фильтрами по сложности, категории и месту."""
-    stmt = _filtered(difficulty, category, continent, country_group)
+    stmt = _filtered(category, continent, country_group, difficulty)
     stmt = stmt.order_by(LocationZone.difficulty, LocationZone.name).limit(limit)
 
     return list((await db.execute(stmt)).scalars().all())
@@ -63,13 +63,12 @@ async def get_zone(db: AsyncSession, zone_id: int) -> LocationZone:
 
 async def pick_random_zone(
     db: AsyncSession,
-    difficulty: int | None = None,
     category: str | None = None,
     continent: str | None = None,
     country_group: str | None = None,
 ) -> LocationZone:
     """Случайная активная зона под заданные фильтры."""
-    stmt = _filtered(difficulty, category, continent, country_group)
+    stmt = _filtered(category, continent, country_group)
     zone = (await db.execute(stmt.order_by(func.random()).limit(1))).scalar_one_or_none()
 
     if zone is None:

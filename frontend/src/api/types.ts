@@ -144,7 +144,6 @@ export interface Leaderboard {
 export interface StartSessionOptions {
   rounds_total: number;
   view_extent_km: number;
-  difficulty: number | null;
   /** Часть света, из которой берутся зоны. null — со всего мира. */
   continent: string | null;
   /** Страна или объединение стран. null — не ограничивать. */

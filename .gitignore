@@ -99,7 +99,7 @@ backend/.pytest_cache/
 # Frontend specific
 frontend/node_modules/
 frontend/dist/
-frontend/.vite/
+.vite/
 # Отчёты о покрытии
 .coverage
 coverage.xml

@@ -36,7 +36,6 @@ async def create(
     db: AsyncSession,
     rounds_total: int,
     view_extent_km: float,
-    difficulty: int | None = None,
     category: str | None = None,
     continent: str | None = None,
     country_group: str | None = None,
@@ -48,7 +47,7 @@ async def create(
 
     rounds = [
         await _build_round(
-            db, position, view_extent_km, difficulty, category, continent, country_group, zone_id
+            db, position, view_extent_km, category, continent, country_group, zone_id
         )
         for position in range(1, rounds_total + 1)
     ]
@@ -114,7 +113,6 @@ async def _build_round(
     db: AsyncSession,
     position: int,
     view_extent_km: float,
-    difficulty: int | None,
     category: str | None,
     continent: str | None,
     country_group: str | None,
@@ -130,9 +128,7 @@ async def _build_round(
     zone = (
         await zones_service.get_zone(db, zone_id)
         if zone_id is not None
-        else await zones_service.pick_random_zone(
-            db, difficulty, category, continent, country_group
-        )
+        else await zones_service.pick_random_zone(db, category, continent, country_group)
     )
     lon, lat = await zones_service.random_point_in_zone(db, zone)
 

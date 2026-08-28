@@ -34,7 +34,6 @@ async def create_match(
         user,
         rounds_total=payload.rounds_total,
         view_extent_km=payload.view_extent_km,
-        difficulty=payload.difficulty,
         category=payload.category,
         continent=payload.continent,
         country_group=payload.country_group,
