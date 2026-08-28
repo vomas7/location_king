@@ -5,6 +5,7 @@ import Fill from "ol/style/Fill";
 import RegularShape from "ol/style/RegularShape";
 import Stroke from "ol/style/Stroke";
 import Style from "ol/style/Style";
+import Text from "ol/style/Text";
 
 /**
  * Значение токена из tokens.css.
@@ -42,6 +43,37 @@ function marker(color: string): Style {
 
 export const STYLE_GUESS = marker(COLOR_GUESS);
 export const STYLE_TARGET = marker(COLOR_TARGET);
+
+/**
+ * Цель на карте разбора с номером раунда внутри.
+ *
+ * На карте партии таких точек пять или десять, и без номера непонятно, какая
+ * из них к какой строке списка относится. Стили складываются по номеру один
+ * раз: OpenLayers спрашивает стиль на каждую перерисовку.
+ */
+const numbered = new Map<number, Style>();
+
+export function styleNumberedTarget(index: number): Style {
+  const cached = numbered.get(index);
+  if (cached !== undefined) return cached;
+
+  const style = new Style({
+    image: new Circle({
+      radius: 12,
+      fill: new Fill({ color: COLOR_TARGET }),
+      stroke: new Stroke({ color: OUTLINE, width: 3 }),
+    }),
+    text: new Text({
+      text: String(index),
+      font: `700 11px ${token("--font", "sans-serif")}`,
+      fill: new Fill({ color: OUTLINE }),
+      offsetY: 1,
+    }),
+  });
+
+  numbered.set(index, style);
+  return style;
+}
 
 /** Линия промаха между догадкой и целью. */
 export const STYLE_LINE = new Style({

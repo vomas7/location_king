@@ -40,7 +40,7 @@ test("новичку объясняют игру в первом раунде и
 
   await expect(page.getByText("Осмотрись")).toBeVisible();
   await page.getByRole("button", { name: "Понятно" }).click();
-  await expect(page.getByText("Отметь место")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Отметь место" })).toBeVisible();
 
   await answerRound(page);
   await page.getByRole("dialog").getByRole("button", { name: "Следующий раунд" }).click();
@@ -67,6 +67,29 @@ test("подсказка раскрывает место и стоит очко�
   // Максимум раунда упал — это видно в результате
   await answerRound(page);
   await expect(page.getByRole("dialog").getByText("из 3", { exact: false })).toBeVisible();
+});
+
+test("в итогах партию можно разобрать по карте", async ({ page }) => {
+  await register(page);
+
+  await page.getByRole("radio", { name: "3", exact: true }).first().click();
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+
+  await playRounds(page, 3);
+  await expect(page.getByText("Партия окончена")).toBeVisible();
+
+  // Карта разбора на месте, и сначала на ней вся партия
+  await expect(page.locator("canvas").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Показать всю партию" })).toBeHidden();
+
+  // Строка списка приближает карту к своему раунду
+  await page.getByRole("button", { name: /^Раунд 1,/ }).click();
+
+  const back = page.getByRole("button", { name: "Показать всю партию" });
+  await expect(back).toBeVisible();
+  await back.click();
+  await expect(back).toBeHidden();
 });
 
 test("активный раунд не отдаёт координаты цели", async ({ page }) => {
