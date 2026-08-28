@@ -60,6 +60,30 @@ loki.process "parse" {
   }
 }
 
+// Журнал systemd. Сюда пишет автоматическое развёртывание, и по нему видно,
+// когда и какая версия приехала на сервер, — рядом с логами самой игры.
+discovery.relabel "journal" {
+  targets = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+}
+
+loki.source.journal "systemd" {
+  forward_to    = [loki.write.default.receiver]
+  relabel_rules = discovery.relabel.journal.rules
+  path          = "/var/log/journal"
+  max_age       = "12h"
+
+  // Метка называется container, хотя это не контейнер: по ней фильтруют все
+  // панели с логами, и своя метка потребовала бы второго набора панелей
+  labels = {
+    container = "systemd",
+  }
+}
+
 loki.write "default" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"

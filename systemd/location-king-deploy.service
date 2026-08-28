@@ -1,0 +1,21 @@
+# Одна проверка обновлений. Запускается таймером, сам по себе не работает.
+
+[Unit]
+Description=Location King — забрать и развернуть новую версию
+Documentation=https://github.com/vomas7/location_king/blob/main/docs/deployment.md
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/location_king
+ExecStart=/opt/location_king/autodeploy.sh
+
+# Сборка фронтенда на слабой машине идёт долго; лучше подождать, чем оборвать
+# развёртывание на середине
+TimeoutStartSec=30min
+
+# Вывод уходит в журнал: journalctl -u location-king-deploy
+StandardOutput=journal
+StandardError=journal

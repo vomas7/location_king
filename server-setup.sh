@@ -17,6 +17,9 @@
 #     curl -fsSL .../server-setup.sh | sudo OPERATOR_NAME="Имя" \
 #         OPERATOR_EMAIL=mail@example.com bash
 #
+# Заодно включает автоматическое развёртывание: сервер начнёт сам забирать
+# версии, прошедшие проверки в CI. Не нужно — передайте AUTODEPLOY=false.
+#
 # Запускать можно сколько угодно раз: повторный вызов обновляет код и
 # перезапускает развёртывание.
 
@@ -64,17 +67,32 @@ else
 fi
 
 # ─── Код ──────────────────────────────────────────────────────────────
+# На сервере живёт ветка deploy: её двигает CI после зелёных проверок. Пока
+# её нет — до первой зелёной сборки — берём main.
+checkout_target() {
+    git fetch --prune --quiet origin
+
+    if git rev-parse --verify --quiet origin/deploy > /dev/null; then
+        git checkout --quiet -B deploy origin/deploy
+    else
+        git checkout --quiet -B main origin/main
+    fi
+}
+
 if [ -d "$TARGET/.git" ]; then
     step "Обновляю код"
-    git -C "$TARGET" pull --ff-only ||
-        die "в $TARGET есть локальные правки, git pull не прошёл. Разберитесь с ними и запустите снова"
+    cd "$TARGET"
+    checkout_target ||
+        die "в $TARGET есть правки в файлах репозитория, переключиться не вышло. Разберитесь с ними и запустите снова"
 else
     step "Забираю код в $TARGET"
     command -v git > /dev/null 2>&1 || apt_install git
-    git clone --depth 1 "$REPO" "$TARGET"
+    # Клон полный, а не поверхностный: сервер переключается между ветками и
+    # откатывается на предыдущий коммит, а этого поверхностный клон не умеет
+    git clone --quiet "$REPO" "$TARGET"
+    cd "$TARGET"
+    checkout_target
 fi
-
-cd "$TARGET"
 
 # ─── Сертификат Cloudflare ────────────────────────────────────────────
 # Нужен только контуру cloudflare. По умолчанию сертификат выпускает Let's
@@ -121,6 +139,24 @@ HINT
 fi
 
 [ -s ssl/origin.key ] && chmod 600 ssl/origin.key
+
+# ─── Автоматическое развёртывание ─────────────────────────────────────
+# Сервер сам забирает то, что прошло проверки в CI. Ключей от сервера при этом
+# нигде на стороне не лежит: он ходит наружу сам, а к нему никто не ходит.
+if [ "${AUTODEPLOY:-true}" = "false" ]; then
+    systemctl disable --now location-king-deploy.timer > /dev/null 2>&1 || true
+    echo "Автоматическое развёртывание выключено: AUTODEPLOY=false."
+else
+    step "Настраиваю автоматическое развёртывание"
+
+    install -m 644 systemd/location-king-deploy.service /etc/systemd/system/
+    install -m 644 systemd/location-king-deploy.timer /etc/systemd/system/
+    systemctl daemon-reload
+    systemctl enable --now location-king-deploy.timer > /dev/null
+
+    echo "Таймер включён: новая версия приедет в течение двух минут после зелёного CI."
+    echo "Смотреть: journalctl -u location-king-deploy -f"
+fi
 
 # ─── Развёртывание ────────────────────────────────────────────────────
 step "Разворачиваю"

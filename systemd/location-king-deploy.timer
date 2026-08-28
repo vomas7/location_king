@@ -1,0 +1,14 @@
+# Как часто заглядывать в репозиторий за новой версией.
+
+[Unit]
+Description=Location King — проверять новые версии
+
+[Timer]
+# После перезагрузки не сразу: сначала должен подняться докер
+OnBootSec=3min
+OnUnitActiveSec=2min
+AccuracySec=30s
+Unit=location-king-deploy.service
+
+[Install]
+WantedBy=timers.target

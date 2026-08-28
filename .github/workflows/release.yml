@@ -1,0 +1,94 @@
+name: Release
+
+# Ветка deploy — это «то, что можно ставить на сервер». Двигает её только этот
+# workflow и только после того, как все проверки коммита стали зелёными.
+# Сервер следит за ней сам и забирает изменения к себе.
+#
+# Ключей от сервера здесь нет намеренно: иначе доступ к нему получал бы каждый,
+# кто может править workflow или подменить чужой action.
+
+on:
+  workflow_run:
+    workflows: ["Backend CI", "Frontend CI", "E2E"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+# Две сборки подряд не должны обгонять друг друга и двигать ветку назад
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Определить коммит
+        id: target
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            sha="${{ github.sha }}"
+          else
+            sha="${{ github.event.workflow_run.head_sha }}"
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Коммит: $sha"
+
+      - name: Дождаться остальных проверок этого коммита
+        id: checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          # Проверок у коммита несколько, и заканчиваются они вразнобой.
+          # Каждая, завершившись, запускает этот workflow: тот запуск, который
+          # застанет все остальные завершёнными, и продвинет ветку.
+          runs="$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" \
+              --jq '.workflow_runs[] | select(.name != "Release")
+                    | "\(.name)|\(.status)|\(.conclusion)"')"
+
+          if [ -z "$runs" ]; then
+            echo "Для $SHA нет ни одной проверки — продвигать нечего."
+            echo "promote=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "$runs" | sed 's/|/  /g'
+
+          if echo "$runs" | grep -qv '|completed|'; then
+            echo "::notice::Не все проверки завершились. Продвинет тот запуск, который будет последним."
+            echo "promote=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # skipped бывает у проверки, которую отсекли фильтры путей: коммит
+          # не тронул её часть кода, и это не повод считать его непроверенным
+          if echo "$runs" | grep -qvE '\|(success|skipped)$'; then
+            echo "::warning::Проверки не прошли — на сервер этот коммит не поедет."
+            echo "promote=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "promote=true" >> "$GITHUB_OUTPUT"
+
+      - name: Забрать репозиторий
+        if: steps.checks.outputs.promote == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Передвинуть ветку deploy
+        if: steps.checks.outputs.promote == 'true'
+        env:
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          # Без принуждения: ветка может только двигаться вперёд. Попытка
+          # откатить её назад — почти всегда ошибка, и пусть она будет видна
+          git push origin "$SHA:refs/heads/deploy"
+          echo "::notice::Ветка deploy переведена на $SHA — сервер заберёт её в течение пары минут."

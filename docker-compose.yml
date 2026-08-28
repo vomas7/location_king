@@ -230,6 +230,9 @@ services:
     volumes:
       - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Журнал systemd: в нём работа автоматического развёртывания
+      - /var/log/journal:/var/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
       - alloy_data:/var/lib/alloy/data
     networks:
       - observe
