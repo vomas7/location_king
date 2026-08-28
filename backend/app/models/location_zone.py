@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 
 from geoalchemy2 import Geometry
-from sqlalchemy import Boolean, DateTime, Float, Integer, SmallInteger, String, Text, func
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -22,7 +22,6 @@ class LocationZone(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text)
 
-    difficulty: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=1, index=True)
     category: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
@@ -56,7 +55,7 @@ class LocationZone(Base):
     rounds: Mapped[list["Round"]] = relationship(back_populates="zone", lazy="select")  # noqa: F821
 
     def __repr__(self) -> str:
-        return f"<LocationZone id={self.id} name={self.name!r} difficulty={self.difficulty}>"
+        return f"<LocationZone id={self.id} name={self.name!r} category={self.category!r}>"
 
     @property
     def tag_list(self) -> list[str]:

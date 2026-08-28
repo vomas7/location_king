@@ -13,7 +13,6 @@ from app.models.enums import (
     SessionStatus,
     category_name,
     continent_name,
-    difficulty_name,
 )
 from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
@@ -35,8 +34,6 @@ def zone_view(zone: LocationZone) -> ZoneView:
         id=zone.id,
         name=zone.name,
         description=zone.description,
-        difficulty=zone.difficulty,
-        difficulty_name=difficulty_name(zone.difficulty),
         category=zone.category,
         category_name=category_name(zone.category),
         continent=zone.continent,

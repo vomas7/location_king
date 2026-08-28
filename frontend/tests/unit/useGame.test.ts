@@ -71,8 +71,6 @@ function result(index: number, score: number): RoundResult {
       id: 1,
       name: "Тестовая зона",
       description: null,
-      difficulty: 1,
-      difficulty_name: "Очень легко",
       category: "city",
       category_name: "Город",
       continent: "europe",
@@ -90,6 +88,7 @@ const OPTIONS = {
   view_extent_km: 5,
   continent: null,
   country_group: null,
+  difficulty: "normal",
   time_limit_seconds: null,
 };
 

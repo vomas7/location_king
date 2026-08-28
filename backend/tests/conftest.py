@@ -125,7 +125,6 @@ async def zone(db: AsyncSession) -> LocationZone:
     zone = LocationZone(
         name="Тестовая зона",
         description="Квадрат под Москвой",
-        difficulty=1,
         category="city",
         country="Россия",
         polygon=WKTElement(TEST_POLYGON, srid=4326),

@@ -51,30 +51,43 @@ export const STYLE_LINE = new Style({
 /**
  * Перекрестие в центре показанного участка.
  *
- * Очки считаются от этой точки, поэтому игрок должен видеть, куда целиться.
- * Тёмная подложка нужна, чтобы метка читалась и на снегу, и на тёмной воде.
+ * Очки считаются от этой точки, поэтому игрок должен видеть, куда целиться, —
+ * на снегу, на тёмной воде, на пёстрой застройке и на любой яркости экрана.
+ * Отсюда три слоя: широкая тёмная подложка, белые линии поверх неё и янтарное
+ * кольцо тем же цветом, каким цель отмечена на карте результата. Один белый
+ * штрих в два пикселя, как было раньше, на светлом снимке попросту теряется.
  */
+const RETICLE_RADIUS = 22;
+
 export const STYLE_CENTER: Style[] = [
   new Style({
     image: new RegularShape({
       points: 4,
-      radius: 16,
+      radius: RETICLE_RADIUS,
       radius2: 0,
-      stroke: new Stroke({ color: "rgba(0, 0, 0, 0.55)", width: 5 }),
+      stroke: new Stroke({ color: "rgba(0, 0, 0, 0.65)", width: 8 }),
     }),
   }),
   new Style({
     image: new RegularShape({
       points: 4,
-      radius: 16,
+      radius: RETICLE_RADIUS,
       radius2: 0,
-      stroke: new Stroke({ color: "rgba(255, 255, 255, 0.95)", width: 2 }),
+      stroke: new Stroke({ color: "rgba(255, 255, 255, 0.98)", width: 3 }),
+    }),
+  }),
+  // Кольцо вокруг самой точки: тёмный контур снаружи, янтарь внутри. Центр
+  // остаётся открытым — под ним должно быть видно, что именно ищем
+  new Style({
+    image: new Circle({
+      radius: 8,
+      stroke: new Stroke({ color: "rgba(0, 0, 0, 0.65)", width: 6 }),
     }),
   }),
   new Style({
     image: new Circle({
-      radius: 5,
-      stroke: new Stroke({ color: "rgba(255, 255, 255, 0.95)", width: 2 }),
+      radius: 8,
+      stroke: new Stroke({ color: COLOR_TARGET, width: 3 }),
     }),
   }),
 ];

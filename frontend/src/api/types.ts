@@ -36,8 +36,6 @@ export interface Zone {
   id: number;
   name: string;
   description: string | null;
-  difficulty: number;
-  difficulty_name: string;
   category: string;
   category_name: string;
   continent: string | null;
@@ -148,6 +146,8 @@ export interface StartSessionOptions {
   continent: string | null;
   /** Страна или объединение стран. null — не ограничивать. */
   country_group: string | null;
+  /** Уровень: easy, normal, hard или hardcore. Он же выбирает, что покажут. */
+  difficulty: string;
   /** Сколько секунд даётся на раунд. null — без ограничения. */
   time_limit_seconds: number | null;
 }

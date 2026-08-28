@@ -40,6 +40,7 @@ async def start_session(
     category: str | None = None,
     continent: str | None = None,
     country_group: str | None = None,
+    difficulty: str | None = None,
     zone_id: int | None = None,
     time_limit_seconds: int | None = None,
 ) -> tuple[GameSession, Round]:
@@ -64,6 +65,7 @@ async def start_session(
         category,
         continent,
         country_group,
+        difficulty,
         zone_id,
     )
 

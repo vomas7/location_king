@@ -20,8 +20,6 @@ function result(score: number, distanceKm: string | null = "12.500"): RoundResul
       id: 1,
       name: "Секретное место",
       description: null,
-      difficulty: 1,
-      difficulty_name: "Очень легко",
       category: "city",
       category_name: "Город",
       continent: "europe",

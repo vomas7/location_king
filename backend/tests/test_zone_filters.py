@@ -13,13 +13,18 @@ from tests.conftest import TEST_POLYGON
 from tests.helpers import play_through
 
 
-async def make_zone(db: AsyncSession, name: str, country: str, continent: str) -> LocationZone:
+async def make_zone(
+    db: AsyncSession,
+    name: str,
+    country: str,
+    continent: str,
+    category: str = "city",
+) -> LocationZone:
     """Активная зона в заданной стране."""
     zone = LocationZone(
         name=name,
         description="Квадрат для теста фильтров",
-        difficulty=1,
-        category="city",
+        category=category,
         country=country,
         continent=continent,
         polygon=WKTElement(TEST_POLYGON, srid=4326),
@@ -79,6 +84,57 @@ async def test_endpoint_filters_by_group(
 
     assert response.status_code == 200
     assert [zone["country"] for zone in response.json()] == ["США"]
+
+
+@pytest.fixture
+async def zones_of_every_level(db: AsyncSession) -> None:
+    """По зоне на каждый уровень сложности."""
+    await make_zone(db, "Париж", "Франция", "europe", category="city")
+    await make_zone(db, "Тоскана", "Италия", "europe", category="rural")
+    await make_zone(db, "Гоби", "Монголия", "asia", category="desert")
+
+
+@pytest.mark.parametrize(
+    ("level", "expected"),
+    [
+        ("easy", "Париж"),
+        ("normal", "Париж"),
+        ("hard", "Тоскана"),
+        ("hardcore", "Гоби"),
+    ],
+)
+async def test_level_picks_its_own_places(
+    db: AsyncSession,
+    zones_of_every_level: None,
+    level: str,
+    expected: str,
+):
+    """Хардкор не должен подсовывать город, а лёгкий — пустыню."""
+    found = await zones_service.list_zones(db, difficulty=level)
+
+    assert [zone.name for zone in found] == [expected]
+
+
+async def test_easy_is_narrower_than_normal(db: AsyncSession, zones_of_every_level: None):
+    """
+    «Легко» — это подборка известных городов, а не все города подряд.
+
+    Гуанчжоу тоже город, но лёгким раундом он не будет.
+    """
+    await make_zone(db, "Гуанчжоу", "Китай", "asia", category="city")
+
+    easy = {zone.name for zone in await zones_service.list_zones(db, difficulty="easy")}
+    normal = {zone.name for zone in await zones_service.list_zones(db, difficulty="normal")}
+
+    assert "Гуанчжоу" in normal
+    assert "Гуанчжоу" not in easy
+    assert easy < normal
+
+
+async def test_unknown_level_is_rejected(client: AsyncClient, auth_headers: dict):
+    response = await client.get("/api/zones?difficulty=невозможно", headers=auth_headers)
+
+    assert response.status_code == 422
 
 
 async def test_unknown_group_is_rejected(client: AsyncClient, auth_headers: dict):

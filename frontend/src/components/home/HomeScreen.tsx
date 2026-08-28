@@ -27,6 +27,20 @@ const ROUNDS = [3, 5, 10].map((value) => ({ value, label: String(value) }));
  * текстура кварталов без ориентиров, поэтому лестница начинается там, где
  * в кадр уже попадает река, шоссе или берег.
  */
+/**
+ * Уровень — это выбор содержания, а не множитель очков. Подсказка под
+ * переключателем объясняет, что именно достанется: без неё «хардкор» звучит
+ * как «то же самое, но обидно».
+ */
+const LEVELS = [
+  { value: "easy", label: "Легко", hint: "Всемирно известные города — Париж, Токио, Нью-Йорк" },
+  { value: "normal", label: "Средне", hint: "Любой город и городской объект" },
+  { value: "hard", label: "Сложно", hint: "Обжитая местность без города: поля, дельты, острова" },
+  { value: "hardcore", label: "Хардкор", hint: "Дикая природа: горы, пустыни, тайга, лёд" },
+];
+
+const DEFAULT_LEVEL = "normal";
+
 const EXTENTS = [
   { value: 5, label: "5 км" },
   { value: 15, label: "15 км" },
@@ -75,6 +89,7 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
 
   const [rounds, setRounds] = useState(5);
   const [extent, setExtent] = useState(15);
+  const [level, setLevel] = useState(DEFAULT_LEVEL);
   const [timeLimit, setTimeLimit] = useState<number | null>(null);
   const [place, setPlace] = useState<PlaceKey>(null);
   const [zoneCount, setZoneCount] = useState<number | null>(null);
@@ -87,7 +102,7 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
 
     const { continent, country_group } = placeFilter(place);
 
-    const query = new URLSearchParams();
+    const query = new URLSearchParams({ difficulty: level });
     if (continent !== null) query.set("continent", continent);
     if (country_group !== null) query.set("country_group", country_group);
 
@@ -103,7 +118,9 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
     return () => {
       cancelled = true;
     };
-  }, [place]);
+  }, [place, level]);
+
+  const levelHint = LEVELS.find((item) => item.value === level)?.hint ?? "";
 
   // Незавершённая партия — предлагаем продолжить, а не начинать заново
   useEffect(() => {
@@ -155,6 +172,13 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
           <div className={styles.options}>
             <Segmented label="Раундов" options={ROUNDS} value={rounds} onChange={setRounds} />
             <Segmented
+              label="Сложность"
+              options={LEVELS}
+              value={level}
+              onChange={setLevel}
+              hint={levelHint}
+            />
+            <Segmented
               label="Размер участка"
               options={EXTENTS}
               value={extent}
@@ -192,6 +216,7 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
               onStart({
                 rounds_total: rounds,
                 view_extent_km: extent,
+                difficulty: level,
                 ...placeFilter(place),
                 time_limit_seconds: timeLimit,
               });
@@ -213,6 +238,7 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
           options={{
             rounds_total: rounds,
             view_extent_km: extent,
+            difficulty: level,
             ...placeFilter(place),
             time_limit_seconds: timeLimit,
           }}

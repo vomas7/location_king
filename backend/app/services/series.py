@@ -39,6 +39,7 @@ async def create(
     category: str | None = None,
     continent: str | None = None,
     country_group: str | None = None,
+    difficulty: str | None = None,
     zone_id: int | None = None,
 ) -> RoundSeries:
     """Собрать серию раундов и сохранить её."""
@@ -47,7 +48,14 @@ async def create(
 
     rounds = [
         await _build_round(
-            db, position, view_extent_km, category, continent, country_group, zone_id
+            db,
+            position,
+            view_extent_km,
+            category,
+            continent,
+            country_group,
+            difficulty,
+            zone_id,
         )
         for position in range(1, rounds_total + 1)
     ]
@@ -116,6 +124,7 @@ async def _build_round(
     category: str | None,
     continent: str | None,
     country_group: str | None,
+    difficulty: str | None = None,
     zone_id: int | None = None,
 ) -> SeriesRound:
     """
@@ -128,7 +137,9 @@ async def _build_round(
     zone = (
         await zones_service.get_zone(db, zone_id)
         if zone_id is not None
-        else await zones_service.pick_random_zone(db, category, continent, country_group)
+        else await zones_service.pick_random_zone(
+            db, category, continent, country_group, difficulty=difficulty
+        )
     )
     lon, lat = await zones_service.random_point_in_zone(db, zone)
 

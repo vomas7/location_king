@@ -15,20 +15,21 @@ export interface PlaceFilter {
   country_group: string | null;
 }
 
+const EVERYWHERE: PlaceFilter = { continent: null, country_group: null };
+
 const CONTINENT = "continent:";
 const COUNTRY = "country:";
 
 /** Разобрать выбор игрока в параметры запроса. */
 export function placeFilter(place: PlaceKey): PlaceFilter {
-  if (place === null) return { continent: null, country_group: null };
+  if (place === null) return EVERYWHERE;
 
   if (place.startsWith(CONTINENT)) {
-    return { continent: place.slice(CONTINENT.length), country_group: null };
+    return { ...EVERYWHERE, continent: place.slice(CONTINENT.length) };
   }
   if (place.startsWith(COUNTRY)) {
-    return { continent: null, country_group: place.slice(COUNTRY.length) };
+    return { ...EVERYWHERE, country_group: place.slice(COUNTRY.length) };
   }
-
   // Ключ приходит из списка в меню, поэтому третьего варианта быть не может:
   // если он появился, это опечатка в списке, а не выбор игрока
   throw new Error(`Неизвестное место: ${place}`);

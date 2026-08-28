@@ -9,7 +9,15 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.enums import COUNTRY_GROUPS, Continent, ZoneCategory
+from app.models.enums import (
+    COUNTRY_GROUPS,
+    DIFFICULTY_CATEGORIES,
+    ZONE_COLLECTIONS,
+    Continent,
+    Difficulty,
+    ZoneCategory,
+    ZoneCollection,
+)
 from app.models.location_zone import LocationZone
 from app.utils.geo import haversine_km
 from scripts.seed import ZONES, seed
@@ -29,17 +37,18 @@ def test_coordinates_are_on_the_planet():
         assert -85 <= zone.latitude <= 85, zone.name
 
 
-#: Категории, в которых любая точка зоны застроена или хотя бы обжита.
-#: Лес, песок, горы и открытая вода из каталога убраны намеренно: игрок видит
-#: там однородный ковёр без единого ориентира и определить место не может
-#: никаким усилием. Остальные значения ZoneCategory остаются в перечислении —
-#: на них ссылаются уже сыгранные раунды.
-URBAN_CATEGORIES = {"city", "coast", "historical", "architecture", "industrial"}
+#: Категории городских уровней. Точка раунда здесь обязана остаться в
+#: застройке, иначе игрок получает поле вместо города.
+URBAN_CATEGORIES = set(DIFFICULTY_CATEGORIES[Difficulty.NORMAL])
 
 #: Точка раунда берётся из квадрата вокруг центра, поэтому в углу она отходит
 #: от него ещё в полтора раза дальше. Десять километров — это уже до
 #: пятнадцати от центра города, дальше начинаются поля.
-MAX_RADIUS_KM = 10
+MAX_URBAN_RADIUS_KM = 10
+
+#: Дикая местность попадается только тем, кто выбрал её сам, и там большой
+#: разброс — часть замысла: искать приходится по рельефу, а не по кварталам.
+MAX_RADIUS_KM = 200
 
 
 def test_zone_is_big_enough_for_a_round():
@@ -47,17 +56,44 @@ def test_zone_is_big_enough_for_a_round():
         assert 3 <= zone.radius_km <= MAX_RADIUS_KM, zone.name
 
 
-def test_only_inhabited_places():
-    """Место, которое нельзя узнать, не должно попадаться игроку вовсе."""
+def test_city_rounds_stay_inside_the_city():
+    """
+    Радиус городской зоны ограничен.
+
+    Иначе точка уходит за окраину, и «Лос-Анджелес» показывает горный хребет
+    в тридцати километрах от города — ровно на это и жаловались игроки.
+    """
     for zone in ZONES:
-        assert zone.category in URBAN_CATEGORIES, f"{zone.name}: {zone.category}"
+        if zone.category in URBAN_CATEGORIES:
+            assert zone.radius_km <= MAX_URBAN_RADIUS_KM, zone.name
+
+
+def test_every_difficulty_has_zones():
+    """Пустой уровень — это тупик: игрок выбирает и получает отказ."""
+    categories = {zone.category for zone in ZONES}
+    names = {zone.name for zone in ZONES}
+
+    for level in Difficulty:
+        if level is Difficulty.EASY:
+            assert names & set(ZONE_COLLECTIONS[ZoneCollection.MAJOR_CITIES])
+        else:
+            assert categories & set(DIFFICULTY_CATEGORIES[level]), level
+
+
+def test_difficulty_levels_do_not_overlap():
+    """Категория принадлежит одному уровню: иначе «хардкор» выдавал бы города."""
+    seen: set[str] = set()
+
+    for level, members in DIFFICULTY_CATEGORIES.items():
+        overlap = seen & set(members)
+        assert not overlap, f"{level}: категории уже заняты — {overlap}"
+        seen |= set(members)
 
 
 def test_categories_and_continents_are_known():
     for zone in ZONES:
         assert zone.category in set(ZoneCategory), zone.name
         assert zone.continent in set(Continent), zone.name
-        assert 1 <= zone.difficulty <= 5, zone.name
 
 
 def test_polygon_is_closed():
@@ -82,6 +118,23 @@ def test_zones_do_not_duplicate_each_other():
                 first.longitude, first.latitude, second.longitude, second.latitude
             )
             assert distance > 5, f"{first.name} и {second.name} — одно и то же место"
+
+
+def test_collections_name_real_zones():
+    """Подборка хранит имена: опечатка или переименование выкинули бы место молча."""
+    names = {zone.name for zone in ZONES}
+
+    for collection, members in ZONE_COLLECTIONS.items():
+        missing = set(members) - names
+        assert not missing, f"в подборке {collection} нет таких зон: {sorted(missing)}"
+
+
+def test_major_cities_are_cities():
+    """Подборка обещает города — каналы и пирамиды в неё попадать не должны."""
+    by_name = {zone.name: zone for zone in ZONES}
+
+    for name in ZONE_COLLECTIONS[ZoneCollection.MAJOR_CITIES]:
+        assert by_name[name].category in {"city", "coast", "historical"}, name
 
 
 def test_every_country_group_has_zones():
@@ -111,7 +164,6 @@ async def test_seed_retires_zones_that_left_the_list(db: AsyncSession):
     stale = LocationZone(
         name="Зона, которой больше нет в списке",
         description="Осталась от прошлой редакции",
-        difficulty=1,
         category="city",
         country="Нигде",
         continent="europe",
