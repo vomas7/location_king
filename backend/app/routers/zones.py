@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.enums import Continent, CountryGroup, Difficulty, ZoneCollection
+from app.models.enums import Continent, CountryGroup, Difficulty
 from app.schemas.game import ZoneView
 from app.services import views
 from app.services import zones as zones_service
@@ -18,13 +18,12 @@ async def list_zones(
     category: str | None = None,
     continent: Continent | None = None,
     country_group: CountryGroup | None = None,
-    collection: ZoneCollection | None = None,
     limit: int = Query(default=200, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
 ) -> list[ZoneView]:
     """Список активных зон."""
     zones = await zones_service.list_zones(
-        db, difficulty, category, continent, country_group, collection, limit
+        db, difficulty, category, continent, country_group, limit
     )
     return [views.zone_view(zone) for zone in zones]
 

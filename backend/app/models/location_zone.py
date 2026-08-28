@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.enums import ZoneCategory
+from app.models.enums import Difficulty, ZoneCategory
 
 
 class LocationZone(Base):
@@ -26,6 +26,15 @@ class LocationZone(Base):
         String(100),
         nullable=False,
         default=ZoneCategory.MIXED,
+        index=True,
+    )
+
+    #: Уровень, на котором зона попадается игроку. Не выводится из категории:
+    #: узнаваемость места — это знание о мире, а не свойство местности
+    tier: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=Difficulty.NORMAL,
         index=True,
     )
 

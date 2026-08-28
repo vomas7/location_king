@@ -5,18 +5,18 @@
 партии игрока: раунд посреди океана или дубль зоны в выдаче.
 """
 
+import re
+from pathlib import Path
+
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.enums import (
     COUNTRY_GROUPS,
-    DIFFICULTY_CATEGORIES,
-    ZONE_COLLECTIONS,
     Continent,
     Difficulty,
     ZoneCategory,
-    ZoneCollection,
 )
 from app.models.location_zone import LocationZone
 from app.utils.geo import haversine_km
@@ -37,14 +37,16 @@ def test_coordinates_are_on_the_planet():
         assert -85 <= zone.latitude <= 85, zone.name
 
 
-#: Категории городских уровней. Точка раунда здесь обязана остаться в
-#: застройке, иначе игрок получает поле вместо города.
-URBAN_CATEGORIES = set(DIFFICULTY_CATEGORIES[Difficulty.NORMAL])
+#: Категории, где точка раунда обязана остаться в застройке: иначе игрок
+#: получает поле вместо города.
+URBAN_CATEGORIES = {"city", "coast", "historical", "architecture", "industrial"}
 
-#: Точка раунда берётся из квадрата вокруг центра, поэтому в углу она отходит
-#: от него ещё в полтора раза дальше. Десять километров — это уже до
-#: пятнадцати от центра города, дальше начинаются поля.
-MAX_URBAN_RADIUS_KM = 10
+#: Точка раунда берётся из квадрата вокруг центра и в углу отходит от него в
+#: полтора раза дальше — до семи километров. Вид по умолчанию пятнадцать
+#: километров, то есть семь с половиной в каждую сторону: центр места остаётся
+#: в кадре. При десяти километрах радиуса он уходил за край, и «Париж»
+#: показывал безымянный пригород.
+MAX_URBAN_RADIUS_KM = 5
 
 #: Дикая местность попадается только тем, кто выбрал её сам, и там большой
 #: разброс — часть замысла: искать приходится по рельефу, а не по кварталам.
@@ -68,26 +70,49 @@ def test_city_rounds_stay_inside_the_city():
             assert zone.radius_km <= MAX_URBAN_RADIUS_KM, zone.name
 
 
+def test_every_zone_has_a_known_tier():
+    for zone in ZONES:
+        assert zone.tier in set(Difficulty), f"{zone.name}: неизвестный уровень {zone.tier}"
+
+
 def test_every_difficulty_has_zones():
     """Пустой уровень — это тупик: игрок выбирает и получает отказ."""
-    categories = {zone.category for zone in ZONES}
-    names = {zone.name for zone in ZONES}
+    tiers = {zone.tier for zone in ZONES}
 
     for level in Difficulty:
-        if level is Difficulty.EASY:
-            assert names & set(ZONE_COLLECTIONS[ZoneCollection.MAJOR_CITIES])
-        else:
-            assert categories & set(DIFFICULTY_CATEGORIES[level]), level
+        assert level in tiers, f"на уровне {level} нет ни одной зоны"
 
 
-def test_difficulty_levels_do_not_overlap():
-    """Категория принадлежит одному уровню: иначе «хардкор» выдавал бы города."""
-    seen: set[str] = set()
+def test_no_level_swallows_the_catalog():
+    """
+    Уровень, в который попала половина каталога, уровнем не является.
 
-    for level, members in DIFFICULTY_CATEGORIES.items():
-        overlap = seen & set(members)
-        assert not overlap, f"{level}: категории уже заняты — {overlap}"
-        seen |= set(members)
+    Ровно это и случилось, когда уровень выводился из категории: «средне»
+    оказалось четырьмя пятыми списка и складывало Гамбург с Сурабаей.
+    """
+    for level in Difficulty:
+        share = sum(zone.tier == level for zone in ZONES) / len(ZONES)
+        assert share <= 0.5, f"на уровне {level} — {share:.0%} каталога"
+
+
+def test_wild_places_are_hardcore_only():
+    """
+    Дикая природа не должна попадаться тому, кто её не выбирал.
+
+    Это и было главной жалобой: на среднем уровне игроку доставалась саванна.
+    """
+    wild = {"nature", "mountains", "desert", "polar"}
+
+    for zone in ZONES:
+        if zone.category in wild:
+            assert zone.tier == Difficulty.HARDCORE, zone.name
+
+
+def test_easy_and_normal_are_built_up_places():
+    """На двух нижних уровнях игрок ищет город, а не местность."""
+    for zone in ZONES:
+        if zone.tier in {Difficulty.EASY, Difficulty.NORMAL}:
+            assert zone.category in URBAN_CATEGORIES, f"{zone.name} ({zone.category})"
 
 
 def test_categories_and_continents_are_known():
@@ -118,23 +143,6 @@ def test_zones_do_not_duplicate_each_other():
                 first.longitude, first.latitude, second.longitude, second.latitude
             )
             assert distance > 5, f"{first.name} и {second.name} — одно и то же место"
-
-
-def test_collections_name_real_zones():
-    """Подборка хранит имена: опечатка или переименование выкинули бы место молча."""
-    names = {zone.name for zone in ZONES}
-
-    for collection, members in ZONE_COLLECTIONS.items():
-        missing = set(members) - names
-        assert not missing, f"в подборке {collection} нет таких зон: {sorted(missing)}"
-
-
-def test_major_cities_are_cities():
-    """Подборка обещает города — каналы и пирамиды в неё попадать не должны."""
-    by_name = {zone.name: zone for zone in ZONES}
-
-    for name in ZONE_COLLECTIONS[ZoneCollection.MAJOR_CITIES]:
-        assert by_name[name].category in {"city", "coast", "historical"}, name
 
 
 def test_every_country_group_has_zones():
@@ -182,3 +190,27 @@ async def test_seed_retires_zones_that_left_the_list(db: AsyncSession):
         await db.execute(select(LocationZone).where(LocationZone.name == stale.name))
     ).scalar_one()
     assert found.is_active is False
+
+
+def test_readme_counts_match_the_catalog():
+    """
+    Таблица уровней в README должна сходиться с каталогом.
+
+    Числа в ней проверяемые, а значит, однажды разойдутся с правдой: зоны
+    добавляют, а таблицу поправить забывают.
+    """
+    readme = (Path(__file__).resolve().parents[2] / "README.md").read_text(encoding="utf-8")
+
+    rows = re.findall(r"^\| (Легко|Средне|Сложно|Хардкор)\s*\|[^|]+\|\s*(\d+) \|$", readme, re.M)
+    assert len(rows) == len(Difficulty), "в README не все уровни"
+
+    levels = {
+        "Легко": Difficulty.EASY,
+        "Средне": Difficulty.NORMAL,
+        "Сложно": Difficulty.HARD,
+        "Хардкор": Difficulty.HARDCORE,
+    }
+
+    for title, claimed in rows:
+        actual = sum(zone.tier == levels[title] for zone in ZONES)
+        assert actual == int(claimed), f"{title}: в README {claimed}, в каталоге {actual}"

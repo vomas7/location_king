@@ -19,12 +19,14 @@ async def make_zone(
     country: str,
     continent: str,
     category: str = "city",
+    tier: str = "normal",
 ) -> LocationZone:
     """Активная зона в заданной стране."""
     zone = LocationZone(
         name=name,
         description="Квадрат для теста фильтров",
         category=category,
+        tier=tier,
         country=country,
         continent=continent,
         polygon=WKTElement(TEST_POLYGON, srid=4326),
@@ -88,17 +90,18 @@ async def test_endpoint_filters_by_group(
 
 @pytest.fixture
 async def zones_of_every_level(db: AsyncSession) -> None:
-    """По зоне на каждый уровень сложности."""
-    await make_zone(db, "Париж", "Франция", "europe", category="city")
-    await make_zone(db, "Тоскана", "Италия", "europe", category="rural")
-    await make_zone(db, "Гоби", "Монголия", "asia", category="desert")
+    """По зоне на каждый уровень."""
+    await make_zone(db, "Париж", "Франция", "europe", category="city", tier="easy")
+    await make_zone(db, "Гамбург", "Германия", "europe", category="city", tier="normal")
+    await make_zone(db, "Тоскана", "Италия", "europe", category="rural", tier="hard")
+    await make_zone(db, "Гоби", "Монголия", "asia", category="desert", tier="hardcore")
 
 
 @pytest.mark.parametrize(
     ("level", "expected"),
     [
         ("easy", "Париж"),
-        ("normal", "Париж"),
+        ("normal", "Гамбург"),
         ("hard", "Тоскана"),
         ("hardcore", "Гоби"),
     ],
@@ -115,20 +118,37 @@ async def test_level_picks_its_own_places(
     assert [zone.name for zone in found] == [expected]
 
 
-async def test_easy_is_narrower_than_normal(db: AsyncSession, zones_of_every_level: None):
+async def test_levels_do_not_share_zones(db: AsyncSession, zones_of_every_level: None):
     """
-    «Легко» — это подборка известных городов, а не все города подряд.
+    Зона живёт ровно на одном уровне.
 
-    Гуанчжоу тоже город, но лёгким раундом он не будет.
+    Раньше «легко» было подмножеством «средне»: Париж — город, а значит,
+    попадался и там. Уровень, который включает в себя соседний, ничего не
+    обещает игроку: выбрав «средне», он всё равно мог получить Манхэттен.
     """
-    await make_zone(db, "Гуанчжоу", "Китай", "asia", category="city")
+    seen: set[str] = set()
+
+    for level in ("easy", "normal", "hard", "hardcore"):
+        names = {zone.name for zone in await zones_service.list_zones(db, difficulty=level)}
+        assert not (seen & names), f"{level}: зона уже занята другим уровнем"
+        seen |= names
+
+
+async def test_level_beats_the_category(db: AsyncSession):
+    """
+    Из категории уровень не выводится, и город городу рознь.
+
+    Гуанчжоу больше Амстердама, но с воздуха узнают второй — поэтому оба
+    «city», а уровни у них разные.
+    """
+    await make_zone(db, "Амстердам", "Нидерланды", "europe", category="city", tier="easy")
+    await make_zone(db, "Гуанчжоу", "Китай", "asia", category="city", tier="hard")
 
     easy = {zone.name for zone in await zones_service.list_zones(db, difficulty="easy")}
-    normal = {zone.name for zone in await zones_service.list_zones(db, difficulty="normal")}
+    hard = {zone.name for zone in await zones_service.list_zones(db, difficulty="hard")}
 
-    assert "Гуанчжоу" in normal
-    assert "Гуанчжоу" not in easy
-    assert easy < normal
+    assert easy == {"Амстердам"}
+    assert hard == {"Гуанчжоу"}
 
 
 async def test_unknown_level_is_rejected(client: AsyncClient, auth_headers: dict):

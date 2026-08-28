@@ -6,14 +6,7 @@ from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import NotFoundError
-from app.models.enums import (
-    ZONE_COLLECTIONS,
-    Difficulty,
-    ZoneCollection,
-    collection_zones,
-    difficulty_categories,
-    group_countries,
-)
+from app.models.enums import group_countries
 from app.models.location_zone import LocationZone
 
 logger = logging.getLogger(__name__)
@@ -23,38 +16,23 @@ def _filtered(
     category: str | None,
     continent: str | None,
     country_group: str | None = None,
-    collection: str | None = None,
     difficulty: str | None = None,
 ) -> Select:
     """Запрос активных зон с общими фильтрами."""
     stmt = select(LocationZone).where(LocationZone.is_active.is_(True))
 
+    # Уровень записан у самой зоны: узнаваемость места из его категории не
+    # выводится, и разложить её по категориям однажды уже не получилось
     if difficulty is not None:
-        stmt = stmt.where(_difficulty_clause(difficulty))
+        stmt = stmt.where(LocationZone.tier == difficulty)
     if category is not None:
         stmt = stmt.where(LocationZone.category == category)
     if continent is not None:
         stmt = stmt.where(LocationZone.continent == continent)
     if country_group is not None:
         stmt = stmt.where(LocationZone.country.in_(group_countries(country_group)))
-    if collection is not None:
-        stmt = stmt.where(LocationZone.name.in_(collection_zones(collection)))
 
     return stmt
-
-
-def _difficulty_clause(difficulty: str):
-    """
-    Условие уровня.
-
-    «Легко» — это подборка известных городов, остальные уровни — набор
-    категорий. Разделение намеренное: город городу рознь, и узнаваемость из
-    категории не выводится.
-    """
-    if Difficulty(difficulty) is Difficulty.EASY:
-        return LocationZone.name.in_(ZONE_COLLECTIONS[ZoneCollection.MAJOR_CITIES])
-
-    return LocationZone.category.in_(difficulty_categories(difficulty))
 
 
 async def list_zones(
@@ -63,11 +41,10 @@ async def list_zones(
     category: str | None = None,
     continent: str | None = None,
     country_group: str | None = None,
-    collection: str | None = None,
     limit: int = 200,
 ) -> list[LocationZone]:
-    """Активные зоны с фильтрами по сложности, категории и месту."""
-    stmt = _filtered(category, continent, country_group, collection, difficulty)
+    """Активные зоны с фильтрами по уровню, категории и месту."""
+    stmt = _filtered(category, continent, country_group, difficulty)
     stmt = stmt.order_by(LocationZone.name).limit(limit)
 
     return list((await db.execute(stmt)).scalars().all())
@@ -91,11 +68,10 @@ async def pick_random_zone(
     category: str | None = None,
     continent: str | None = None,
     country_group: str | None = None,
-    collection: str | None = None,
     difficulty: str | None = None,
 ) -> LocationZone:
     """Случайная активная зона под заданные фильтры."""
-    stmt = _filtered(category, continent, country_group, collection, difficulty)
+    stmt = _filtered(category, continent, country_group, difficulty)
     zone = (await db.execute(stmt.order_by(func.random()).limit(1))).scalar_one_or_none()
 
     if zone is None:
