@@ -24,6 +24,10 @@ class User(Base):
     avatar_shape: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
     avatar_color: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
 
+    # По этому коду игрока добавляют в друзья. Не по имени: имена не
+    # уникальны, а искать людей по чужому имени — способ найти не того
+    friend_code: Mapped[str] = mapped_column(String(8), nullable=False, unique=True, index=True)
+
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
 
     # Статистика — пересчитывается сервисом после каждой завершённой сессии

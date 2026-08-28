@@ -3,11 +3,13 @@
 from app.models.daily import DailyChallenge
 from app.models.enums import (
     Continent,
+    FriendshipStatus,
     MatchStatus,
     RoundStatus,
     SessionStatus,
     ZoneCategory,
 )
+from app.models.friendship import Friendship
 from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
 from app.models.match import Match
@@ -18,6 +20,8 @@ from app.models.user import User
 __all__ = [
     "Continent",
     "DailyChallenge",
+    "Friendship",
+    "FriendshipStatus",
     "GameSession",
     "LocationZone",
     "Match",

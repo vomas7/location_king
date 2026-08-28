@@ -26,6 +26,13 @@ class MatchStatus(StrEnum):
     CLOSED = "closed"  # хост закрыл набор
 
 
+class FriendshipStatus(StrEnum):
+    """Состояние дружбы: позвали или уже дружат."""
+
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+
+
 class MatchKind(StrEnum):
     """
     Откуда взялась комната.

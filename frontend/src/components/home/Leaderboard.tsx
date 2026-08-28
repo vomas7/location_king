@@ -36,6 +36,7 @@ const CAPTIONS: Record<LeaderboardMetric, string> = {
  */
 const SCOPES: { value: string; label: string }[] = [
   { value: "", label: "Все партии" },
+  { value: "among_friends=true", label: "Друзья" },
   { value: "difficulty=easy", label: "Легко" },
   { value: "difficulty=normal", label: "Средне" },
   { value: "difficulty=hard", label: "Сложно" },

@@ -10,7 +10,6 @@
 """
 
 import logging
-import secrets
 from collections.abc import Sequence
 
 from sqlalchemy import func, select
@@ -25,21 +24,12 @@ from app.models.match import Match
 from app.models.round import Round
 from app.models.user import User
 from app.services import series as series_service
+from app.utils import codes
 
 logger = logging.getLogger(__name__)
 
-# Код набирают руками и диктуют голосом, поэтому он короткий и без похожих
-# друг на друга символов
-CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-CODE_LENGTH = 6
-
 # Сколько попыток на подбор свободного кода, прежде чем признать неудачу
 CODE_ATTEMPTS = 10
-
-
-def new_code() -> str:
-    """Случайный код комнаты."""
-    return "".join(secrets.choice(CODE_ALPHABET) for _ in range(CODE_LENGTH))
 
 
 async def create(
@@ -67,7 +57,7 @@ async def create(
 
     for _ in range(CODE_ATTEMPTS):
         match = Match(
-            code=new_code(),
+            code=codes.new_code(),
             # Связь, а не только идентификатор: иначе показать имя хоста сразу
             # после создания не выйдет — ленивая подгрузка в async запрещена
             host=host,

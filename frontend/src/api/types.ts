@@ -165,6 +165,8 @@ export interface Leaderboard {
   difficulty: string | null;
   continent: string | null;
   country_group: string | null;
+  /** Зачёт сужен до друзей игрока и его самого. */
+  among_friends: boolean;
   entries: LeaderboardEntry[];
   me: LeaderboardEntry | null;
 }
@@ -203,6 +205,29 @@ export interface DailyChallenge {
   /** Самая длинная его серия за всё время. */
   best_streak: number;
   results: DailyResult[];
+}
+
+/**
+ * Связь с другим игроком: подтверждённая дружба или заявка.
+ *
+ * id — идентификатор связи, а не игрока: чужих идентификаторов сервер не
+ * отдаёт. По нему заявку принимают и убирают, больше он ни для чего не нужен.
+ */
+export interface Friend {
+  id: number;
+  display_name: string;
+  avatar: AvatarView;
+  rating: number;
+  accepted: boolean;
+  /** Заявка пришла ко мне и ждёт ответа. */
+  incoming: boolean;
+  created_at: string;
+}
+
+export interface FriendList {
+  /** Код игрока: его показывают тем, кого хотят добавить. */
+  my_code: string;
+  friends: Friend[];
 }
 
 /** Строка таблицы комнаты. Чужих идентификаторов сервер не отдаёт. */

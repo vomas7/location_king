@@ -1,0 +1,144 @@
+/* Свой код — то, что игрок диктует другому, поэтому он крупный, моноширинный
+   и с разрядкой: так его не спутать и легко переписать */
+.mine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.mineLabel {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.code {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.copy {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.copy:hover {
+  color: var(--text);
+}
+
+.form {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.form > *:first-child {
+  flex: 1 1 auto;
+}
+
+.empty {
+  color: var(--text-faint);
+  font-size: 13px;
+  text-wrap: pretty;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--line-soft);
+  grid-template-columns: auto 1fr auto auto;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.name {
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  font-size: 14px;
+  gap: 1px;
+}
+
+/* Заявка — это ещё не дружба, и строка должна это говорить, а не намекать */
+.pending {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.rating {
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.accept {
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--positive) 45%, transparent);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--positive);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.accept:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--positive) 12%, transparent);
+}
+
+.drop {
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.drop:hover:not(:disabled) {
+  color: var(--danger);
+}
+
+.accept:disabled,
+.drop:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

@@ -30,6 +30,8 @@ class LeaderboardResponse(BaseModel):
     difficulty: Difficulty | None
     continent: Continent | None
     country_group: CountryGroup | None
+    #: Зачёт сужен до друзей игрока и его самого
+    among_friends: bool
 
     entries: list[LeaderboardEntry]
     me: LeaderboardEntry | None

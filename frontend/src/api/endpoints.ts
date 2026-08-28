@@ -7,6 +7,8 @@ import type {
   DailyChallenge,
   DuelFormat,
   DuelSearch,
+  Friend,
+  FriendList,
   GuessResponse,
   Leaderboard,
   LeaderboardMetric,
@@ -81,6 +83,18 @@ export const challenge = {
   today: () => request<DailyChallenge>("/api/challenge/today"),
 
   start: () => request<SessionState>("/api/challenge/today/start", { method: "POST" }),
+};
+
+export const friends = {
+  list: () => request<FriendList>("/api/friends"),
+
+  /** Позвать в друзья по коду игрока. */
+  invite: (code: string) => request<Friend>("/api/friends", { method: "POST", body: { code } }),
+
+  accept: (id: number) => request<Friend>(`/api/friends/${String(id)}/accept`, { method: "POST" }),
+
+  /** Отклонить заявку, отозвать свою или расстаться — это одно действие. */
+  remove: (id: number) => request<void>(`/api/friends/${String(id)}`, { method: "DELETE" }),
 };
 
 export const duels = {

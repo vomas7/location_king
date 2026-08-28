@@ -23,6 +23,7 @@ from app.config import settings
 from app.exceptions import AuthError, ConflictError, ValidationError
 from app.models.user import User
 from app.observability import metrics
+from app.services import friends
 from app.utils import avatar
 
 logger = logging.getLogger(__name__)
@@ -192,6 +193,7 @@ async def register(db: AsyncSession, email: str, password: str, display_name: st
         email=email,
         password_hash=hash_password(password),
         display_name=(display_name or "").strip() or default_display_name(),
+        friend_code=await friends.unique_code(db),
         last_login_at=datetime.now(UTC),
     )
     db.add(user)

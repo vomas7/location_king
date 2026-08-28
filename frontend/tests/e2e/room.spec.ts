@@ -14,10 +14,15 @@ test("двое играют одну серию и сравнивают резу
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
   await page.getByRole("button", { name: "Создать комнату" }).click();
 
-  const code = await page
-    .getByText(/^[A-Z2-9]{6}$/)
-    .first()
-    .textContent();
+  // Шестизначный код есть и у комнаты, и у самого игрока в карточке друзей.
+  // Код комнаты — абзац, код игрока — <code>, по этому их и различаем
+  const shown = page
+    .locator("p")
+    .filter({ hasText: /^[A-Z2-9]{6}$/ })
+    .first();
+  await expect(shown).toBeVisible();
+
+  const code = await shown.textContent();
   expect(code).not.toBeNull();
 
   await expect(page.getByText("Пока никто не вошёл. Отправь ссылку друзьям.")).toBeVisible();
@@ -49,10 +54,15 @@ test("в закрытую комнату войти нельзя", async ({ brow
   await register(page);
 
   await page.getByRole("button", { name: "Создать комнату" }).click();
-  const code = await page
-    .getByText(/^[A-Z2-9]{6}$/)
-    .first()
-    .textContent();
+  // Шестизначный код есть и у комнаты, и у самого игрока в карточке друзей.
+  // Код комнаты — абзац, код игрока — <code>, по этому их и различаем
+  const shown = page
+    .locator("p")
+    .filter({ hasText: /^[A-Z2-9]{6}$/ })
+    .first();
+  await expect(shown).toBeVisible();
+
+  const code = await shown.textContent();
   expect(code).not.toBeNull();
 
   await page.getByRole("button", { name: "Закрыть набор" }).click();

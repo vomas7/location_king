@@ -40,6 +40,11 @@ class LeaderboardFilter:
     continent: str | None = None
     country_group: str | None = None
 
+    #: Считать только этих игроков. Пусто — считать всех. Так устроен зачёт
+    #: среди друзей: тот же зачёт, но по короткому списку. Про дружбу таблица
+    #: лидеров при этом не знает ничего — список ей приносят готовым
+    players: tuple[int, ...] | None = None
+
 
 @dataclass(frozen=True)
 class LeaderboardRow:
@@ -92,6 +97,9 @@ def _aggregated(filters: LeaderboardFilter) -> Select:
     ):
         if value is not None:
             stmt = stmt.where(column == value)
+
+    if filters.players is not None:
+        stmt = stmt.where(User.id.in_(filters.players))
 
     return stmt
 

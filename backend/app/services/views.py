@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models.enums import (
+    FriendshipStatus,
     RoundStatus,
     SessionStatus,
     category_name,
@@ -21,6 +22,7 @@ from app.models.round import Round
 from app.models.user import User
 from app.schemas.auth import AvatarView
 from app.schemas.daily import DailyResult
+from app.schemas.friend import FriendView
 from app.schemas.game import (
     HintView,
     RoundResult,
@@ -31,9 +33,9 @@ from app.schemas.game import (
 )
 from app.schemas.leaderboard import LeaderboardEntry
 from app.schemas.match import MatchStanding, MatchSummary, MatchView
+from app.services import friends, tiles
 from app.services import game as game_service
 from app.services import hints as hints_service
-from app.services import tiles
 from app.services.leaderboard import LeaderboardRow
 from app.services.scoring import score_after_hint
 
@@ -158,6 +160,26 @@ def session_summary(session: GameSession) -> SessionSummary:
 def player_name(session: GameSession) -> str:
     """Как показывать игрока в таблицах: своё имя, иначе логин."""
     return session.user.display_name or session.user.username
+
+
+def friend_view(connection: "friends.Connection") -> FriendView:
+    """
+    Связь глазами того, кто её смотрит.
+
+    Чужого идентификатора в ответе нет — только идентификатор самой связи:
+    по нему её принимают и убирают, и больше он ни для чего не нужен.
+    """
+    other = connection.other
+
+    return FriendView(
+        id=connection.friendship.id,
+        display_name=other.display_name or other.username,
+        avatar=avatar_view(other),
+        rating=other.rating,
+        accepted=connection.friendship.status == FriendshipStatus.ACCEPTED,
+        incoming=connection.incoming,
+        created_at=connection.friendship.created_at,
+    )
 
 
 def avatar_view(user: User) -> AvatarView:
