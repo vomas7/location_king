@@ -468,6 +468,12 @@ docker compose exec -T backend alembic upgrade head
 step "Загружаю игровые зоны"
 docker compose exec -T backend python scripts/seed.py
 
+# Границы качаются из сети и весят двадцать мегабайт, поэтому только один раз.
+# Не скачались — режим стран просто не включится, остальная игра работает
+step "Загружаю границы стран"
+docker compose exec -T backend python scripts/load_countries.py --only-new ||
+    echo "  ! границы не загрузились: режим «угадай страну» будет недоступен"
+
 # ─── Проверка ─────────────────────────────────────────────────────────
 step "Проверяю, что игра отвечает"
 

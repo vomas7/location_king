@@ -17,17 +17,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.exceptions import ConflictError, ForbiddenError, NotFoundError
-from app.models.enums import RoundStatus, SessionStatus
+from app.models.enums import AnswerMode, RoundStatus, SessionStatus
 from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
 from app.models.match import Match
 from app.models.round import Round
 from app.models.user import User
 from app.observability import metrics
+from app.services import countries as countries_service
 from app.services import daily, duels, matches
 from app.services import series as series_service
 from app.services.round_timer import is_late, time_left_fraction
-from app.services.scoring import evaluate_guess
+from app.services.scoring import GuessResult, country_score, evaluate_guess, time_factor
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ async def start_session(
     difficulty: str | None = None,
     zone_id: int | None = None,
     time_limit_seconds: int | None = None,
+    answer_mode: str = AnswerMode.POINT,
 ) -> tuple[GameSession, Round]:
     """
     Создать сессию и первый раунд.
@@ -67,6 +69,7 @@ async def start_session(
         country_group,
         difficulty,
         zone_id,
+        answer_mode,
     )
 
     session = GameSession(
@@ -171,13 +174,13 @@ async def submit_guess(
     round_obj.guess_point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
     round_obj.distance_km = Decimal(str(result.distance_km))
     round_obj.accuracy_percentage = Decimal(str(result.accuracy))
-    round_obj.score = result.score
+    round_obj.score = await _score_of(db, round_obj, session, result, longitude, latitude)
     round_obj.status = RoundStatus.GUESSED
     round_obj.guessed_at = datetime.now(UTC)
     round_obj.answer_seconds = _elapsed(round_obj)
 
     session.rounds_done += 1
-    session.total_score += result.score
+    session.total_score += round_obj.score
     session.average_score = session.total_score / session.rounds_done
 
     await db.flush()
@@ -189,10 +192,43 @@ async def submit_guess(
         "Раунд %s: %s км, %s очков (пользователь %s)",
         round_obj.id,
         result.distance_km,
-        result.score,
+        round_obj.score,
         user.id,
     )
     return round_obj, next_round
+
+
+async def _score_of(
+    db: AsyncSession,
+    round_obj: Round,
+    session: GameSession,
+    result: GuessResult,
+    longitude: float,
+    latitude: float,
+) -> int:
+    """
+    Очки за раунд.
+
+    В обычном раунде считает расстояние до цели. В режиме стран вопрос другой —
+    в какую страну попал игрок, — поэтому и очки другие: угадал страну, значит,
+    задача решена, как бы далеко от центра он ни ткнул.
+    """
+    if round_obj.country_code is None:
+        return result.score
+
+    guessed = await countries_service.at_point(db, longitude, latitude)
+    right = guessed is not None and guessed.code == round_obj.country_code
+    round_obj.guess_country_code = None if guessed is None else guessed.code
+
+    miss = (
+        0.0
+        if right
+        else await countries_service.distance_km(db, round_obj.country_code, longitude, latitude)
+    )
+    points = country_score(right, miss, round_obj.max_score)
+
+    # Скорость решает и здесь: иначе режим стран стал бы способом обойти таймер
+    return int(points * time_factor(time_left_fraction(session, round_obj))) // 10 * 10
 
 
 async def timeout_round(

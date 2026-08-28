@@ -65,6 +65,11 @@ class Round(Base):
     #: Максимум очков за раунд. Подсказка его уменьшает — навсегда для этого
     #: раунда, поэтому цена подсказки видна прямо в результате
     max_score: Mapped[int] = mapped_column(Integer, nullable=False, default=5000)
+    #: Страна цели и страна, в которую попал игрок. Заполняются только в
+    #: режиме «угадай страну»: в обычном они не значат ничего
+    country_code: Mapped[str | None] = mapped_column(String(3))
+    guess_country_code: Mapped[str | None] = mapped_column(String(3))
+
     #: Брал ли игрок подсказку. Текст подсказки не хранится: он выводится из
     #: зоны и условий партии, а значит, не может с ними разойтись
     hint_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

@@ -132,6 +132,7 @@ async def test_active_round_response_carries_no_coordinates(
         "tiles_url",
         "attribution",
         "created_at",
+        "answer_mode",
         "max_score",
         "hint",
         "hint_cost",

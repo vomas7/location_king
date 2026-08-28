@@ -18,6 +18,14 @@ MAX_ROUND_SCORE = 5000
 # Во сколько раз дальше размера области можно промахнуться, ещё получая очки
 MAX_DISTANCE_FACTOR = 2
 
+# Дальше этого от границы правильной страны ответ не стоит ничего
+COUNTRY_MISS_LIMIT_KM = 2000
+
+# Сколько максимум даёт неправильная страна. Соседняя страна — это уже
+# осмысленный ответ, но не тот же самый: угадавший должен получить заметно
+# больше того, кто промахнулся на границу
+WRONG_COUNTRY_CEILING = 0.5
+
 # Во сколько обходится подсказка: столько от максимума раунда она забирает.
 # Треть — это заметно, но не разорительно: подсказка должна быть выбором, а не
 # признанием поражения.
@@ -46,6 +54,25 @@ def max_distance_km(view_extent_km: float) -> float:
 def score_after_hint(max_score: int) -> int:
     """Максимум раунда после взятой подсказки."""
     return int(max_score * (1 - HINT_COST_FRACTION)) // 10 * 10
+
+
+def country_score(
+    guessed_right: bool,
+    distance_to_country_km: float,
+    max_score: int = MAX_ROUND_SCORE,
+) -> int:
+    """
+    Очки за ответ страной.
+
+    Угадал — весь максимум. Не угадал — не больше половины, и тем меньше, чем
+    дальше точка от границы правильной страны: ткнуть в соседнюю страну и
+    ткнуть в другое полушарие — разные ошибки.
+    """
+    if guessed_right:
+        return max_score
+
+    ratio = min(max(distance_to_country_km, 0.0) / COUNTRY_MISS_LIMIT_KM, 1.0)
+    return int(max_score * WRONG_COUNTRY_CEILING * (1 - ratio) ** 2) // 10 * 10
 
 
 def time_factor(time_left_fraction: float | None) -> float:

@@ -15,9 +15,11 @@ from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.exceptions import ConflictError, NotFoundError
+from app.models.enums import CATALOG_ALIASES, AnswerMode
 from app.models.game_session import GameSession
 from app.models.round import Round
 from app.models.series import RoundSeries, SeriesRound
+from app.services import countries as countries_service
 from app.services import tiles
 from app.services import zones as zones_service
 from app.services.round_timer import deadline_for
@@ -31,6 +33,10 @@ logger = logging.getLogger(__name__)
 MIN_ROUNDS = 1
 MAX_ROUNDS = 20
 
+# Сколько зон перебрать в режиме стран, прежде чем признать, что подходящих
+# мест под заданные условия нет
+COUNTRY_ATTEMPTS = 12
+
 
 async def create(
     db: AsyncSession,
@@ -41,6 +47,7 @@ async def create(
     country_group: str | None = None,
     difficulty: str | None = None,
     zone_id: int | None = None,
+    answer_mode: str = AnswerMode.POINT,
 ) -> RoundSeries:
     """Собрать серию раундов и сохранить её."""
     if not MIN_ROUNDS <= rounds_total <= MAX_ROUNDS:
@@ -56,6 +63,7 @@ async def create(
             country_group,
             difficulty,
             zone_id,
+            answer_mode,
         )
         for position in range(1, rounds_total + 1)
     ]
@@ -69,6 +77,7 @@ async def create(
         difficulty=difficulty,
         continent=continent,
         country_group=country_group,
+        answer_mode=answer_mode,
     )
     db.add(series)
     await db.flush()
@@ -107,6 +116,7 @@ async def open_round(db: AsyncSession, session: GameSession, position: int) -> R
         position=position,
         zone_id=template.zone_id,
         target_point=template.target_point,
+        country_code=template.country_code,
         tile_zoom=template.tile_zoom,
         tile_x=template.tile_x,
         tile_y=template.tile_y,
@@ -133,6 +143,7 @@ async def _build_round(
     country_group: str | None,
     difficulty: str | None = None,
     zone_id: int | None = None,
+    answer_mode: str = AnswerMode.POINT,
 ) -> SeriesRound:
     """
     Заготовка одного раунда серии.
@@ -141,25 +152,57 @@ async def _build_round(
     масштаба, и целью раунда становится центр этого тайла — именно его игрок
     и видит в центре снимка.
     """
-    zone = (
-        await zones_service.get_zone(db, zone_id)
-        if zone_id is not None
-        else await zones_service.pick_random_zone(
-            db, category, continent, country_group, difficulty=difficulty
+    for _ in range(COUNTRY_ATTEMPTS):
+        zone = (
+            await zones_service.get_zone(db, zone_id)
+            if zone_id is not None
+            else await zones_service.pick_random_zone(
+                db, category, continent, country_group, difficulty=difficulty
+            )
         )
-    )
-    lon, lat = await zones_service.random_point_in_zone(db, zone)
+        lon, lat = await zones_service.random_point_in_zone(db, zone)
 
-    zoom = zoom_for_extent(lat, view_extent_km, max_zoom=settings.satellite_max_zoom - 1)
-    tile_x, tile_y = lonlat_to_tile(lon, lat, zoom)
-    target_lon, target_lat = tile_center(tile_x, tile_y, zoom)
+        zoom = zoom_for_extent(lat, view_extent_km, max_zoom=settings.satellite_max_zoom - 1)
+        tile_x, tile_y = lonlat_to_tile(lon, lat, zoom)
+        target_lon, target_lat = tile_center(tile_x, tile_y, zoom)
 
-    return SeriesRound(
-        position=position,
-        zone_id=zone.id,
-        target_point=WKTElement(f"POINT({target_lon} {target_lat})", srid=4326),
-        tile_zoom=zoom,
-        tile_x=tile_x,
-        tile_y=tile_y,
-        view_extent_km=Decimal(str(round(tile_width_km(tile_x, tile_y, zoom), 3))),
-    )
+        country_code = None
+
+        if AnswerMode(answer_mode) is AnswerMode.COUNTRY:
+            country = await countries_service.at_point(db, target_lon, target_lat)
+
+            # Границы и каталог обязаны сходиться: иначе правильным ответом
+            # окажется не та страна, которую игрок увидит в результате. Такие
+            # места в режим стран просто не попадают — их единицы
+            if country is None or not _same_country(country.name, zone.country):
+                logger.info(
+                    "Зона %s мимо режима стран: каталог %r, границы %r",
+                    zone.name,
+                    zone.country,
+                    None if country is None else country.name,
+                )
+                if zone_id is not None:
+                    raise NotFoundError(f"Зона {zone.name} не годится для режима стран")
+                continue
+
+            country_code = country.code
+
+        return SeriesRound(
+            position=position,
+            zone_id=zone.id,
+            target_point=WKTElement(f"POINT({target_lon} {target_lat})", srid=4326),
+            country_code=country_code,
+            tile_zoom=zoom,
+            tile_x=tile_x,
+            tile_y=tile_y,
+            view_extent_km=Decimal(str(round(tile_width_km(tile_x, tile_y, zoom), 3))),
+        )
+
+    raise NotFoundError("Не нашлось места, подходящего для режима стран")
+
+
+def _same_country(border_name: str, catalog_name: str | None) -> bool:
+    """Одна ли это страна: названия у границ и у каталога местами разные."""
+    if catalog_name is None:
+        return False
+    return border_name == CATALOG_ALIASES.get(catalog_name, catalog_name)

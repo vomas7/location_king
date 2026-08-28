@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models.enums import (
+    AnswerMode,
     FriendshipStatus,
     RoundStatus,
     SessionStatus,
@@ -34,6 +35,7 @@ from app.schemas.game import (
 )
 from app.schemas.leaderboard import LeaderboardEntry
 from app.schemas.match import MatchStanding, MatchSummary, MatchView
+from app.services import countries as countries_service
 from app.services import friends, tiles
 from app.services import game as game_service
 from app.services import hints as hints_service
@@ -80,6 +82,9 @@ async def round_view(db: AsyncSession, round_obj: Round) -> RoundView:
         tiles_url=f"/api/rounds/{round_obj.id}/tiles/{{z}}/{{x}}/{{y}}.jpg",
         attribution=settings.satellite_attribution,
         created_at=round_obj.created_at,
+        answer_mode=(
+            AnswerMode.COUNTRY if round_obj.country_code is not None else AnswerMode.POINT
+        ),
         max_score=round_obj.max_score,
         hint=(
             HintView(label=available.label, value=available.value)
@@ -115,6 +120,15 @@ async def guess_response(
     )
 
 
+async def _country_name(db: AsyncSession, code: str | None) -> str | None:
+    """Название страны по коду. Пусто — раунд был не про страны."""
+    if code is None:
+        return None
+
+    country = await countries_service.by_code(db, code)
+    return None if country is None else country.name
+
+
 async def round_result(db: AsyncSession, round_obj: Round) -> RoundResult:
     """Завершённый раунд вместе с координатами цели."""
     target = await game_service.target_coordinates(db, round_obj)
@@ -131,6 +145,8 @@ async def round_result(db: AsyncSession, round_obj: Round) -> RoundResult:
         score=round_obj.score,
         max_score=round_obj.max_score,
         accuracy=round_obj.accuracy_percentage,
+        country=await _country_name(db, round_obj.country_code),
+        guess_country=await _country_name(db, round_obj.guess_country_code),
         answer_seconds=round_obj.answer_seconds,
         zone=zone_view(round_obj.zone),
         guessed_at=round_obj.guessed_at,

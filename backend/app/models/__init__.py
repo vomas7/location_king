@@ -1,5 +1,6 @@
 """Импорт всех моделей, чтобы Alembic видел таблицы при автогенерации."""
 
+from app.models.country import Country
 from app.models.daily import DailyChallenge
 from app.models.enums import (
     Continent,
@@ -19,6 +20,7 @@ from app.models.user import User
 
 __all__ = [
     "Continent",
+    "Country",
     "DailyChallenge",
     "Friendship",
     "FriendshipStatus",

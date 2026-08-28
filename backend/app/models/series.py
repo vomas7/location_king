@@ -5,6 +5,7 @@ from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, SmallInteger, Str
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.enums import AnswerMode
 
 
 class RoundSeries(Base):
@@ -32,6 +33,13 @@ class RoundSeries(Base):
     difficulty: Mapped[str | None] = mapped_column(String(20))
     continent: Mapped[str | None] = mapped_column(String(20))
     country_group: Mapped[str | None] = mapped_column(String(20))
+
+    #: Чем отвечают на раунды этой серии — точкой или страной
+    answer_mode: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=AnswerMode.POINT,
+    )
 
     rounds: Mapped[list["SeriesRound"]] = relationship(
         back_populates="series",
@@ -63,6 +71,10 @@ class SeriesRound(Base):
         Geometry(geometry_type="POINT", srid=4326),
         nullable=False,
     )
+
+    #: Страна цели по границам. Считается один раз при сборке серии: у всех,
+    #: кто играет эту серию, правильный ответ обязан быть один
+    country_code: Mapped[str | None] = mapped_column(String(3))
 
     tile_zoom: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     tile_x: Mapped[int] = mapped_column(Integer, nullable=False)

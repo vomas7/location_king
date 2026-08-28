@@ -10,7 +10,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models.enums import Continent, CountryGroup, Difficulty
+from app.models.enums import AnswerMode, Continent, CountryGroup, Difficulty
 from app.services.round_timer import ALLOWED_TIME_LIMITS
 from app.services.series import MAX_ROUNDS, MIN_ROUNDS
 
@@ -34,6 +34,9 @@ class RoundsRequest(BaseModel):
     continent: Continent | None = None
     country_group: CountryGroup | None = None
     difficulty: Difficulty = Difficulty.NORMAL
+    #: Чем отвечать: точкой или страной. Ставит игрок в обоих случаях
+    #: точку — в режиме стран сервер сам смотрит, куда она попала
+    answer_mode: AnswerMode = AnswerMode.POINT
     time_limit_seconds: int | None = Field(
         default=None,
         description="Сколько секунд даётся на раунд. Пусто — без ограничения",
@@ -113,6 +116,8 @@ class RoundView(BaseModel):
     tiles_url: str
     attribution: str
     created_at: datetime
+    #: Чем отвечать на этот раунд
+    answer_mode: AnswerMode
     #: Сколько очков ещё можно взять за раунд. Подсказка это число уменьшает
     max_score: int
     #: Заполнено, если игрок взял подсказку
@@ -137,6 +142,10 @@ class RoundResult(BaseModel):
     score: int
     max_score: int
     accuracy: Decimal | None
+    #: Страна цели и страна, куда попал игрок. Заполнены только в режиме
+    #: стран: в обычном раунде вопрос был не про страну
+    country: str | None
+    guess_country: str | None
     #: Сколько секунд игрок думал над раундом
     answer_seconds: Decimal | None
     zone: ZoneView

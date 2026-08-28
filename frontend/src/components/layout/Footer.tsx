@@ -45,7 +45,7 @@ export function Footer({ onOpen }: FooterProps) {
             Провайдер снимков подписан прямо на экране игры: его название
             приходит вместе с раундом */}
         <p className={styles.credits}>
-          Карта — © участники{" "}
+          Карта и границы стран — © участники{" "}
           <a
             className={styles.credit}
             href="https://www.openstreetmap.org/copyright"
