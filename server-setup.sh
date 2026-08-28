@@ -158,6 +158,17 @@ else
     echo "Смотреть: journalctl -u location-king-deploy -f"
 fi
 
+# ─── Резервные копии ──────────────────────────────────────────────────
+step "Настраиваю резервные копии базы"
+
+install -m 644 systemd/location-king-backup.service /etc/systemd/system/
+install -m 644 systemd/location-king-backup.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now location-king-backup.timer > /dev/null
+
+echo "Копия базы снимается каждую ночь и тут же проверяется разворачиванием."
+echo "Лежат копии в ${TARGET}/backups, хранятся неделю."
+
 # ─── Развёртывание ────────────────────────────────────────────────────
 step "Разворачиваю"
 exec ./deploy.sh

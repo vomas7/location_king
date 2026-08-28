@@ -114,3 +114,6 @@ nginx/snippets/cloudflare-origin-pull.conf
 
 # Собирается deploy.sh под выбранный контур: в нём настоящее имя домена
 nginx/snippets/monitoring-host.conf
+
+# Резервные копии базы
+backups/

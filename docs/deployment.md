@@ -432,9 +432,37 @@ SATELLITE_TILE_URL=https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg
 
 ## Резервное копирование
 
-Данные лежат в томах `postgres_data` и `redis_data`. Кэш тайлов
-восстанавливается сам, а базу стоит выгружать:
+Копия базы снимается каждую ночь таймером systemd и тут же проверяется:
+скрипт разворачивает её в отдельную базу и считает в ней игроков. Копия,
+которую ни разу не разворачивали, — это не копия, а надежда.
+
+Лежат копии в `/opt/location_king/backups`, хранятся неделю. Кэш тайлов и
+счётчики в Redis не выгружаются: тайлы восстановятся сами, а обрыв в графиках
+не стоит места на диске.
 
 ```bash
-docker compose exec -T postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > backup.sql.gz
+systemctl status location-king-backup.timer   # включён ли таймер
+journalctl -u location-king-backup --since '3 days ago'
+./backup.sh --check                           # снять копию прямо сейчас
 ```
+
+### Как восстановиться
+
+```bash
+cd /opt/location_king
+docker compose stop backend
+
+gzip -dc backups/location_king-2026-08-28-0130.sql.gz \
+    | docker compose exec -T postgres psql -U locationking -d location_king
+
+docker compose start backend
+```
+
+Дамп снимается с ключом `--clean`, поэтому разворачивается поверх существующей
+базы: сначала сносит её объекты, потом создаёт заново. Останавливать бэкенд
+нужно именно поэтому — иначе он будет обращаться к таблицам, которых в этот
+момент нет.
+
+**Копии лежат на том же диске, что и база.** От случайного `DROP TABLE` они
+спасут, от смерти диска — нет. Если игра станет важной, копии стоит увозить
+наружу: тот же скрипт плюс `rclone` или `scp` в другое место.

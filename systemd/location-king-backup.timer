@@ -1,0 +1,16 @@
+# Когда снимать копию базы.
+
+[Unit]
+Description=Location King — ежедневная резервная копия
+
+[Timer]
+# Ночью по московскому времени: нагрузка минимальна, а проверка копии
+# разворачиванием занимает базу на пару минут
+OnCalendar=*-*-* 01:30:00
+# Сервер мог быть выключен в это время — снимем копию сразу после включения
+Persistent=true
+RandomizedDelaySec=10min
+Unit=location-king-backup.service
+
+[Install]
+WantedBy=timers.target

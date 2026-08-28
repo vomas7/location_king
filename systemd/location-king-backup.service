@@ -1,0 +1,18 @@
+# Одна резервная копия базы. Запускается таймером, сам по себе не работает.
+
+[Unit]
+Description=Location King — резервная копия базы
+Documentation=https://github.com/vomas7/location_king/blob/main/docs/deployment.md
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/location_king
+# С проверкой: копия, которую ни разу не разворачивали, — это не копия
+ExecStart=/opt/location_king/backup.sh --check
+
+TimeoutStartSec=30min
+
+StandardOutput=journal
+StandardError=journal
