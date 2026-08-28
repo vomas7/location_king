@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """
-Уборка брошенных партий.
+Уборка брошенных партий и недосчитанных дуэлей.
 
 Игрок может закрыть вкладку посреди игры: партия останется активной навсегда,
 попадёт в «продолжить» через месяц и будет мешать статистике. Скрипт помечает
 такие партии брошенными и пересчитывает статистику затронутых игроков.
+
+Дуэли обычно досчитывает тот, кто дошёл до конца последним. Но если ушли оба
+или победитель закрыл вкладку, не дождавшись соперника, звать некого — такие
+дуэли добираются здесь.
 
 Запускать по расписанию, например раз в час:
 
@@ -25,6 +29,7 @@ from sqlalchemy import select
 from app.database import AsyncSessionLocal
 from app.models.enums import SessionStatus
 from app.models.game_session import GameSession
+from app.services import duels
 from app.services.game import finish_session
 
 logger = logging.getLogger("cleanup")
@@ -58,6 +63,15 @@ async def abandon_stale_sessions(older_than_hours: int) -> int:
     return len(stale)
 
 
+async def settle_abandoned_duels() -> int:
+    """Начислить рейтинг по дуэлям, за которыми никто не вернулся."""
+    async with AsyncSessionLocal() as session:
+        settled = await duels.settle_stale(session)
+        await session.commit()
+
+    return settled
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Уборка брошенных партий Location King")
     parser.add_argument(
@@ -73,6 +87,9 @@ def main() -> None:
 
     closed = asyncio.run(abandon_stale_sessions(args.older_than))
     logger.info("Брошенных партий закрыто: %s", closed)
+
+    settled = asyncio.run(settle_abandoned_duels())
+    logger.info("Дуэлей досчитано: %s", settled)
 
 
 if __name__ == "__main__":

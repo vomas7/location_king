@@ -59,24 +59,25 @@ async def isolate_shared_state() -> AsyncGenerator[None, None]:
 
     Клиенты Redis и HTTP — синглтоны на процесс, а pytest-asyncio даёт каждому
     тесту свой цикл событий: соединение, открытое в одном, ломается в
-    следующем. Счётчики лимитов тоже общие и переживают откат транзакции,
-    поэтому чистятся перед каждым тестом.
+    следующем. Счётчики лимитов и очередь подбора тоже общие и переживают
+    откат транзакции, поэтому чистятся перед каждым тестом.
     """
-    await _drop_rate_limit_counters()
+    await _drop_shared_keys()
     yield
     await close_clients()
 
 
-async def _drop_rate_limit_counters() -> None:
-    """Убрать счётчики лимитов, оставшиеся от предыдущего теста."""
+async def _drop_shared_keys() -> None:
+    """Убрать состояние в Redis, оставшееся от предыдущего теста."""
     client = redis_client()
 
     try:
-        keys = [key async for key in client.scan_iter(match="ratelimit:*")]
-        if keys:
-            await client.delete(*keys)
+        for pattern in ("ratelimit:*", "duel:*"):
+            keys = [key async for key in client.scan_iter(match=pattern)]
+            if keys:
+                await client.delete(*keys)
     except RedisError:
-        # Без Redis лимиты не срабатывают вовсе — чистить нечего
+        # Без Redis ни лимиты, ни подбор не работают вовсе — чистить нечего
         pass
 
 

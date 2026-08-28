@@ -40,6 +40,8 @@ class Limit(StrEnum):
     """Что именно ограничиваем. Значение попадает в ключ Redis."""
 
     DELETE_ACCOUNT = "delete-account"
+    DUEL_POLL = "duel-poll"
+    DUEL_QUEUE = "duel-queue"
     HINT = "hint"
     LOGIN = "login"
     REGISTER = "register"
@@ -68,6 +70,11 @@ RULES: dict[Limit, RateLimit] = {
     # Подсказка пишет в раунд и стоит очков. Больше одной на раунд её всё
     # равно не взять, так что лимит защищает базу от долбёжки, а не игру
     Limit.HINT: RateLimit(limit=300, window_seconds=60 * 60),
+    # Встать в очередь и выйти из неё — редкие действия, а вот опрос идёт
+    # раз в три секунды, пока игрок ищет: это до 1200 запросов в час у
+    # того, кто ищет непрерывно. Лимит выше с запасом, но не бесконечный
+    Limit.DUEL_QUEUE: RateLimit(limit=120, window_seconds=60 * 60),
+    Limit.DUEL_POLL: RateLimit(limit=2000, window_seconds=60 * 60),
     Limit.START_SESSION: RateLimit(limit=60, window_seconds=60 * 60),
     Limit.TILES: RateLimit(limit=3000, window_seconds=60 * 60),
 }

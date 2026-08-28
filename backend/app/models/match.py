@@ -4,7 +4,7 @@ from sqlalchemy import DateTime, ForeignKey, SmallInteger, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.enums import MatchStatus
+from app.models.enums import MatchKind, MatchStatus
 
 
 class Match(Base):
@@ -33,6 +33,14 @@ class Match(Base):
     time_limit_seconds: Mapped[int | None] = mapped_column(SmallInteger)
 
     status: Mapped[str] = mapped_column(String(20), nullable=False, default=MatchStatus.OPEN)
+
+    #: Обычная комната или дуэль из подбора. По итогу дуэли меняется рейтинг
+    kind: Mapped[str] = mapped_column(
+        String(20), nullable=False, default=MatchKind.ROOM, index=True
+    )
+    #: Когда по дуэли начислили рейтинг. Пусто — ещё не начисляли, и это
+    #: единственная защита от двойного начисления
+    rated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

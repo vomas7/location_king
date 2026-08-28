@@ -64,6 +64,11 @@ class UserProfile(BaseModel):
     average_score: float | None
     average_distance: float | None
 
+    #: Рейтинг дуэлей. У того, кто ещё не дуэлился, он стартовый — по нему
+    #: подбирают первого соперника
+    rating: int
+    duels_played: int
+
     created_at: datetime
 
 

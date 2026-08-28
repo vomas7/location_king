@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.exceptions import ConflictError, ForbiddenError, NotFoundError
-from app.models.enums import MatchStatus, SessionStatus
+from app.models.enums import MatchKind, MatchStatus, SessionStatus
 from app.models.game_session import GameSession
 from app.models.match import Match
 from app.models.round import Round
@@ -52,6 +52,7 @@ async def create(
     country_group: str | None = None,
     difficulty: str | None = None,
     time_limit_seconds: int | None = None,
+    kind: str = MatchKind.ROOM,
 ) -> Match:
     """Собрать комнату вместе с её серией раундов."""
     series = await series_service.create(
@@ -74,6 +75,7 @@ async def create(
             rounds_total=rounds_total,
             time_limit_seconds=time_limit_seconds,
             status=MatchStatus.OPEN,
+            kind=kind,
         )
 
         try:

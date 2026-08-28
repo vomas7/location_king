@@ -4,6 +4,7 @@ from sqlalchemy import BigInteger, Boolean, DateTime, Float, Integer, String, fu
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.utils.elo import START_RATING
 
 
 class User(Base):
@@ -27,6 +28,12 @@ class User(Base):
     best_score: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     average_score: Mapped[float | None] = mapped_column(Float)
     average_distance: Mapped[float | None] = mapped_column(Float)
+
+    # Рейтинг считается только по дуэлям: там соперники играют одну и ту же
+    # серию раундов, и условия партии сокращаются. Из обычных партий вывести
+    # его нельзя — они у всех разной сложности
+    rating: Mapped[int] = mapped_column(Integer, nullable=False, default=START_RATING, index=True)
+    duels_played: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

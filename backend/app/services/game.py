@@ -24,7 +24,7 @@ from app.models.match import Match
 from app.models.round import Round
 from app.models.user import User
 from app.observability import metrics
-from app.services import daily, matches
+from app.services import daily, duels, matches
 from app.services import series as series_service
 from app.services.round_timer import is_late, time_left_fraction
 from app.services.scoring import evaluate_guess
@@ -280,6 +280,12 @@ async def finish_session(db: AsyncSession, session: GameSession) -> GameSession:
 
     await metrics.count("session_finished")
     logger.info("Сессия %s завершена со счётом %s", session.id, session.total_score)
+
+    # Дуэль считается сыгранной, когда закончил второй: рейтинг начисляет тот,
+    # кто дошёл до конца последним. Обычной комнаты это не касается
+    if session.match_code is not None:
+        await duels.settle(db, await matches.get(db, session.match_code))
+
     return session
 
 
