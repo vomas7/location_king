@@ -100,6 +100,7 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
         response = await _get_http_client().get(url)
         response.raise_for_status()
     except httpx.HTTPError as e:
+        metrics.count("tile_provider_error")
         logger.error("Провайдер снимков не отдал тайл %s: %s", url, e)
         raise UpstreamError("Провайдер снимков недоступен") from e
 
@@ -109,6 +110,7 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
     # Провайдер может ответить двухсоткой и страницей с ошибкой. Положив её в
     # кэш, мы бы неделю отдавали игроку HTML под видом снимка.
     if not content_type.startswith("image/") or not tile:
+        metrics.count("tile_provider_error")
         logger.error("Провайдер снимков вернул не картинку (%s) для %s", content_type, url)
         raise UpstreamError("Провайдер снимков вернул не картинку")
 

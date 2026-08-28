@@ -18,11 +18,18 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 readonly HEALTH_TIMEOUT_SECONDS=180
+# Секреты, без которых приложение не должно стартовать
 readonly SECRET_VARS=(POSTGRES_PASSWORD REDIS_PASSWORD JWT_SECRET)
+
+# Пароль Grafana генерируется так же, но требуется только мониторингу
+readonly GRAFANA_PASSWORD_VAR=GRAFANA_ADMIN_PASSWORD
+
+readonly MONITORING_SNIPPET=nginx/snippets/monitoring-host.conf
 
 # Переменные, которые при создании .env можно передать окружением
 readonly ENV_OVERRIDES=(
     SITE_URL OPERATOR_NAME OPERATOR_EMAIL NGINX_PROFILE SSL_EMAIL SSL_EXTRA_DOMAINS
+    MONITORING MONITORING_DOMAIN
 )
 
 
@@ -127,6 +134,13 @@ for name in "${SECRET_VARS[@]}"; do
     [ -n "$(env_value "$name")" ] || die "в .env не заполнена переменная ${name}"
 done
 
+# Пароль Grafana дописывается и в уже существующий .env: без него docker
+# compose не разберёт файл описания, даже когда мониторинг выключен
+if [ -z "$(env_value "$GRAFANA_PASSWORD_VAR")" ]; then
+    set_env_value "$GRAFANA_PASSWORD_VAR" "$(random_secret)"
+    echo "Пароль администратора Grafana сгенерирован, он в .env."
+fi
+
 # Не смертельно, но документы без реквизитов оператора бесполезны: игроку
 # некуда обратиться по поводу своих данных
 if [ -z "$(env_value OPERATOR_NAME)" ] || [ -z "$(env_value OPERATOR_EMAIL)" ]; then
@@ -204,7 +218,17 @@ issue_certificate() {
     for extra in $(env_value SSL_EXTRA_DOMAINS | tr ',' ' '); do
         domains+=("$extra")
     done
+
+    # Панель мониторинга живёт на своём поддомене и тоже нуждается в
+    # сертификате: отдельно его выпускать незачем, имя добавляется в общий
+    monitoring_enabled && domains+=("$(monitoring_domain)")
+
     for extra in "${domains[@]}"; do
+        # Повтор имени certbot считает ошибкой, а попасть в список дважды оно
+        # может легко: и через SSL_EXTRA_DOMAINS, и как домен панели
+        case " ${names[*]} " in
+            *" $extra "*) continue ;;
+        esac
         names+=(-d "$extra")
     done
 
@@ -240,13 +264,95 @@ issue_certificate() {
             "Let's Encrypt не выдал сертификат." \
             "Проверьте, что домены указывают на этот сервер — в Cloudflare это" \
             "серое облачко, DNS only, — и что 80-й порт открыт снаружи." \
-            "Домена, которого нет в DNS, в SSL_EXTRA_DOMAINS быть не должно:" \
-            "проверка не пройдёт целиком."
+            "Домена, которого нет в DNS, в списке быть не должно: проверка не" \
+            "пройдёт целиком. Это касается и поддомена панели мониторинга —" \
+            "либо заведите ему запись, либо поставьте MONITORING=false."
     )"
+}
+
+# Узел Grafana. Имя домена в конфигурацию nginx подставить переменной нельзя,
+# поэтому server-блок собирается здесь — под контур и под настоящее имя.
+write_monitoring_host() {
+    local domain="$1" tls_lines=""
+
+    case "$profile" in
+        letsencrypt)
+            tls_lines="$(
+                printf '%s\n' \
+                    "    listen 443 ssl;" \
+                    "    http2 on;" \
+                    "" \
+                    "    ssl_certificate /etc/letsencrypt/live/main/fullchain.pem;" \
+                    "    ssl_certificate_key /etc/letsencrypt/live/main/privkey.pem;"
+            )"
+            ;;
+        cloudflare)
+            tls_lines="$(
+                printf '%s\n' \
+                    "    listen 443 ssl;" \
+                    "    http2 on;" \
+                    "" \
+                    "    ssl_certificate /etc/nginx/ssl/origin.pem;" \
+                    "    ssl_certificate_key /etc/nginx/ssl/origin.key;" \
+                    "" \
+                    "    include /etc/nginx/snippets/cloudflare-real-ip.conf;" \
+                    "    include /etc/nginx/snippets/cloudflare-origin-pull.conf;"
+            )"
+            ;;
+        tls)
+            tls_lines="$(
+                printf '%s\n' \
+                    "    listen 443 ssl;" \
+                    "    http2 on;" \
+                    "" \
+                    "    ssl_certificate /etc/nginx/ssl/fullchain.pem;" \
+                    "    ssl_certificate_key /etc/nginx/ssl/privkey.pem;"
+            )"
+            ;;
+        *)
+            # Контур http: шифрование терминирует кто-то перед нами
+            tls_lines="    listen 80;"
+            ;;
+    esac
+
+    {
+        echo "# Собран deploy.sh $(date -u '+%Y-%m-%d %H:%M UTC') под контур ${profile}."
+        echo "# Правки в этом файле затрутся при следующем развёртывании."
+        echo
+        echo "server {"
+        echo "$tls_lines"
+        echo
+        echo "    server_name ${domain};"
+        echo
+        echo "    include /etc/nginx/snippets/monitoring-proxy.conf;"
+        echo "}"
+    } > "$MONITORING_SNIPPET"
+}
+
+# Мониторинг включён? Значение по умолчанию берём из .env.example, чтобы
+# правда о настройках по умолчанию лежала в одном месте
+monitoring_enabled() {
+    [ "$(env_value MONITORING)" != "false" ]
+}
+
+# Домен панели. Пусто — собирается из домена сайта
+monitoring_domain() {
+    local configured
+    configured="$(env_value MONITORING_DOMAIN)"
+
+    if [ -n "$configured" ]; then
+        printf '%s' "$configured"
+    else
+        printf 'grafana.%s' "$(site_domain)"
+    fi
 }
 
 profile="$(env_value NGINX_PROFILE)"
 [ -n "$profile" ] || profile=http
+
+# Профили docker compose: ими включаются необязательные службы
+compose_profiles=()
+monitoring_enabled && compose_profiles+=(monitoring)
 
 case "$profile" in
     tls)
@@ -276,7 +382,7 @@ case "$profile" in
         fi
 
         # Контейнер продления объявлен с profiles: без этого он не поднимется
-        export COMPOSE_PROFILES=letsencrypt
+        compose_profiles+=(letsencrypt)
         ;;
     cloudflare)
         step "Готовлю контур Cloudflare"
@@ -296,6 +402,42 @@ case "$profile" in
         write_cloudflare_origin_pull
         ;;
 esac
+
+# ─── Наблюдаемость ────────────────────────────────────────────────────
+if monitoring_enabled; then
+    step "Готовлю мониторинг"
+
+    monitoring_host="$(monitoring_domain)"
+    [ -n "$monitoring_host" ] ||
+        die "мониторинг включён, но домен панели неоткуда взять: заполните MONITORING_DOMAIN"
+
+    write_monitoring_host "$monitoring_host"
+
+    # Записываем разобранные значения обратно: docker compose читает .env, а
+    # не эти функции, и Grafana должна знать свой публичный адрес
+    set_env_value MONITORING_DOMAIN "$monitoring_host"
+    if [ "$profile" = "http" ]; then
+        set_env_value MONITORING_URL "http://${monitoring_host}"
+    else
+        set_env_value MONITORING_URL "https://${monitoring_host}"
+    fi
+
+    echo "Панель будет доступна на ${monitoring_host}."
+else
+    # Файла нет — nginx подключает узел по маске и не спотыкается об это
+    rm -f "$MONITORING_SNIPPET"
+    echo "Мониторинг выключен: MONITORING=false."
+fi
+
+# Список профилей compose собирается один раз: пустая переменная означала бы,
+# что необязательные службы не поднимутся вовсе
+if [ "${#compose_profiles[@]}" -gt 0 ]; then
+    COMPOSE_PROFILES="$(
+        IFS=,
+        echo "${compose_profiles[*]}"
+    )"
+    export COMPOSE_PROFILES
+fi
 
 # ─── Сборка и запуск ──────────────────────────────────────────────────
 step "Собираю образы и поднимаю контур"
@@ -355,6 +497,13 @@ else
 
     echo "Бэкенд здоров, nginx принял конфигурацию контура ${profile}."
     echo "Откройте снаружи: ${site:-https://<ваш домен>}/api/health"
+fi
+
+if monitoring_enabled; then
+    echo
+    echo "Мониторинг: $(env_value MONITORING_URL)"
+    grafana_user="$(env_value GRAFANA_ADMIN_USER)"
+    echo "Вход — ${grafana_user:-admin}, пароль в .env (GRAFANA_ADMIN_PASSWORD)."
 fi
 
 echo

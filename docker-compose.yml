@@ -42,6 +42,8 @@ services:
         condition: service_healthy
     networks:
       - edge
+      # Чтобы проксировать на Grafana
+      - observe
     healthcheck:
       test: ["CMD", "nginx", "-t"]
       interval: 30s
@@ -95,6 +97,8 @@ services:
       SATELLITE_TILE_URL: ${SATELLITE_TILE_URL:-https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}}
       SATELLITE_ATTRIBUTION: ${SATELLITE_ATTRIBUTION:-Esri, Maxar, Earthstar Geographics}
       TILE_PREWARM: ${TILE_PREWARM:-true}
+      # Строка лога объектом JSON: так её разбирает сборщик логов
+      LOG_FORMAT: json
       DEBUG: "false"
     depends_on:
       postgres:
@@ -105,6 +109,8 @@ services:
       # edge нужен не только для nginx: за тайлами снимков бэкенд ходит наружу
       - edge
       - data
+      # Чтобы Prometheus мог снимать показатели
+      - observe
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 30s
@@ -154,6 +160,135 @@ services:
       timeout: 5s
       retries: 5
 
+  # ═════════════════════════════════════════
+  # НАБЛЮДАЕМОСТЬ
+  # Поднимается при MONITORING=true — профиль включает deploy.sh
+  # ═════════════════════════════════════════
+
+  # Показатели: снимает с бэкенда и с сервера, хранит месяц
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: location_king_prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--storage.tsdb.retention.size=4GB"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    networks:
+      - observe
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Логи: хранение и поиск
+  loki:
+    image: grafana/loki:3.3.2
+    container_name: location_king_loki
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./monitoring/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki_data:/loki
+    networks:
+      - observe
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # Сбор логов всех контейнеров. Пришёл на смену Promtail, который Grafana
+  # объявила устаревшим
+  alloy:
+    image: grafana/alloy:v1.6.1
+    container_name: location_king_alloy
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    # Контейнеры Alloy находит через докер, а сокет доступен только root.
+    # Права намеренно ограничены чтением: писать в докер сборщику логов незачем
+    user: root
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy_data:/var/lib/alloy/data
+    networks:
+      - observe
+    depends_on:
+      - loki
+
+  # Показатели самой машины: процессор, память, диск, сеть
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: location_king_node_exporter
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - observe
+
+  # Панели и запросы к логам
+  grafana:
+    image: grafana/grafana:11.5.1
+    container_name: location_king_grafana
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?пароль администратора Grafana обязателен}
+      # Адрес собирает deploy.sh: он знает и домен, и контур, а Grafana
+      # строит по нему ссылки в письмах и переходы после входа
+      GF_SERVER_ROOT_URL: ${MONITORING_URL:-http://localhost:3000}
+      GF_SERVER_DOMAIN: ${MONITORING_DOMAIN:-localhost}
+      # Заводить учётные записи может только администратор: панель видна
+      # из интернета, и открытая регистрация означала бы открытый доступ
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Наружу Grafana не ходит: сеть observe закрыта, а телеметрия и проверка
+      # обновлений всё равно только мешали бы
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    networks:
+      - observe
+    depends_on:
+      - prometheus
+      - loki
+
 networks:
   # Внешняя сеть: сюда смотрит nginx, отсюда же бэкенд ходит за снимками
   edge:
@@ -162,7 +297,16 @@ networks:
   data:
     driver: bridge
     internal: true
+  # Наблюдаемость: тоже закрыта наружу. Grafana доступна только через nginx,
+  # а Prometheus и Loki — только из этой сети
+  observe:
+    driver: bridge
+    internal: true
 
 volumes:
   postgres_data:
   redis_data:
+  prometheus_data:
+  loki_data:
+  alloy_data:
+  grafana_data:

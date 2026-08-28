@@ -1,0 +1,36 @@
+# Сбор показателей. Всё внутри контура: наружу Prometheus не смотрит и
+# наружу не выставлен — к нему ходит только Grafana.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    service: location-king
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  # Игра: запросы, задержки, события вроде попаданий в кэш тайлов
+  - job_name: backend
+    metrics_path: /api/metrics
+    static_configs:
+      - targets: ["backend:8000"]
+
+  # Сервер: процессор, память, диск, сеть
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  # Сам стек наблюдаемости: если замолчит он, это тоже нужно видеть
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: loki
+    static_configs:
+      - targets: ["loki:3100"]
+
+  - job_name: alloy
+    static_configs:
+      - targets: ["alloy:12345"]

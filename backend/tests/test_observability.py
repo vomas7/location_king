@@ -1,8 +1,17 @@
-"""Тесты идентификатора запроса и показателей."""
+"""Тесты идентификатора запроса, формата логов и показателей."""
+
+import json
+import logging
+import sys
 
 from httpx import AsyncClient
 
-from app.observability import REQUEST_ID_HEADER, metrics
+from app.observability import (
+    REQUEST_ID_HEADER,
+    JsonFormatter,
+    RequestIdFilter,
+    metrics,
+)
 
 
 async def test_response_carries_a_request_id(client: AsyncClient):
@@ -90,3 +99,46 @@ async def test_histogram_has_upper_bucket_and_count(client: AsyncClient):
 
     assert 'location_king_request_seconds_bucket{route="/api/health",le="+Inf"}' in body
     assert 'location_king_request_seconds_count{route="/api/health"}' in body
+
+
+async def test_json_log_line_is_parsable():
+    """Loki разбирает строку сам, поэтому она обязана быть корректным JSON."""
+    record = logging.LogRecord(
+        "app.services.game", logging.INFO, "game.py", 10, "Сессия %s начата", ("abc",), None
+    )
+    RequestIdFilter().filter(record)
+    record.zone_id = 42
+
+    line = json.loads(JsonFormatter().format(record))
+
+    assert line["level"] == "INFO"
+    assert line["logger"] == "app.services.game"
+    assert line["message"] == "Сессия abc начата"
+    assert line["request_id"] == "-"
+    # Поля из extra попадают в объект: ради них формат и заводился
+    assert line["zone_id"] == 42
+
+
+async def test_json_log_keeps_the_traceback():
+    try:
+        raise ValueError("провайдер лёг")
+    except ValueError:
+        record = logging.LogRecord(
+            "app", logging.ERROR, "tiles.py", 1, "упало", None, sys.exc_info()
+        )
+
+    RequestIdFilter().filter(record)
+    line = json.loads(JsonFormatter().format(record))
+
+    assert "ValueError: провайдер лёг" in line["exception"]
+
+
+async def test_json_log_survives_unserialisable_extra():
+    """Логи не должны падать из-за того, что в extra положили что попало."""
+    record = logging.LogRecord("app", logging.INFO, "x.py", 1, "сообщение", None, None)
+    RequestIdFilter().filter(record)
+    record.weird = object()
+
+    line = json.loads(JsonFormatter().format(record))
+
+    assert isinstance(line["weird"], str)

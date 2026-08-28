@@ -1,0 +1,99 @@
+# Правила тревог.
+#
+# Alertmanager в контуре нет, поэтому тревоги никуда не отправляются — они
+# видны в Grafana на панели «Тревоги» и в самом Prometheus. Как подключить
+# доставку в почту или телеграм, описано в docs/monitoring.md.
+
+groups:
+  - name: игра
+    rules:
+      - alert: BackendDown
+        expr: up{job="backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Бэкенд не отвечает
+          description: >-
+            Prometheus не может снять показатели с backend:8000 уже две минуты.
+            Смотрите docker compose logs backend.
+
+      - alert: HighErrorRate
+        expr: >-
+          sum(rate(location_king_requests_total{status=~"5.."}[5m]))
+          / sum(rate(location_king_requests_total[5m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Каждый двадцатый запрос отвечает ошибкой
+          description: Доля ответов 5xx выше 5% десять минут подряд.
+
+      - alert: SlowRequests
+        expr: >-
+          histogram_quantile(
+            0.95, sum by (le) (rate(location_king_request_seconds_bucket[5m]))
+          ) > 2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Запросы стали медленными
+          description: 95-я процентиль времени ответа держится выше двух секунд.
+
+      - alert: TileProviderFailing
+        expr: increase(location_king_events_total{event="tile_provider_error"}[10m]) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Провайдер снимков отдаёт ошибки
+          description: >-
+            Больше двадцати неудачных обращений за десять минут. Игроки видят
+            пустые квадраты вместо снимка.
+
+      - alert: RateLimitStorm
+        expr: sum(increase(location_king_events_total{event=~"rate_limited_.*"}[15m])) > 200
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Лимиты срабатывают массово
+          description: >-
+            Похоже на перебор или бота. Посмотрите в логах nginx, с каких
+            адресов идут запросы.
+
+  - name: сервер
+    rules:
+      - alert: DiskFillingUp
+        expr: >-
+          node_filesystem_avail_bytes{mountpoint="/"}
+          / node_filesystem_size_bytes{mountpoint="/"} < 0.1
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: На диске меньше десяти процентов места
+          description: >-
+            Кончится место — встанет и база, и запись логов. Проверьте
+            docker system df.
+
+      - alert: MemoryPressure
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Свободной памяти меньше десяти процентов
+          description: Следующий всплеск нагрузки может уронить контейнер.
+
+      - alert: MonitoringBlind
+        expr: up{job=~"loki|node|alloy"} == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Часть наблюдаемости замолчала
+          description: >-
+            Не отвечает {{ $labels.job }}. Показатели или логи собираются не
+            полностью.

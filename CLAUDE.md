@@ -7,7 +7,8 @@
 
 Геогессер по спутниковым снимкам. Игроку показывают участок снимка, он ищет это
 место на карте мира. Как устроена игра и API — в [README](README.md), как
-разворачивается — в [docs/deployment.md](docs/deployment.md).
+разворачивается — в [docs/deployment.md](docs/deployment.md), как за ним
+наблюдать — в [docs/monitoring.md](docs/monitoring.md).
 
 ## Перед каждым коммитом
 

@@ -1,0 +1,16 @@
+# Дашборды лежат файлами в репозитории: правка через интерфейс не переживёт
+# пересоздание контейнера, а файл переживёт и попадёт в историю git.
+
+apiVersion: 1
+
+providers:
+  - name: location-king
+    orgId: 1
+    folder: Location King
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

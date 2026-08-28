@@ -7,7 +7,9 @@
 prometheus-client, и это будет отдельным решением.
 """
 
+import json
 import logging
+import os
 import re
 import time
 import uuid
@@ -102,6 +104,43 @@ class Metrics:
 metrics = Metrics()
 
 
+class JsonFormatter(logging.Formatter):
+    """
+    Строка лога как объект JSON.
+
+    Так Loki разбирает уровень, источник и идентификатор запроса сам, без
+    регулярных выражений на стороне сборщика: они пришлось бы править каждый
+    раз, когда меняется формат строки.
+    """
+
+    #: Что уже есть в готовом объекте и не должно попасть туда второй раз
+    RESERVED = frozenset(vars(logging.LogRecord("", 0, "", 0, "", None, None))) | {
+        "request_id",
+        "message",
+        "asctime",
+    }
+
+    def format(self, record: logging.LogRecord) -> str:
+        payload: dict[str, object] = {
+            "time": self.formatTime(record, "%Y-%m-%dT%H:%M:%S%z"),
+            "level": record.levelname,
+            "logger": record.name,
+            "request_id": getattr(record, "request_id", "-"),
+            "message": record.getMessage(),
+        }
+
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+
+        # Всё, что логгеру передали через extra: это ровно те поля, ради
+        # которых JSON и заводится
+        for key, value in vars(record).items():
+            if key not in self.RESERVED:
+                payload[key] = value
+
+        return json.dumps(payload, ensure_ascii=False, default=str)
+
+
 class RequestIdFilter(logging.Filter):
     """Подмешивает идентификатор запроса в каждую строку лога."""
 
@@ -156,13 +195,23 @@ def _route_of(request: Request) -> str:
     return path if isinstance(path, str) else "unknown"
 
 
+#: Формат вывода логов: text — человеку в терминал, json — сборщику логов.
+#: Читается из окружения напрямую, а не через настройки: логи включаются
+#: раньше, чем разбирается конфигурация, и её ошибку тоже нужно записать.
+LOG_FORMAT = os.getenv("LOG_FORMAT", "text")
+
+
 def configure_logging(debug: bool) -> None:
     """Настроить логи так, чтобы в каждой строке был идентификатор запроса."""
     handler = logging.StreamHandler()
     handler.addFilter(RequestIdFilter())
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s %(levelname)-8s [%(request_id)s] %(name)s: %(message)s")
-    )
+
+    if LOG_FORMAT == "json":
+        handler.setFormatter(JsonFormatter())
+    else:
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)-8s [%(request_id)s] %(name)s: %(message)s")
+        )
 
     root = logging.getLogger()
     root.handlers = [handler]

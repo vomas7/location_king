@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.exceptions import AuthError, ConflictError
 from app.models.user import User
+from app.observability import metrics
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +131,7 @@ async def register(db: AsyncSession, email: str, password: str, display_name: st
         await db.rollback()
         raise ConflictError("Пользователь с таким email уже зарегистрирован") from e
 
+    metrics.count("user_registered")
     logger.info("Зарегистрирован пользователь %s", user.id)
     return user
 

@@ -1,0 +1,67 @@
+// Сбор логов всех контейнеров и отправка в Loki.
+//
+// Alloy пришёл на смену Promtail, который Grafana объявила устаревшим.
+// Контейнеры он находит сам через докер, поэтому новый сервис в
+// docker-compose.yml попадает в логи без правки этого файла.
+
+logging {
+  level  = "warn"
+  format = "logfmt"
+}
+
+discovery.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "15s"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  // Докер отдаёт имя со слэшем впереди — убираем, иначе в Grafana оно
+  // выглядит как путь
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  // Разделять stdout и stderr полезно: ошибки видны отдельным потоком
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "stream"
+  }
+}
+
+loki.source.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.relabel.containers.output
+  forward_to       = [loki.process.parse.receiver]
+  refresh_interval = "15s"
+}
+
+loki.process "parse" {
+  forward_to = [loki.write.default.receiver]
+
+  // Бэкенд и nginx пишут строку объектом JSON. Строки, которые объектом не
+  // являются — postgres, redis, — просто проходят дальше как есть.
+  stage.json {
+    expressions = {
+      level = "level",
+    }
+  }
+
+  // Меткой становится только уровень: по нему фильтруют и настраивают тревоги.
+  // Остальные поля разбираются на лету запросом `| json` — так число потоков
+  // в Loki не растёт вместе с числом полей.
+  stage.labels {
+    values = {
+      level = "",
+    }
+  }
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
