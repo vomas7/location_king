@@ -101,7 +101,9 @@ export function LandingScreen({ onOpenLegal }: LandingScreenProps) {
           </div>
           <div className={styles.number}>
             <dt>Мест в игре</dt>
-            <dd>159</dd>
+            {/* Число сверяется с каталогом тестом: соврать игроку легко,
+                заметить это потом — нет */}
+            <dd>277</dd>
           </div>
           <div className={styles.number}>
             <dt>Уровней приближения</dt>
