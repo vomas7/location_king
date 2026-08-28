@@ -33,6 +33,26 @@
   font-size: 13px;
 }
 
+/* Серия — единственная причина вернуться завтра, поэтому она акцентная */
+.streak {
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--glow-warm);
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.streak strong {
+  color: var(--accent);
+  font-size: 15px;
+}
+
+.streakBest {
+  color: var(--text-faint);
+}
+
 .played {
   display: flex;
   align-items: center;

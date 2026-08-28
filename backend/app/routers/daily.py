@@ -23,6 +23,7 @@ async def get_today(
 ) -> DailyChallengeView:
     """Условия челленджа дня, результат игрока и таблица дня."""
     day = daily_service.today()
+    current_streak, best_streak = await daily_service.streak(db, user, day)
 
     return DailyChallengeView(
         day=day,
@@ -30,6 +31,8 @@ async def get_today(
         view_extent_km=daily_service.VIEW_EXTENT_KM,
         my_session=views.session_summary_or_none(await daily_service.played_session(db, user, day)),
         finished_players=await daily_service.played_count(db, day),
+        current_streak=current_streak,
+        best_streak=best_streak,
         results=[
             views.daily_result(rank, session)
             for rank, session in enumerate(await daily_service.results(db, day), start=1)

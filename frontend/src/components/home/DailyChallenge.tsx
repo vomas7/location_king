@@ -86,6 +86,17 @@ export function DailyChallenge({ refreshKey, onStarted, onError }: DailyChalleng
         для всех. Одна попытка в сутки.
       </p>
 
+      {data.current_streak > 0 && (
+        <p className={styles.streak}>
+          <strong>{data.current_streak}</strong>{" "}
+          {plural(data.current_streak, "день", "дня", "дней")} подряд
+          {finished ? "" : " — сыграй сегодня, чтобы не прервать"}
+          {data.best_streak > data.current_streak && (
+            <span className={styles.streakBest}> · рекорд {data.best_streak}</span>
+          )}
+        </p>
+      )}
+
       {finished && data.my_session !== null && (
         <div className={styles.played}>
           <span className={styles.playedLabel}>Твой результат сегодня</span>

@@ -166,6 +166,10 @@ export interface DailyChallenge {
   /** Партия игрока по этому челленджу, если он его уже начинал. */
   my_session: SessionSummary | null;
   finished_players: number;
+  /** Сколько дней подряд игрок доходит до конца челленджа. */
+  current_streak: number;
+  /** Самая длинная его серия за всё время. */
+  best_streak: number;
   results: DailyResult[];
 }
 

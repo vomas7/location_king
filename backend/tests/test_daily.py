@@ -7,10 +7,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.daily import DailyChallenge
+from app.models.enums import SessionStatus
 from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
 from app.models.round import Round
 from app.models.series import SeriesRound
+from app.models.user import User
 from app.services import daily as daily_service
 from tests.helpers import play_through
 
@@ -188,3 +190,36 @@ async def test_challenge_round_hides_the_target(
 
     assert "target" not in started.text
     assert zone.name not in started.text
+
+
+async def test_streak_counts_finished_days(
+    client: AsyncClient,
+    auth_headers: dict,
+    db: AsyncSession,
+    registered_user: User,
+    zone: LocationZone,
+):
+    """Серия растёт по дням, в которые челлендж доигран до конца."""
+    today = daily_service.today()
+
+    # Три дня подряд, из них позавчерашний брошен на середине
+    for offset, status in (
+        (2, SessionStatus.ABANDONED),
+        (1, SessionStatus.FINISHED),
+        (0, SessionStatus.FINISHED),
+    ):
+        db.add(
+            GameSession(
+                user_id=registered_user.id,
+                rounds_total=daily_service.ROUNDS_TOTAL,
+                challenge_day=today - timedelta(days=offset),
+                status=status,
+            )
+        )
+    await db.flush()
+
+    body = (await client.get("/api/challenge/today", headers=auth_headers)).json()
+
+    # Брошенная партия серию не продолжает: считаются только доигранные
+    assert body["current_streak"] == 2
+    assert body["best_streak"] == 2

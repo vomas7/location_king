@@ -24,6 +24,7 @@ from app.models.game_session import GameSession
 from app.models.round import Round
 from app.models.user import User
 from app.services import series as series_service
+from app.utils.streak import current_and_best
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +108,24 @@ async def results(db: AsyncSession, day: date, limit: int = 20) -> list[GameSess
         .limit(limit)
     )
     return list((await db.execute(stmt)).scalars().all())
+
+
+async def streak(db: AsyncSession, user: User, day: date) -> tuple[int, int]:
+    """
+    Текущая и лучшая серия дней игрока.
+
+    Считается запросом каждый раз, а не хранится в профиле: дней у игрока
+    столько, сколько он играл, и посчитать их дешевле, чем поддерживать
+    счётчик, который однажды разойдётся с правдой.
+    """
+    stmt = select(GameSession.challenge_day).where(
+        GameSession.user_id == user.id,
+        GameSession.challenge_day.is_not(None),
+        GameSession.status == SessionStatus.FINISHED,
+    )
+    days = [value for value in (await db.execute(stmt)).scalars().all() if value is not None]
+
+    return current_and_best(days, day)
 
 
 async def played_count(db: AsyncSession, day: date) -> int:

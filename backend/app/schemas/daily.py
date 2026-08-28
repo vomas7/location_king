@@ -28,4 +28,9 @@ class DailyChallengeView(BaseModel):
     #: Сколько игроков уже дошли до конца
     finished_players: int
 
+    #: Сколько дней подряд игрок доходит до конца челленджа
+    current_streak: int
+    #: Самая длинная его серия за всё время
+    best_streak: int
+
     results: list[DailyResult]
