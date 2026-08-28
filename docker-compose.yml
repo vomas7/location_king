@@ -22,10 +22,21 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      # NGINX_PROFILE=http — TLS терминирует хостинг; tls — сертификаты свои
+      # Контур задаёт NGINX_PROFILE, значения — в .env.example
       - ./nginx/${NGINX_PROFILE:-http}:/etc/nginx/conf.d:ro
       - ./nginx/snippets:/etc/nginx/snippets:ro
       - ./ssl:/etc/nginx/ssl:ro
+      # Сертификат Let's Encrypt и каталог для проверки домена. Остальным
+      # контурам они не мешают: конфигурация их просто не упоминает
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    # Продлённый сертификат появляется в томе рядом с работающим nginx, и
+    # подхватывается он только перезагрузкой конфигурации. Раз в шесть часов —
+    # с большим запасом: certbot продлевает за месяц до истечения
+    command:
+      - sh
+      - -c
+      - "while :; do sleep 6h; nginx -s reload; done & exec nginx -g 'daemon off;'"
     depends_on:
       backend:
         condition: service_healthy
@@ -36,6 +47,37 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # ─────────────────────────────────────────
+  # CERTBOT — продление сертификата Let's Encrypt
+  # ─────────────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    container_name: location_king_certbot
+    restart: unless-stopped
+    # Поднимается только при NGINX_PROFILE=letsencrypt: его включает deploy.sh
+    profiles:
+      - letsencrypt
+    # Наружу за продлением ходит по той же сети, что и остальной периметр
+    networks:
+      - edge
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    # Проверка раз в двенадцать часов — рекомендация Let's Encrypt: сертификат
+    # продлевается за месяц до истечения, так что пара пропущенных попыток
+    # ничего не ломает. trap нужен, чтобы docker compose down не ждал таймаута
+    entrypoint: >-
+      sh -c "trap exit TERM;
+      while :; do
+        certbot renew --webroot --webroot-path /var/www/certbot;
+        sleep 12h & wait $${!};
+      done"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
 
   # ─────────────────────────────────────────
   # BACKEND — FastAPI

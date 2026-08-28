@@ -21,8 +21,16 @@ readonly HEALTH_TIMEOUT_SECONDS=180
 readonly SECRET_VARS=(POSTGRES_PASSWORD REDIS_PASSWORD JWT_SECRET)
 
 # Переменные, которые при создании .env можно передать окружением
-readonly ENV_OVERRIDES=(SITE_URL OPERATOR_NAME OPERATOR_EMAIL)
+readonly ENV_OVERRIDES=(
+    SITE_URL OPERATOR_NAME OPERATOR_EMAIL NGINX_PROFILE SSL_EMAIL SSL_EXTRA_DOMAINS
+)
 
+
+# Каталог сертификата фиксирован ключом --cert-name: путь в конфигурации
+# nginx тогда не зависит от домена
+readonly LETSENCRYPT_NAME=main
+readonly LETSENCRYPT_LIVE=certbot/conf/live/main
+readonly ACME_HELPER=location_king_acme
 
 readonly CLOUDFLARE_IPS_V4=https://www.cloudflare.com/ips-v4
 readonly CLOUDFLARE_IPS_V6=https://www.cloudflare.com/ips-v6
@@ -89,15 +97,6 @@ if [ ! -f .env ]; then
         sed -i "s|^${name}=$|${name}=${secret}|" .env
     done
 
-    # Значения из окружения: так первый запуск обходится без правки .env
-    # редактором — это заметно проще, когда сервер настраивают с телефона
-    for name in "${ENV_OVERRIDES[@]}"; do
-        value="${!name-}"
-        [ -n "$value" ] || continue
-        set_env_value "$name" "$value"
-        echo "${name} взят из окружения."
-    done
-
     echo "Пароли сгенерированы, файл доступен только владельцу."
     echo "Домен и провайдера снимков задайте в .env, если нужны не значения по умолчанию."
 fi
@@ -111,6 +110,18 @@ env_value() {
     raw="${raw#\"}"
     printf '%s' "$raw"
 }
+
+# Значения, переданные окружением, сильнее записанных в .env: так и первый
+# запуск обходится без редактора, и потом можно поменять контур или домен той
+# же командой. Это заметно проще, когда сервером управляют с телефона.
+for name in "${ENV_OVERRIDES[@]}"; do
+    value="${!name-}"
+    [ -n "$value" ] || continue
+    [ "$value" != "$(env_value "$name")" ] || continue
+
+    set_env_value "$name" "$value"
+    echo "${name} взят из окружения: ${value}"
+done
 
 for name in "${SECRET_VARS[@]}"; do
     [ -n "$(env_value "$name")" ] || die "в .env не заполнена переменная ${name}"
@@ -174,6 +185,66 @@ write_cloudflare_origin_pull() {
     fi
 }
 
+# Домен из SITE_URL: схема и путь тут не нужны, сертификат выпускается на имя
+site_domain() {
+    local site
+    site="$(env_value SITE_URL)"
+    site="${site#*://}"
+    printf '%s' "${site%%/*}"
+}
+
+# Первый сертификат. Дальше его продлевает контейнер certbot — тем же способом
+# проверки, поэтому и здесь webroot, а не standalone: иначе продление стало бы
+# отличаться от выпуска и однажды отвалилось бы молча.
+issue_certificate() {
+    local domain="$1" email="$2" extra code
+    local domains=("$domain") names=()
+
+    # Разбиение по словам здесь и нужно: в переменной список доменов
+    for extra in $(env_value SSL_EXTRA_DOMAINS | tr ',' ' '); do
+        domains+=("$extra")
+    done
+    for extra in "${domains[@]}"; do
+        names+=(-d "$extra")
+    done
+
+    echo "Выпускаю сертификат: ${domains[*]}"
+
+    # Проверку Let's Encrypt присылает на 80-й порт, и его слушает nginx
+    # контура. Настоящий nginx на это время не годится: без сертификата он не
+    # стартует вовсе, поэтому порт занимает сервер, умеющий ровно одно —
+    # отдать файл проверки
+    docker compose stop nginx > /dev/null 2>&1 || true
+    trap 'docker rm -f "$ACME_HELPER" > /dev/null 2>&1 || true' EXIT
+    docker rm -f "$ACME_HELPER" > /dev/null 2>&1 || true
+
+    docker run --rm --detach --name "$ACME_HELPER" --publish 80:80 \
+        --volume "$PWD/certbot/www:/usr/share/nginx/html:ro" \
+        nginx:alpine > /dev/null ||
+        die "не удалось занять 80-й порт для проверки домена"
+
+    code=0
+    docker run --rm \
+        --volume "$PWD/certbot/conf:/etc/letsencrypt" \
+        --volume "$PWD/certbot/www:/var/www/certbot" \
+        certbot/certbot certonly \
+        --webroot --webroot-path /var/www/certbot \
+        --cert-name "$LETSENCRYPT_NAME" "${names[@]}" \
+        --email "$email" --agree-tos --no-eff-email --non-interactive || code=$?
+
+    docker rm -f "$ACME_HELPER" > /dev/null 2>&1 || true
+    trap - EXIT
+
+    [ "$code" = "0" ] || die "$(
+        printf '%s\n' \
+            "Let's Encrypt не выдал сертификат." \
+            "Проверьте, что домены указывают на этот сервер — в Cloudflare это" \
+            "серое облачко, DNS only, — и что 80-й порт открыт снаружи." \
+            "Домена, которого нет в DNS, в SSL_EXTRA_DOMAINS быть не должно:" \
+            "проверка не пройдёт целиком."
+    )"
+}
+
 profile="$(env_value NGINX_PROFILE)"
 [ -n "$profile" ] || profile=http
 
@@ -181,6 +252,31 @@ case "$profile" in
     tls)
         [ -s ssl/fullchain.pem ] && [ -s ssl/privkey.pem ] ||
             die "профиль tls требует ssl/fullchain.pem и ssl/privkey.pem"
+        ;;
+    letsencrypt)
+        step "Готовлю сертификат Let's Encrypt"
+
+        domain="$(site_domain)"
+        [ -n "$domain" ] ||
+            die "профиль letsencrypt требует SITE_URL в .env: из него берётся домен сертификата"
+
+        # Адрес нужен Let's Encrypt, чтобы предупредить об истечении, если
+        # продление вдруг перестанет проходить
+        email="$(env_value SSL_EMAIL)"
+        [ -n "$email" ] || email="$(env_value OPERATOR_EMAIL)"
+        [ -n "$email" ] ||
+            die "профиль letsencrypt требует SSL_EMAIL или OPERATOR_EMAIL в .env"
+
+        mkdir -p certbot/conf certbot/www
+
+        if [ -s "$LETSENCRYPT_LIVE/fullchain.pem" ]; then
+            echo "Сертификат уже выпущен, продлевает его контейнер certbot."
+        else
+            issue_certificate "$domain" "$email"
+        fi
+
+        # Контейнер продления объявлен с profiles: без этого он не поднимется
+        export COMPOSE_PROFILES=letsencrypt
         ;;
     cloudflare)
         step "Готовлю контур Cloudflare"
@@ -235,6 +331,20 @@ if [ "$profile" = "http" ]; then
         curl --fail --silent --show-error http://localhost/api/health && echo
     else
         echo "curl не установлен, проверьте вручную: http://localhost/api/health"
+    fi
+elif [ "$profile" = "letsencrypt" ]; then
+    docker compose exec -T nginx nginx -t > /dev/null 2>&1 ||
+        die "nginx поднялся с нерабочей конфигурацией, смотрите docker compose logs nginx"
+
+    # Настоящая проверка: сертификат признаётся, HTTPS отвечает. Запрос идёт с
+    # самого сервера, а он не на всяком хостинге может достучаться до своего же
+    # внешнего адреса, — поэтому неудача здесь не приговор
+    if curl --fail --silent --show-error --max-time 15 "https://${domain}/api/health"; then
+        echo
+        echo "Сертификат принят, игра отвечает по HTTPS."
+    else
+        echo "С самого сервера достучаться до https://${domain} не вышло." >&2
+        echo "Так бывает из-за NAT: откройте адрес с другого устройства." >&2
     fi
 else
     # Контуры с TLS отвечают по HTTPS, а за Cloudflare origin вдобавок требует

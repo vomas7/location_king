@@ -9,8 +9,10 @@
 #
 #     curl -fsSL https://raw.githubusercontent.com/vomas7/location_king/main/server-setup.sh | sudo bash
 #
-# Реквизиты оператора для правовых документов можно передать той же строкой —
-# они уйдут в .env при первом запуске:
+# По умолчанию сайт получает сертификат Let's Encrypt, и от человека не нужно
+# ничего, кроме записей DNS на этот сервер. Реквизиты оператора для правовых
+# документов можно передать той же строкой — они уйдут в .env при первом
+# запуске:
 #
 #     curl -fsSL .../server-setup.sh | sudo OPERATOR_NAME="Имя" \
 #         OPERATOR_EMAIL=mail@example.com bash
@@ -75,10 +77,19 @@ fi
 cd "$TARGET"
 
 # ─── Сертификат Cloudflare ────────────────────────────────────────────
+# Нужен только контуру cloudflare. По умолчанию сертификат выпускает Let's
+# Encrypt, и тогда вмешательства не требуется вовсе.
+if [ -f .env ]; then
+    profile="$(sed -n 's/^[[:space:]]*NGINX_PROFILE=//p' .env | tail -n 1)"
+else
+    profile="${NGINX_PROFILE-}"
+fi
+[ -n "${profile:-}" ] || profile="$(sed -n 's/^[[:space:]]*NGINX_PROFILE=//p' .env.example | tail -n 1)"
+
 mkdir -p ssl
 chmod 700 ssl
 
-if [ ! -s ssl/origin.pem ] || [ ! -s ssl/origin.key ]; then
+if [ "$profile" = "cloudflare" ] && { [ ! -s ssl/origin.pem ] || [ ! -s ssl/origin.key ]; }; then
     cat <<'HINT'
 
 ── Остался один шаг: origin-сертификат Cloudflare ──
@@ -109,7 +120,7 @@ HINT
     exit 0
 fi
 
-chmod 600 ssl/origin.key
+[ -s ssl/origin.key ] && chmod 600 ssl/origin.key
 
 # ─── Развёртывание ────────────────────────────────────────────────────
 step "Разворачиваю"

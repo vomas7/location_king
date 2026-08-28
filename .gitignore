@@ -79,6 +79,9 @@ docker-data/
 # SSL certificates
 ssl/
 
+# Сертификаты Let's Encrypt и каталог проверки домена
+certbot/
+
 # Database
 *.db
 *.sqlite
