@@ -31,6 +31,24 @@ test("партия от регистрации до итогов", async ({ page
   await expect(page.getByRole("button", { name: "Играть снова" })).toBeVisible();
 });
 
+test("новичку объясняют игру в первом раунде и только в нём", async ({ page }) => {
+  await register(page);
+
+  await page.getByRole("radio", { name: "3", exact: true }).first().click();
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+
+  await expect(page.getByText("Осмотрись")).toBeVisible();
+  await page.getByRole("button", { name: "Понятно" }).click();
+  await expect(page.getByText("Отметь место")).toBeVisible();
+
+  await answerRound(page);
+  await page.getByRole("dialog").getByRole("button", { name: "Следующий раунд" }).click();
+
+  // Второй раунд игрок открывает уже сам
+  await expect(page.getByText("Шаг 1 из 3")).toBeHidden();
+});
+
 test("активный раунд не отдаёт координаты цели", async ({ page }) => {
   await register(page);
 

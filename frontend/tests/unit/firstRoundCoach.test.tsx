@@ -1,0 +1,80 @@
+/**
+ * Подсказки первого раунда.
+ *
+ * Проверяется главное их свойство: шаг следует за действиями игрока, а не за
+ * нажатиями на саму подсказку.
+ */
+
+import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { FirstRoundCoach } from "~/components/game/FirstRoundCoach";
+
+/**
+ * jsdom не знает про matchMedia, а подсказка спрашивает у него, есть ли
+ * курсор: на телефоне карта открывается кнопкой, и текст там другой.
+ */
+function withPointer(hover: boolean): void {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: (query: string) => ({
+      matches: hover,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
+  });
+}
+
+afterEach(() => {
+  Reflect.deleteProperty(window, "matchMedia");
+});
+
+describe("FirstRoundCoach", () => {
+  it("начинает с рассказа о снимке", () => {
+    withPointer(true);
+    render(<FirstRoundCoach hasGuess={false} onDismiss={vi.fn()} />);
+
+    expect(screen.getByText("Осмотрись")).toBeTruthy();
+    expect(screen.getByText("Шаг 1 из 3")).toBeTruthy();
+  });
+
+  it("после «Понятно» зовёт поставить точку", () => {
+    withPointer(true);
+    render(<FirstRoundCoach hasGuess={false} onDismiss={vi.fn()} />);
+
+    fireEvent.click(screen.getByText("Понятно"));
+
+    expect(screen.getByText("Отметь место")).toBeTruthy();
+    expect(screen.queryByText("Понятно")).toBeNull();
+  });
+
+  it("на телефоне зовёт нажать кнопку, а не подвести курсор", () => {
+    withPointer(false);
+    render(<FirstRoundCoach hasGuess={false} onDismiss={vi.fn()} />);
+
+    fireEvent.click(screen.getByText("Понятно"));
+
+    expect(screen.getByText(/Нажми «Открыть карту»/)).toBeTruthy();
+    expect(screen.queryByText(/Подведи курсор/)).toBeNull();
+  });
+
+  it("поставленная точка сразу переводит к ответу", () => {
+    withPointer(true);
+    render(<FirstRoundCoach hasGuess onDismiss={vi.fn()} />);
+
+    expect(screen.getByText("Отвечай")).toBeTruthy();
+    expect(screen.getByText("Шаг 3 из 3")).toBeTruthy();
+  });
+
+  it("подсказки можно закрыть", () => {
+    withPointer(true);
+    const onDismiss = vi.fn();
+    render(<FirstRoundCoach hasGuess={false} onDismiss={onDismiss} />);
+
+    fireEvent.click(screen.getByText("Не показывать"));
+
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+});

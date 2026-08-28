@@ -19,6 +19,7 @@ import { Footer } from "~/components/layout/Footer";
 import { TopBar } from "~/components/layout/TopBar";
 import { Loader } from "~/components/ui/Loader";
 import { Toast } from "~/components/ui/Toast";
+import { isNewPlayer } from "~/domain/onboarding";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useAuth } from "~/state/authContext";
 import { useGame } from "~/state/useGame";
@@ -130,6 +131,7 @@ export function App() {
             guess={state.guess}
             busy={state.phase !== "playing"}
             timeLimitSeconds={state.session?.time_limit_seconds ?? null}
+            coaching={isNewPlayer(user) && state.round.index === 1}
             onPick={game.pick}
             onSubmit={() => {
               void game.submit();

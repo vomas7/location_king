@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { RoundView } from "~/api/types";
+import { FirstRoundCoach } from "~/components/game/FirstRoundCoach";
 import styles from "~/components/game/GameScreen.module.css";
 import { GuessPanel } from "~/components/game/GuessPanel";
 import { RoundTimer } from "~/components/game/RoundTimer";
@@ -15,6 +16,8 @@ interface GameScreenProps {
   guess: LonLat | null;
   busy: boolean;
   timeLimitSeconds: number | null;
+  /** Показывать ли подсказки: это первый раунд первой партии игрока. */
+  coaching: boolean;
   onPick: (guess: LonLat) => void;
   onSubmit: () => void;
   /** Время вышло, а точка не поставлена. */
@@ -26,12 +29,16 @@ export function GameScreen({
   guess,
   busy,
   timeLimitSeconds,
+  coaching,
   onPick,
   onSubmit,
   onTimeout,
 }: GameScreenProps) {
   const [pinned, setPinned] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
+  // Закрытые подсказки не возвращаются до конца партии: экран игры живёт всю
+  // партию, поэтому хранить этот отказ где-то ещё незачем
+  const [coachDismissed, setCoachDismissed] = useState(false);
   const { secondsLeft, expired } = useCountdown(round.deadline_at);
 
   // Время вышло: отправляем поставленную точку, а если её нет — закрываем
@@ -79,6 +86,15 @@ export function GameScreen({
   return (
     <div className={styles.screen}>
       <SatelliteView round={round} resetSignal={resetSignal} />
+
+      {coaching && !coachDismissed && (
+        <FirstRoundCoach
+          hasGuess={guess !== null}
+          onDismiss={() => {
+            setCoachDismissed(true);
+          }}
+        />
+      )}
 
       {secondsLeft !== null && timeLimitSeconds !== null && (
         <RoundTimer secondsLeft={secondsLeft} totalSeconds={timeLimitSeconds} />

@@ -16,17 +16,13 @@ import { Button } from "~/components/ui/Button";
 import { Card, CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { Segmented } from "~/components/ui/Segmented";
 import { formatDistance, formatNumber, formatTimeLimit } from "~/domain/format";
+import { FIRST_GAME_SETUP, isNewPlayer } from "~/domain/onboarding";
 import type { PlaceKey } from "~/domain/place";
 import { placeFilter } from "~/domain/place";
 import { useAuth } from "~/state/authContext";
 
 const ROUNDS = [3, 5, 10].map((value) => ({ value, label: String(value) }));
 
-/**
- * Сколько земли попадает в кадр. Пять километров плотного города — это одна
- * текстура кварталов без ориентиров, поэтому лестница начинается там, где
- * в кадр уже попадает река, шоссе или берег.
- */
 /**
  * Уровень — это выбор содержания, а не множитель очков. Подсказка под
  * переключателем объясняет, что именно достанется: без неё «хардкор» звучит
@@ -39,8 +35,14 @@ const LEVELS = [
   { value: "hardcore", label: "Хардкор", hint: "Дикая природа: горы, пустыни, тайга, лёд" },
 ];
 
-const DEFAULT_LEVEL = "normal";
+/** Настройки по умолчанию для того, кто уже играл: свои он выставит сам. */
+const DEFAULT_SETUP = { rounds: 5, extent: 15, level: "normal", timeLimit: null } as const;
 
+/**
+ * Сколько земли попадает в кадр. Пять километров плотного города — это одна
+ * текстура кварталов без ориентиров, поэтому лестница начинается там, где
+ * в кадр уже попадает река, шоссе или берег.
+ */
 const EXTENTS = [
   { value: 5, label: "5 км" },
   { value: 15, label: "15 км" },
@@ -87,10 +89,14 @@ interface HomeScreenProps {
 export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: HomeScreenProps) {
   const { user } = useAuth();
 
-  const [rounds, setRounds] = useState(5);
-  const [extent, setExtent] = useState(15);
-  const [level, setLevel] = useState(DEFAULT_LEVEL);
-  const [timeLimit, setTimeLimit] = useState<number | null>(null);
+  // Первую партию настраивать не за что: человек ещё не знает, чем «средне»
+  // отличается от «сложно», и первый же непонятный кадр он закрывает
+  const setup = isNewPlayer(user) ? FIRST_GAME_SETUP : DEFAULT_SETUP;
+
+  const [rounds, setRounds] = useState<number>(setup.rounds);
+  const [extent, setExtent] = useState<number>(setup.extent);
+  const [level, setLevel] = useState<string>(setup.level);
+  const [timeLimit, setTimeLimit] = useState<number | null>(setup.timeLimit);
   const [place, setPlace] = useState<PlaceKey>(null);
   const [zoneCount, setZoneCount] = useState<number | null>(null);
   const [unfinished, setUnfinished] = useState<SessionState | null>(null);
@@ -167,7 +173,11 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
 
         <Card>
           <CardTitle>Новая партия</CardTitle>
-          <CardSubtitle>Настрой сложность и жми «Начать»</CardSubtitle>
+          <CardSubtitle>
+            {isNewPlayer(user)
+              ? "Для первой партии всё уже выставлено: пять раундов по городам, которые узнают все. Просто жми «Начать»"
+              : "Настрой сложность и жми «Начать»"}
+          </CardSubtitle>
 
           <div className={styles.options}>
             <Segmented label="Раундов" options={ROUNDS} value={rounds} onChange={setRounds} />

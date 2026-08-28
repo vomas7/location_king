@@ -1,0 +1,71 @@
+/* Подсказка стоит в левом верхнем углу: справа сверху уже висят клавиши,
+   слева снизу — масштаб, справа снизу — панель догадки. Свободен один угол */
+.coach {
+  position: absolute;
+  z-index: 15;
+  top: 14px;
+  left: 14px;
+  width: 300px;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-sm);
+}
+
+.counter {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin-top: 6px;
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.text {
+  margin-top: 6px;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.skip {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.skip:hover {
+  color: var(--text-dim);
+}
+
+/* На узком экране подсказка занимает всю ширину: колонкой в 300 пикселей она
+   отъедала бы половину снимка */
+@media (max-width: 780px) {
+  .coach {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+}
