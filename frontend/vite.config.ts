@@ -17,6 +17,16 @@ const API_PROXY = process.env.VITE_API_PROXY ?? "http://localhost:8000";
 const SITE_URL = (process.env.SITE_URL ?? "").replace(/\/+$/, "");
 
 /**
+ * Из какого коммита собрана эта сборка.
+ *
+ * Отдаётся файлом /version.json. Без него нельзя ответить на простой вопрос
+ * «а на сервере точно последняя версия?» — снаружи сборка ничем не отличается
+ * от вчерашней, и молчащее автоматическое развёртывание выглядит как
+ * работающее.
+ */
+const GIT_SHA = process.env.GIT_SHA ?? "";
+
+/**
  * Разметка для поисковиков.
  *
  * JSON-LD вставляется блоком данных, а не скриптом: браузер его не исполняет,
@@ -56,6 +66,12 @@ function seoPlugin(): Plugin {
     },
 
     generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "version.json",
+        source: `${JSON.stringify({ commit: GIT_SHA, built_at: new Date().toISOString() }, null, 2)}\n`,
+      });
+
       this.emitFile({
         type: "asset",
         fileName: "robots.txt",

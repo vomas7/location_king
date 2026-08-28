@@ -16,6 +16,8 @@ services:
         # Реквизиты оператора для условий использования и политики
         OPERATOR_NAME: ${OPERATOR_NAME:-}
         OPERATOR_EMAIL: ${OPERATOR_EMAIL:-}
+        # Коммит, из которого собрано: его отдаёт /version.json
+        GIT_SHA: ${GIT_SHA:-}
     container_name: location_king_nginx
     restart: unless-stopped
     ports:

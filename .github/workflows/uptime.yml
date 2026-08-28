@@ -25,6 +25,10 @@ jobs:
       SITE: https://locationking.ru
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Игра отвечает
         run: |
           # Три попытки: одиночная сетевая ошибка у бегунка GitHub не повод
@@ -56,6 +60,42 @@ jobs:
             exit 1
           }
           echo "Страница на месте"
+
+      - name: На сервере свежая версия
+        run: |
+          # Автоматическое развёртывание молчит, когда не работает: снаружи
+          # вчерашняя сборка выглядит ровно как сегодняшняя. Отметка версии —
+          # единственный способ это заметить
+          deployed="$(
+            curl --silent --show-error --location --max-time 20 "$SITE/version.json" \
+              | sed -n 's/.*"commit": *"\([^"]*\)".*/\1/p'
+          )"
+
+          if [ -z "$deployed" ]; then
+            echo "::warning::Сервер не отдаёт /version.json — на нём сборка старше этой проверки"
+            exit 0
+          fi
+
+          expected="$(git ls-remote origin refs/heads/deploy | cut -f1)"
+          echo "На сервере: ${deployed:0:12}   ветка deploy: ${expected:0:12}"
+
+          if [ "$deployed" = "$expected" ]; then
+            echo "Версии совпадают"
+            exit 0
+          fi
+
+          # Отставание на пару минут — это нормально: сервер проверяет
+          # обновления раз в две минуты, а сборка идёт несколько минут
+          age="$(git log -1 --format=%ct "$expected" 2>/dev/null || echo 0)"
+          behind=$(( ( $(date +%s) - age ) / 60 ))
+
+          if [ "$age" != "0" ] && [ "$behind" -lt 30 ]; then
+            echo "Сервер отстаёт на $behind мин. — развёртывание, скорее всего, идёт прямо сейчас"
+            exit 0
+          fi
+
+          echo "::error::Сервер не забрал версию ${expected:0:12}: автоматическое развёртывание не работает"
+          exit 1
 
       - name: Сертификату есть ещё сколько жить
         run: |
