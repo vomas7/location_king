@@ -128,16 +128,22 @@ def player_name(session: GameSession) -> str:
 
 
 def leaderboard_entry(row: LeaderboardRow) -> LeaderboardEntry:
-    """Строка таблицы лидеров."""
+    """
+    Строка таблицы лидеров.
+
+    Цифры берутся из строки, а не из профиля игрока: профиль знает сумму за
+    всё время, а таблица считает только партии, подходящие под выбранные
+    условия.
+    """
     return LeaderboardEntry(
         rank=row.rank,
         user_id=row.user.id,
         display_name=row.user.display_name or row.user.username,
-        games_played=row.user.games_played,
-        total_rounds=row.user.total_rounds,
-        best_score=row.user.best_score,
-        total_score=row.user.total_score,
-        average_distance=row.user.average_distance,
+        games_played=row.games_played,
+        total_rounds=row.total_rounds,
+        best_score=row.best_score,
+        total_score=row.total_score,
+        average_distance=row.average_distance,
     )
 
 

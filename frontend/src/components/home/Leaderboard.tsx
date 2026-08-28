@@ -21,10 +21,28 @@ const METRICS: { value: LeaderboardMetric; label: string }[] = [
 
 /** Подпись под переключателем: что именно означает выбранная метрика. */
 const CAPTIONS: Record<LeaderboardMetric, string> = {
-  best: "Лучший результат за одну партию",
+  best: "Очков за раунд в лучшей партии",
   total: "Сумма очков за все партии",
   accuracy: "Средний промах за раунд, от пяти раундов",
 };
+
+/**
+ * Отдельный зачёт на каждые условия игры.
+ *
+ * Общая таблица складывает несравнимое: партия на лёгком уровне и партия в
+ * тайге стоят разного труда, а очки у них одни и те же. Значения ключей — те
+ * же, что понимает сервер.
+ */
+const SCOPES: { value: string; label: string }[] = [
+  { value: "", label: "Все партии" },
+  { value: "difficulty=easy", label: "Легко" },
+  { value: "difficulty=normal", label: "Средне" },
+  { value: "difficulty=hard", label: "Сложно" },
+  { value: "difficulty=hardcore", label: "Хардкор" },
+  { value: "country_group=russia", label: "Россия" },
+  { value: "country_group=usa", label: "США" },
+  { value: "country_group=eu", label: "Евросоюз" },
+];
 
 function valueOf(entry: LeaderboardEntry, metric: LeaderboardMetric): string {
   if (metric === "best") return formatNumber(entry.best_score);
@@ -56,6 +74,7 @@ function Row({
 
 export function Leaderboard({ refreshKey }: { refreshKey: number }) {
   const [metric, setMetric] = useState<LeaderboardMetric>("best");
+  const [scope, setScope] = useState("");
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -64,7 +83,7 @@ export function Leaderboard({ refreshKey }: { refreshKey: number }) {
 
     void (async () => {
       try {
-        const loaded = await leaderboardApi.top(metric, 10);
+        const loaded = await leaderboardApi.top(metric, 10, scope);
         if (!cancelled) {
           setData(loaded);
           setFailed(false);
@@ -77,7 +96,7 @@ export function Leaderboard({ refreshKey }: { refreshKey: number }) {
     return () => {
       cancelled = true;
     };
-  }, [metric, refreshKey]);
+  }, [metric, scope, refreshKey]);
 
   const entries = data?.entries ?? [];
   const me = data?.me ?? null;
@@ -106,6 +125,23 @@ export function Leaderboard({ refreshKey }: { refreshKey: number }) {
         ))}
       </div>
 
+      <label className={styles.scope}>
+        <span className={styles.scopeLabel}>Зачёт</span>
+        <select
+          className={styles.scopeSelect}
+          value={scope}
+          onChange={(event) => {
+            setScope(event.target.value);
+          }}
+        >
+          {SCOPES.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
       <p className={styles.caption}>{CAPTIONS[metric]}</p>
 
       {failed && <p className={styles.empty}>Не удалось загрузить таблицу</p>}
@@ -113,7 +149,11 @@ export function Leaderboard({ refreshKey }: { refreshKey: number }) {
       {!failed && data === null && <Skeleton rows={4} />}
 
       {!failed && data !== null && entries.length === 0 && (
-        <p className={styles.empty}>Пока никто не сыграл ни одной партии. Займи первое место</p>
+        <p className={styles.empty}>
+          {scope === ""
+            ? "Пока никто не сыграл ни одной партии. Займи первое место"
+            : "На этих условиях ещё никто не играл. Займи первое место"}
+        </p>
       )}
 
       <div className={styles.table}>

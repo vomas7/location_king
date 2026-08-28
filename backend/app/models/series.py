@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from geoalchemy2 import Geometry
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, SmallInteger, func
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, SmallInteger, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -25,6 +25,13 @@ class RoundSeries(Base):
         nullable=False,
         server_default=func.now(),
     )
+
+    # Условия, из которых собрана серия. Нужны таблице лидеров: она делится
+    # по ним, а больше эти значения нигде не хранятся. Пусто — серия собрана
+    # до того, как условия начали запоминать, либо без ограничений
+    difficulty: Mapped[str | None] = mapped_column(String(20))
+    continent: Mapped[str | None] = mapped_column(String(20))
+    country_group: Mapped[str | None] = mapped_column(String(20))
 
     rounds: Mapped[list["SeriesRound"]] = relationship(
         back_populates="series",

@@ -1,10 +1,15 @@
 """Тесты таблицы лидеров и истории партий."""
 
+from datetime import UTC, datetime
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.enums import SessionStatus
+from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
+from app.models.series import RoundSeries
 from app.models.user import User
 from app.services.auth import create_token, register
 
@@ -18,14 +23,46 @@ async def make_player(
     games: int = 3,
     rounds: int = 15,
     average_distance: float | None = 10.0,
+    difficulty: str | None = None,
+    continent: str | None = None,
+    country_group: str | None = None,
 ) -> User:
-    """Игрок с уже посчитанной статистикой."""
+    """
+    Игрок с уже сыгранными партиями.
+
+    Таблица считает по партиям, а не по цифрам в профиле, поэтому подделать
+    профиль недостаточно — нужны настоящие завершённые партии с условиями.
+    """
     user = await register(db, email, "password for tests", email.split("@")[0])
-    user.best_score = best_score
-    user.total_score = total_score
-    user.games_played = games
-    user.total_rounds = rounds
-    user.average_distance = average_distance
+
+    series = RoundSeries(
+        difficulty=difficulty,
+        continent=continent,
+        country_group=country_group,
+    )
+    db.add(series)
+    await db.flush()
+
+    # Раунды и очки раскладываем поровну, а лучшую партию делаем первой:
+    # зачёт по лучшей смотрит на очки за раунд, поэтому длины партий равны
+    per_game = max(rounds // games, 1)
+
+    for index in range(games):
+        best = index == 0
+        db.add(
+            GameSession(
+                user_id=user.id,
+                series_id=series.id,
+                status=SessionStatus.FINISHED,
+                rounds_total=per_game,
+                rounds_done=per_game if index > 0 else rounds - per_game * (games - 1),
+                total_score=total_score // games,
+                average_score=best_score if best else best_score / 2,
+                average_distance=average_distance,
+                finished_at=datetime.now(UTC),
+            )
+        )
+
     await db.flush()
     return user
 
@@ -113,6 +150,108 @@ async def test_player_without_games_has_no_place(client: AsyncClient, auth_heade
     """Пока не сыграл ни одной партии — места в таблице нет."""
     body = (await client.get("/api/leaderboard", headers=auth_headers)).json()
     assert body["me"] is None
+
+
+# ── Зачёты по условиям игры ──────────────────────────────────────────
+
+
+async def test_level_has_its_own_standings(client: AsyncClient, db: AsyncSession):
+    """Мастер хардкора не должен обходить всех в зачёте лёгкого уровня."""
+    await make_player(
+        db, "hardcore@example.com", best_score=4900, total_score=9000, difficulty="hardcore"
+    )
+    await make_player(db, "easy@example.com", best_score=1200, total_score=1200, difficulty="easy")
+
+    hardcore = (await client.get("/api/leaderboard?difficulty=hardcore")).json()
+    easy = (await client.get("/api/leaderboard?difficulty=easy")).json()
+
+    assert [e["display_name"] for e in hardcore["entries"]] == ["hardcore"]
+    assert [e["display_name"] for e in easy["entries"]] == ["easy"]
+
+    # Условия возвращаются в ответе: клиент должен видеть, что ему посчитали
+    assert hardcore["difficulty"] == "hardcore"
+
+
+async def test_country_has_its_own_standings(client: AsyncClient, db: AsyncSession):
+    await make_player(
+        db, "ru@example.com", best_score=3000, total_score=3000, country_group="russia"
+    )
+    await make_player(db, "usa@example.com", best_score=4000, total_score=4000, country_group="usa")
+
+    entries = (await client.get("/api/leaderboard?country_group=russia")).json()["entries"]
+
+    assert [e["display_name"] for e in entries] == ["ru"]
+
+
+async def test_general_standings_include_every_condition(client: AsyncClient, db: AsyncSession):
+    """Без фильтра считаются все партии, с какими бы условиями их ни играли."""
+    await make_player(db, "one@example.com", best_score=3000, total_score=3000, difficulty="easy")
+    await make_player(
+        db, "two@example.com", best_score=4000, total_score=4000, difficulty="hardcore"
+    )
+
+    entries = (await client.get("/api/leaderboard")).json()["entries"]
+
+    assert {e["display_name"] for e in entries} == {"one", "two"}
+
+
+async def test_numbers_count_only_matching_games(client: AsyncClient, db: AsyncSession):
+    """
+    Цифры в строке — по отобранным партиям, а не за всё время.
+
+    Иначе рядом с зачётом хардкора стояла бы сумма очков, набранная на лёгком,
+    и таблица врала бы о том, что показывает.
+    """
+    player = await make_player(
+        db, "both@example.com", best_score=1000, total_score=3000, difficulty="easy"
+    )
+    series = RoundSeries(difficulty="hardcore")
+    db.add(series)
+    await db.flush()
+    db.add(
+        GameSession(
+            user_id=player.id,
+            series_id=series.id,
+            status=SessionStatus.FINISHED,
+            rounds_total=5,
+            rounds_done=5,
+            total_score=500,
+            average_score=100,
+            average_distance=42.0,
+            finished_at=datetime.now(UTC),
+        )
+    )
+    await db.flush()
+
+    hardcore = (await client.get("/api/leaderboard?difficulty=hardcore")).json()["entries"][0]
+    overall = (await client.get("/api/leaderboard")).json()["entries"][0]
+
+    assert hardcore["total_score"] == 500
+    assert hardcore["games_played"] == 1
+    assert overall["total_score"] == 3500
+
+
+async def test_own_place_is_counted_within_the_same_conditions(
+    client: AsyncClient,
+    db: AsyncSession,
+):
+    leader = await make_player(
+        db, "leader@example.com", best_score=4900, total_score=9000, difficulty="hardcore"
+    )
+    outsider = await make_player(
+        db, "outsider@example.com", best_score=100, total_score=100, difficulty="hardcore"
+    )
+    # Партия на лёгком уровне не должна двигать место в зачёте хардкора
+    await make_player(db, "easy@example.com", best_score=5000, total_score=5000, difficulty="easy")
+
+    body = (
+        await client.get(
+            "/api/leaderboard?difficulty=hardcore&limit=1", headers=headers_for(outsider)
+        )
+    ).json()
+
+    assert [e["display_name"] for e in body["entries"]] == [leader.display_name]
+    assert body["me"]["rank"] == 2
 
 
 async def test_invalid_metric_is_rejected(client: AsyncClient):

@@ -93,8 +93,11 @@ export const matches = {
 };
 
 export const leaderboard = {
-  top: (metric: LeaderboardMetric, limit = 20) =>
-    request<Leaderboard>(`/api/leaderboard?metric=${metric}&limit=${String(limit)}`),
+  /** filters — строка вида "difficulty=hardcore&country_group=russia". */
+  top: (metric: LeaderboardMetric, limit = 20, filters = "") =>
+    request<Leaderboard>(
+      `/api/leaderboard?metric=${metric}&limit=${String(limit)}${filters === "" ? "" : `&${filters}`}`,
+    ),
 };
 
 export const zones = {

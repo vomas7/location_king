@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel
 
+from app.models.enums import Continent, CountryGroup, Difficulty
 from app.services.leaderboard import LeaderboardMetric
 
 
@@ -22,5 +23,11 @@ class LeaderboardResponse(BaseModel):
     """Таблица целиком плюс строка текущего игрока, если он в неё попадает."""
 
     metric: LeaderboardMetric
+    #: Условия, по которым отобраны партии. Повторяются в ответе, чтобы клиент
+    #: мог убедиться, что показывает именно то, что просил
+    difficulty: Difficulty | None
+    continent: Continent | None
+    country_group: CountryGroup | None
+
     entries: list[LeaderboardEntry]
     me: LeaderboardEntry | None

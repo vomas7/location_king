@@ -53,6 +53,9 @@ class GameSession(Base):
     rounds_done: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
     total_score: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     average_score: Mapped[float | None] = mapped_column(Float)
+    #: Средний промах за раунд в этой партии. Считается при её завершении:
+    #: зачёт по точности иначе пришлось бы собирать по всем раундам всех игроков
+    average_distance: Mapped[float | None] = mapped_column(Float)
 
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

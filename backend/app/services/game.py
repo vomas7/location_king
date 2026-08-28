@@ -273,6 +273,7 @@ async def finish_session(db: AsyncSession, session: GameSession) -> GameSession:
         else SessionStatus.ABANDONED
     )
     session.finished_at = datetime.now(UTC)
+    session.average_distance = await _session_average_distance(db, session)
 
     await db.flush()
     await _update_user_statistics(db, session.user_id)
@@ -418,6 +419,26 @@ async def guess_coordinates(db: AsyncSession, round_obj: Round) -> tuple[float, 
 
     row = (await db.execute(stmt)).one()
     return float(row[0]), float(row[1])
+
+
+async def _session_average_distance(db: AsyncSession, session: GameSession) -> float | None:
+    """
+    Средний промах за раунд в этой партии.
+
+    Считается один раз, при завершении: зачёт по точности иначе пришлось бы
+    каждый раз собирать по всем раундам всех игроков.
+    """
+    value = (
+        await db.execute(
+            select(func.avg(Round.distance_km)).where(
+                Round.session_id == session.id,
+                Round.status == RoundStatus.GUESSED,
+                Round.distance_km.is_not(None),
+            )
+        )
+    ).scalar_one_or_none()
+
+    return float(value) if value is not None else None
 
 
 async def _update_user_statistics(db: AsyncSession, user_id: int) -> None:

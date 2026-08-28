@@ -62,7 +62,14 @@ async def create(
 
     # Раунды кладутся сразу в связь: иначе обращение к series.rounds полезло бы
     # в базу за тем, что только что создали
-    series = RoundSeries(rounds=rounds)
+    # Условия запоминаем вместе с серией: по ним делится таблица лидеров, а
+    # больше их хранить негде — раунды уже собраны и о выборе игрока не знают
+    series = RoundSeries(
+        rounds=rounds,
+        difficulty=difficulty,
+        continent=continent,
+        country_group=country_group,
+    )
     db.add(series)
     await db.flush()
 

@@ -134,6 +134,10 @@ export interface LeaderboardEntry {
 
 export interface Leaderboard {
   metric: LeaderboardMetric;
+  /** Условия, по которым отобраны партии. null — считались все. */
+  difficulty: string | null;
+  continent: string | null;
+  country_group: string | null;
   entries: LeaderboardEntry[];
   me: LeaderboardEntry | null;
 }

@@ -87,6 +87,40 @@
   text-align: center;
 }
 
+/* Выбор зачёта: список, а не ряд кнопок — вариантов восемь, и в карточку
+   они рядом не помещаются даже на широком экране */
+.scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.scopeLabel {
+  color: var(--text-faint);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.scopeSelect {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.16s var(--ease);
+}
+
+.scopeSelect:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
 .caption {
   margin-bottom: 10px;
   color: var(--text-faint);
