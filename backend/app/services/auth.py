@@ -23,6 +23,7 @@ from app.config import settings
 from app.exceptions import AuthError, ConflictError, ValidationError
 from app.models.user import User
 from app.observability import metrics
+from app.utils import avatar
 
 logger = logging.getLogger(__name__)
 
@@ -132,19 +133,40 @@ def clean_display_name(raw: str) -> str:
     return name
 
 
-async def rename(db: AsyncSession, user: User, display_name: str) -> User:
-    """Сменить публичное имя игрока."""
-    name = clean_display_name(display_name)
+async def update_profile(
+    db: AsyncSession,
+    user: User,
+    display_name: str | None = None,
+    avatar_shape: int | None = None,
+    avatar_color: int | None = None,
+) -> User:
+    """
+    Сменить то, каким игрока видят другие: имя и аватарку.
 
-    if name == user.display_name:
-        return user
+    Одной операцией, потому что и то и другое — публичное лицо игрока, и
+    ограничены они одним лимитом: частая смена того или другого одинаково
+    путает соперников в комнате.
+    """
+    if display_name is not None:
+        name = clean_display_name(display_name)
 
-    previous = user.display_name
-    user.display_name = name
+        if name != user.display_name:
+            previous = user.display_name
+            user.display_name = name
+            logger.info("Игрок %s сменил имя с %r на %r", user.id, previous, name)
+
+    if avatar_shape is not None or avatar_color is not None:
+        shape = avatar_shape if avatar_shape is not None else user.avatar_shape
+        color = avatar_color if avatar_color is not None else user.avatar_color
+
+        if not avatar.is_known(shape, color):
+            raise ValidationError("Такой аватарки нет")
+
+        user.avatar_shape, user.avatar_color = shape, color
+
     await db.flush()
-
     await metrics.count("user_renamed")
-    logger.info("Игрок %s сменил имя с %r на %r", user.id, previous, name)
+
     return user
 
 
@@ -181,6 +203,11 @@ async def register(db: AsyncSession, email: str, password: str, display_name: st
         # одновременно. Последнее слово за уникальным индексом.
         await db.rollback()
         raise ConflictError("Пользователь с таким email уже зарегистрирован") from e
+
+    # Аватарка выводится из идентификатора, а он известен только после
+    # записи: до неё у всех была бы одна и та же заглушка
+    user.avatar_shape, user.avatar_color = avatar.default_for(user.id)
+    await db.flush()
 
     await metrics.count("user_registered")
     logger.info("Зарегистрирован пользователь %s", user.id)

@@ -106,6 +106,7 @@ export function App() {
 
       <TopBar
         playerName={user.display_name ?? user.username}
+        playerAvatar={user.avatar}
         progress={progress}
         {...(playing ? { onQuit: quitGame } : {})}
         onLogout={() => {

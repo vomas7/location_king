@@ -368,3 +368,12 @@
   line-height: 1.5;
   text-wrap: pretty;
 }
+
+/* Аватарка: квадрат со скруглением, ничего не перехватывает мышью */
+.avatar {
+  display: block;
+  flex: 0 0 auto;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}

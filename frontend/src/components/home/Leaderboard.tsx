@@ -9,6 +9,7 @@ import type {
   LeaderboardMetric,
 } from "~/api/types";
 import styles from "~/components/home/Leaderboard.module.css";
+import { Avatar } from "~/components/ui/Avatar";
 import { CardTitle } from "~/components/ui/Card";
 import { Skeleton } from "~/components/ui/Skeleton";
 import { formatDistance, formatNumber } from "~/domain/format";
@@ -66,6 +67,7 @@ function Row({
       >
         {entry.rank}
       </span>
+      <Avatar avatar={entry.avatar} size={24} name={entry.display_name} />
       <span className={styles.player}>{entry.display_name}</span>
       <span className={styles.value}>{valueOf(entry, metric)}</span>
     </div>

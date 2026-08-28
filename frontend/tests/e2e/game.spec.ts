@@ -243,3 +243,16 @@ test("часть света ограничивает выбор зон", async (
   // Зона раунда действительно из выбранной части света
   await expect(dialog.getByText(/Австралия|Новая Зеландия|Полинезия|Папуа/).first()).toBeVisible();
 });
+
+test("аватарка видна в шапке и меняется в профиле", async ({ page }) => {
+  await register(page);
+
+  // Аватарка выдаётся при регистрации: пустого места на её месте не бывает
+  await expect(page.getByRole("img", { name: /Аватарка игрока/ }).first()).toBeVisible();
+
+  await page.getByRole("button", { name: "Изменить" }).click();
+  await page.getByRole("radio", { name: "Узор 4" }).click();
+  await page.getByRole("button", { name: "Сохранить" }).click();
+
+  await expect(page.getByRole("button", { name: "Изменить" })).toBeVisible();
+});

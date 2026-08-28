@@ -6,6 +6,12 @@
  * они появляются только в RoundResult, то есть после принятой догадки.
  */
 
+/** Аватарка: форма узора и цвет. Картинку по ним рисует клиент. */
+export interface AvatarView {
+  shape: number;
+  color: number;
+}
+
 export interface UserProfile {
   id: number;
   username: string;
@@ -20,6 +26,7 @@ export interface UserProfile {
   /** Рейтинг дуэлей. У того, кто ещё не дуэлился, он стартовый. */
   rating: number;
   duels_played: number;
+  avatar: AvatarView;
   created_at: string;
 }
 
@@ -144,6 +151,7 @@ export interface LeaderboardEntry {
   rank: number;
   user_id: number;
   display_name: string;
+  avatar: AvatarView;
   games_played: number;
   total_rounds: number;
   best_score: number;
@@ -178,6 +186,7 @@ export interface StartSessionOptions {
 export interface DailyResult {
   rank: number;
   display_name: string;
+  avatar: AvatarView;
   total_score: number;
   finished_at: string | null;
 }
@@ -200,6 +209,7 @@ export interface DailyChallenge {
 export interface MatchStanding {
   rank: number;
   display_name: string;
+  avatar: AvatarView;
   total_score: number;
   rounds_done: number;
   is_finished: boolean;

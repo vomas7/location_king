@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { challenge as challengeApi } from "~/api/endpoints";
 import type { DailyChallenge as DailyChallengeData, SessionState } from "~/api/types";
 import styles from "~/components/home/DailyChallenge.module.css";
+import { Avatar } from "~/components/ui/Avatar";
 import { Button } from "~/components/ui/Button";
 import { Card, CardTitle } from "~/components/ui/Card";
 import { Skeleton } from "~/components/ui/Skeleton";
@@ -127,6 +128,7 @@ export function DailyChallenge({ refreshKey, onStarted, onError }: DailyChalleng
               >
                 {entry.rank}
               </span>
+              <Avatar avatar={entry.avatar} size={22} name={entry.display_name} />
               <span className={styles.player}>{entry.display_name}</span>
               <span className={styles.score}>{formatNumber(entry.total_score)}</span>
             </div>

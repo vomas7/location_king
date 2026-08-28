@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 import { game as gameApi, matches as matchesApi } from "~/api/endpoints";
 import type { MatchSummary, MatchView, SessionState, StartSessionOptions } from "~/api/types";
 import styles from "~/components/home/MatchRoom.module.css";
+import { Avatar } from "~/components/ui/Avatar";
 import { Button } from "~/components/ui/Button";
 import { Card, CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { formatNumber, formatTimeLimit, plural } from "~/domain/format";
@@ -274,6 +275,7 @@ export function MatchRoom({ options, refreshKey, onJoined, onError }: MatchRoomP
               className={[styles.row, entry.is_you ? styles.rowMe : ""].filter(Boolean).join(" ")}
             >
               <span className={styles.rank}>{entry.rank}</span>
+              <Avatar avatar={entry.avatar} size={22} name={entry.display_name} />
               <span className={styles.player}>{entry.display_name}</span>
               <span className={styles.progress}>
                 {entry.is_finished

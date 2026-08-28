@@ -134,7 +134,7 @@
   gap: 12px;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
-  grid-template-columns: 24px 1fr auto;
+  grid-template-columns: 24px auto 1fr auto;
 }
 
 .rowMe {

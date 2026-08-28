@@ -1,6 +1,8 @@
 /** Шапка: логотип, прогресс партии и вход. */
 
 import { Button } from "~/components/ui/Button";
+import type { AvatarView } from "~/api/types";
+import { Avatar } from "~/components/ui/Avatar";
 import styles from "~/components/layout/TopBar.module.css";
 import { formatNumber } from "~/domain/format";
 
@@ -12,6 +14,8 @@ interface Progress {
 
 interface TopBarProps {
   playerName: string | null;
+  /** Аватарка игрока рядом с именем. Пусто, пока профиль не загружен. */
+  playerAvatar: AvatarView | null;
   progress: Progress | null;
   onQuit?: () => void;
   onLogout: () => void;
@@ -73,7 +77,7 @@ function ProgressBar({ roundIndex, roundsTotal, score }: Progress) {
   );
 }
 
-export function TopBar({ playerName, progress, onQuit, onLogout }: TopBarProps) {
+export function TopBar({ playerName, playerAvatar, progress, onQuit, onLogout }: TopBarProps) {
   return (
     <header className={styles.topbar}>
       <div className={styles.brand}>
@@ -84,7 +88,12 @@ export function TopBar({ playerName, progress, onQuit, onLogout }: TopBarProps) 
       {progress !== null && <ProgressBar {...progress} />}
 
       <div className={styles.user}>
-        {playerName !== null && <span className={styles.player}>{playerName}</span>}
+        {playerName !== null && (
+          <span className={styles.player}>
+            {playerAvatar !== null && <Avatar avatar={playerAvatar} size={22} name={playerName} />}
+            {playerName}
+          </span>
+        )}
 
         {onQuit !== undefined && (
           <Button variant="ghost" size="small" onClick={onQuit}>

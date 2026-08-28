@@ -3,6 +3,7 @@
 from pydantic import BaseModel
 
 from app.models.enums import Continent, CountryGroup, Difficulty
+from app.schemas.auth import AvatarView
 from app.services.leaderboard import LeaderboardMetric
 
 
@@ -12,6 +13,7 @@ class LeaderboardEntry(BaseModel):
     rank: int
     user_id: int
     display_name: str
+    avatar: AvatarView
     games_played: int
     total_rounds: int
     best_score: int

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Float, Integer, String, func
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, Integer, SmallInteger, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -18,6 +18,11 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     display_name: Mapped[str | None] = mapped_column(String(100))
+
+    # Аватарка — два числа, а не файл: узор по ним рисует клиент. Подробности
+    # и причина такого решения в app/utils/avatar.py
+    avatar_shape: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
+    avatar_color: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
 
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
 
@@ -55,3 +60,8 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"<User id={self.id} username={self.username!r}>"
+
+    @property
+    def avatar(self) -> dict[str, int]:
+        """Аватарка одним значением — в таком виде её ждут схемы ответов."""
+        return {"shape": self.avatar_shape, "color": self.avatar_color}

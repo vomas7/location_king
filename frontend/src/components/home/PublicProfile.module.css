@@ -1,0 +1,97 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin-bottom: 18px;
+}
+
+.label {
+  color: var(--text-faint);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.value {
+  color: var(--text);
+  font-weight: 600;
+  /* Длинное имя не должно растягивать карточку */
+  overflow-wrap: anywhere;
+}
+
+.trigger {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 0.16s var(--ease);
+}
+
+.trigger:hover {
+  color: var(--accent);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.actions > * {
+  flex: 1;
+}
+
+/* ── Выбор аватарки ─────────────────────────────────────────────────
+   Два ряда: узор и цвет. Каждый показан на текущем выборе соседа —
+   иначе не видно, как они смотрятся вместе */
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pickerLabel {
+  padding: 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.choice {
+  padding: 3px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+  transition: border-color 0.15s var(--ease);
+}
+
+.choice:hover {
+  border-color: var(--line);
+}
+
+.choiceActive {
+  border-color: var(--accent);
+}

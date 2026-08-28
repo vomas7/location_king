@@ -148,6 +148,7 @@ describe("MatchRoom", () => {
           {
             rank: 1,
             display_name: "Другой",
+            avatar: { shape: 0, color: 0 },
             total_score: 4200,
             rounds_done: 5,
             is_finished: true,
@@ -157,6 +158,7 @@ describe("MatchRoom", () => {
           {
             rank: 2,
             display_name: "Хост",
+            avatar: { shape: 0, color: 0 },
             total_score: 0,
             rounds_done: 2,
             is_finished: false,

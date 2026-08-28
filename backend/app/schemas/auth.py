@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 
 class RegisterRequest(BaseModel):
@@ -32,10 +32,23 @@ class DeleteAccountRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
-class RenameRequest(BaseModel):
-    """Смена публичного имени. Правила проверяет сервис."""
+class ProfileUpdateRequest(BaseModel):
+    """
+    Смена публичного лица игрока: имени, аватарки или того и другого.
 
-    display_name: str = Field(min_length=1, max_length=100)
+    Все поля необязательные, но пустой запрос — это ошибка в клиенте, а не
+    вежливое «ничего не делай»: он должен падать, а не молча проходить.
+    """
+
+    display_name: str | None = Field(default=None, min_length=1, max_length=100)
+    avatar_shape: int | None = Field(default=None, ge=0, le=99)
+    avatar_color: int | None = Field(default=None, ge=0, le=99)
+
+    @model_validator(mode="after")
+    def check_something_changes(self) -> "ProfileUpdateRequest":
+        if self.display_name is None and self.avatar_shape is None and self.avatar_color is None:
+            raise ValueError("Нечего менять: укажи имя или аватарку")
+        return self
 
 
 class TokenPair(BaseModel):
@@ -45,6 +58,18 @@ class TokenPair(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int
+
+
+class AvatarView(BaseModel):
+    """
+    Аватарка: форма узора и цвет. Рисует её клиент.
+
+    Приезжает в каждом ответе, где виден игрок, а не выводится клиентом из
+    идентификатора: в таблице комнаты чужих идентификаторов нет и не будет.
+    """
+
+    shape: int
+    color: int
 
 
 class UserProfile(BaseModel):
@@ -68,6 +93,8 @@ class UserProfile(BaseModel):
     #: подбирают первого соперника
     rating: int
     duels_played: int
+
+    avatar: AvatarView
 
     created_at: datetime
 

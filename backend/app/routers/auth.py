@@ -11,9 +11,9 @@ from app.schemas.auth import (
     AuthResponse,
     DeleteAccountRequest,
     LoginRequest,
+    ProfileUpdateRequest,
     RefreshRequest,
     RegisterRequest,
-    RenameRequest,
     TokenPair,
     UserProfile,
 )
@@ -73,13 +73,19 @@ async def me(user: User = Depends(get_current_user)) -> UserProfile:
     response_model=UserProfile,
     dependencies=[Depends(limit_by_user(Limit.RENAME))],
 )
-async def rename_me(
-    payload: RenameRequest,
+async def update_me(
+    payload: ProfileUpdateRequest,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> UserProfile:
-    """Сменить имя, под которым игрока видят другие."""
-    updated = await auth_service.rename(db, user, payload.display_name)
+    """Сменить имя и аватарку — то, каким игрока видят другие."""
+    updated = await auth_service.update_profile(
+        db,
+        user,
+        display_name=payload.display_name,
+        avatar_shape=payload.avatar_shape,
+        avatar_color=payload.avatar_color,
+    )
     return UserProfile.model_validate(updated)
 
 

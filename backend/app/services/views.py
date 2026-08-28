@@ -19,6 +19,7 @@ from app.models.location_zone import LocationZone
 from app.models.match import Match
 from app.models.round import Round
 from app.models.user import User
+from app.schemas.auth import AvatarView
 from app.schemas.daily import DailyResult
 from app.schemas.game import (
     HintView,
@@ -159,6 +160,11 @@ def player_name(session: GameSession) -> str:
     return session.user.display_name or session.user.username
 
 
+def avatar_view(user: User) -> AvatarView:
+    """Аватарка игрока для таблиц."""
+    return AvatarView(shape=user.avatar_shape, color=user.avatar_color)
+
+
 def leaderboard_entry(row: LeaderboardRow) -> LeaderboardEntry:
     """
     Строка таблицы лидеров.
@@ -171,6 +177,7 @@ def leaderboard_entry(row: LeaderboardRow) -> LeaderboardEntry:
         rank=row.rank,
         user_id=row.user.id,
         display_name=row.user.display_name or row.user.username,
+        avatar=avatar_view(row.user),
         games_played=row.games_played,
         total_rounds=row.total_rounds,
         best_score=row.best_score,
@@ -189,6 +196,7 @@ def daily_result(rank: int, session: GameSession) -> DailyResult:
     return DailyResult(
         rank=rank,
         display_name=player_name(session),
+        avatar=avatar_view(session.user),
         total_score=session.total_score,
         finished_at=session.finished_at,
     )
@@ -204,6 +212,7 @@ def match_standing(rank: int, session: GameSession, viewer: User) -> MatchStandi
     return MatchStanding(
         rank=rank,
         display_name=player_name(session),
+        avatar=avatar_view(session.user),
         total_score=session.total_score,
         rounds_done=session.rounds_done,
         is_finished=session.status == SessionStatus.FINISHED,

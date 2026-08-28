@@ -4,6 +4,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel
 
+from app.schemas.auth import AvatarView
 from app.schemas.game import SessionSummary
 
 
@@ -12,6 +13,7 @@ class DailyResult(BaseModel):
 
     rank: int
     display_name: str
+    avatar: AvatarView
     total_score: int
     finished_at: datetime | None
 

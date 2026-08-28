@@ -101,6 +101,9 @@
 }
 
 .player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   overflow: hidden;
   max-width: 180px;
   color: var(--text-dim);
@@ -121,6 +124,9 @@
 
   .name,
   .player {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     display: none;
   }
 
