@@ -21,6 +21,12 @@ class AppError(Exception):
         return {}
 
 
+class ValidationError(AppError):
+    """Данные не проходят правило, которое не выразить схемой запроса."""
+
+    status_code = 400
+
+
 class AuthError(AppError):
     """Не удалось подтвердить личность: неверные данные или токен."""
 

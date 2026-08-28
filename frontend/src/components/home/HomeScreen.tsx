@@ -6,6 +6,7 @@ import { game, zones } from "~/api/endpoints";
 import type { SessionState, StartSessionOptions } from "~/api/types";
 import { DailyChallenge } from "~/components/home/DailyChallenge";
 import { DeleteAccount } from "~/components/home/DeleteAccount";
+import { DisplayName } from "~/components/home/DisplayName";
 import { GameHistory } from "~/components/home/GameHistory";
 import styles from "~/components/home/HomeScreen.module.css";
 import { Leaderboard } from "~/components/home/Leaderboard";
@@ -237,6 +238,8 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
 
         <Card>
           <CardTitle>Твоя статистика</CardTitle>
+
+          <DisplayName />
 
           <dl className={styles.metrics}>
             <div className={styles.metric}>

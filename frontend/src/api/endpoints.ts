@@ -35,6 +35,13 @@ export const auth = {
 
   me: () => request<UserProfile>("/api/auth/me"),
 
+  /** Сменить имя, под которым игрока видят другие. */
+  rename: (displayName: string) =>
+    request<UserProfile>("/api/auth/me", {
+      method: "PATCH",
+      body: { display_name: displayName },
+    }),
+
   /** Удалить учётную запись со всеми данными. Пароль подтверждает владельца. */
   deleteAccount: (password: string) =>
     request<void>("/api/auth/me/delete", { method: "POST", body: { password } }),

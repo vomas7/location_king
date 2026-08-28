@@ -6,6 +6,7 @@
 """
 
 import logging
+import re
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -19,7 +20,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.exceptions import AuthError, ConflictError
+from app.exceptions import AuthError, ConflictError, ValidationError
 from app.models.user import User
 from app.observability import metrics
 
@@ -95,6 +96,56 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     """Найти пользователя по email без учёта регистра."""
     stmt = select(User).where(func.lower(User.email) == email.strip().lower())
     return (await db.execute(stmt)).scalar_one_or_none()
+
+
+#: Что разрешено в публичном имени: буквы любого алфавита, цифры, пробел и
+#: несколько знаков. Список именно разрешающий, а не запрещающий: в таблице
+#: лидеров имя видят все, а невидимые символы и метки смены направления письма
+#: позволяют выдать себя за другого игрока, ничего похожего не написав.
+DISPLAY_NAME_ALLOWED = re.compile(r"^[\w \-.'’]+$", re.UNICODE)
+
+MIN_DISPLAY_NAME = 2
+MAX_DISPLAY_NAME = 24
+
+
+def clean_display_name(raw: str) -> str:
+    """
+    Привести имя к виду, в котором его можно показать другим.
+
+    Возвращает готовое имя или бросает ValidationError с человеческой
+    причиной: правило, о котором игрок не узнал, — то же самое, что запрет
+    без объяснения.
+    """
+    # Соседние пробелы схлопываются: иначе именем можно раздвинуть колонку в
+    # таблице лидеров, оставаясь в пределах длины
+    name = " ".join(raw.split())
+
+    if len(name) < MIN_DISPLAY_NAME:
+        raise ValidationError(f"Имя короче {MIN_DISPLAY_NAME} символов")
+    if len(name) > MAX_DISPLAY_NAME:
+        raise ValidationError(f"Имя длиннее {MAX_DISPLAY_NAME} символов")
+    if "@" in name:
+        raise ValidationError("Имя с собакой похоже на адрес почты — его видят все игроки")
+    if not DISPLAY_NAME_ALLOWED.match(name):
+        raise ValidationError("В имени можно использовать буквы, цифры, пробел, дефис и точку")
+
+    return name
+
+
+async def rename(db: AsyncSession, user: User, display_name: str) -> User:
+    """Сменить публичное имя игрока."""
+    name = clean_display_name(display_name)
+
+    if name == user.display_name:
+        return user
+
+    previous = user.display_name
+    user.display_name = name
+    await db.flush()
+
+    metrics.count("user_renamed")
+    logger.info("Игрок %s сменил имя с %r на %r", user.id, previous, name)
+    return user
 
 
 def default_display_name() -> str:

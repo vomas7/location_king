@@ -32,6 +32,12 @@ class DeleteAccountRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class RenameRequest(BaseModel):
+    """Смена публичного имени. Правила проверяет сервис."""
+
+    display_name: str = Field(min_length=1, max_length=100)
+
+
 class TokenPair(BaseModel):
     """Пара токенов и срок жизни access-токена в секундах."""
 

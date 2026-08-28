@@ -24,7 +24,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PATCH";
   body?: unknown;
   /** Не пытаться обновить токен при 401 — для самих запросов авторизации. */
   skipRefresh?: boolean;

@@ -14,6 +14,9 @@ export interface AuthContextValue {
   register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => void;
 
+  /** Принять обновлённый профиль: например, после смены имени. */
+  accept: (profile: UserProfile) => void;
+
   /** Перечитать профиль, не трогая текущий экран. */
   refresh: () => Promise<void>;
 }

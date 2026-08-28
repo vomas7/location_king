@@ -46,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       user,
+      accept,
 
       login: async (email: string, password: string) => {
         accept(await auth.login(email, password));

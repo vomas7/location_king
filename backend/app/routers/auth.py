@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
-from app.dependencies import get_current_user, limit_by_address
+from app.dependencies import get_current_user, limit_by_address, limit_by_user
 from app.models.user import User
 from app.schemas.auth import (
     AuthResponse,
@@ -13,6 +13,7 @@ from app.schemas.auth import (
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
+    RenameRequest,
     TokenPair,
     UserProfile,
 )
@@ -65,6 +66,21 @@ async def refresh(payload: RefreshRequest, db: AsyncSession = Depends(get_db)) -
 async def me(user: User = Depends(get_current_user)) -> UserProfile:
     """Профиль текущего игрока."""
     return UserProfile.model_validate(user)
+
+
+@router.patch(
+    "/me",
+    response_model=UserProfile,
+    dependencies=[Depends(limit_by_user(Limit.RENAME))],
+)
+async def rename_me(
+    payload: RenameRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserProfile:
+    """Сменить имя, под которым игрока видят другие."""
+    updated = await auth_service.rename(db, user, payload.display_name)
+    return UserProfile.model_validate(updated)
 
 
 @router.post("/me/delete", status_code=status.HTTP_204_NO_CONTENT)

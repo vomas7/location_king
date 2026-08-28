@@ -147,6 +147,7 @@ src/
 | `POST` | `/api/auth/login`                       | вход                                   |
 | `POST` | `/api/auth/refresh`                     | обновление пары токенов                |
 | `GET`  | `/api/auth/me`                          | профиль и статистика                   |
+| `PATCH`| `/api/auth/me`                          | сменить имя в таблице лидеров          |
 | `POST` | `/api/auth/me/delete`                   | удалить учётную запись и все данные    |
 | `POST` | `/api/sessions`                         | начать партию, получить первый раунд   |
 | `GET`  | `/api/sessions/{id}`                    | состояние партии и история раундов     |

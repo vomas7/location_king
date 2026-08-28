@@ -41,6 +41,7 @@ class Limit(StrEnum):
 
     LOGIN = "login"
     REGISTER = "register"
+    RENAME = "rename"
     START_SESSION = "start-session"
     TILES = "tiles"
 
@@ -55,6 +56,9 @@ class Limit(StrEnum):
 RULES: dict[Limit, RateLimit] = {
     Limit.LOGIN: RateLimit(limit=20, window_seconds=15 * 60),
     Limit.REGISTER: RateLimit(limit=30, window_seconds=60 * 60),
+    # Имя видно другим игрокам. Частая смена — способ запутать соперников в
+    # комнате: только что был один игрок, а в таблице уже другой
+    Limit.RENAME: RateLimit(limit=10, window_seconds=60 * 60),
     Limit.START_SESSION: RateLimit(limit=60, window_seconds=60 * 60),
     Limit.TILES: RateLimit(limit=3000, window_seconds=60 * 60),
 }
