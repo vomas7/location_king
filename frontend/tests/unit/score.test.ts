@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { scoreRatio, scoreTier } from "~/domain/score";
+import { ENOUGH_ROUNDS, scoreRatio, scoreTier, zoneStanding } from "~/domain/score";
 
 describe("scoreRatio", () => {
   it("даёт долю от максимума", () => {
@@ -34,5 +34,24 @@ describe("scoreTier", () => {
 
     const positions = tones.map((tone) => order.indexOf(tone));
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  });
+});
+
+describe("zoneStanding", () => {
+  it("сравнивает промах со средним по зоне", () => {
+    expect(zoneStanding(120, ENOUGH_ROUNDS, 300)).toEqual({ averageKm: 300, better: true });
+    expect(zoneStanding(900, ENOUGH_ROUNDS, 300)).toEqual({ averageKm: 300, better: false });
+  });
+
+  it("молчит, пока зону играли слишком мало", () => {
+    expect(zoneStanding(120, ENOUGH_ROUNDS - 1, 300)).toBeNull();
+  });
+
+  it("молчит, когда сравнивать не с чем", () => {
+    expect(zoneStanding(120, 100, null)).toBeNull();
+  });
+
+  it("молчит, когда игрок не поставил точку", () => {
+    expect(zoneStanding(null, 100, 300)).toBeNull();
   });
 });

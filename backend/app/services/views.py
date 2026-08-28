@@ -50,6 +50,8 @@ def zone_view(zone: LocationZone) -> ZoneView:
         country=zone.country,
         region=zone.region,
         tags=zone.tag_list,
+        total_rounds=zone.total_rounds,
+        average_distance=zone.average_distance,
     )
 
 

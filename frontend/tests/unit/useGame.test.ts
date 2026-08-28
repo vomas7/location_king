@@ -84,6 +84,8 @@ function result(index: number, score: number): RoundResult {
       country: "Россия",
       region: null,
       tags: [],
+      total_rounds: 0,
+      average_distance: null,
     },
     guessed_at: "2026-08-27T10:01:00Z",
   };

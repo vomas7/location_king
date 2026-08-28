@@ -108,6 +108,11 @@ htmlcov/
 # Дамп Redis, если сервер запускали из каталога проекта
 dump.rdb
 
+# Отчёты Playwright. В корне, а не только во frontend: запуск из другого
+# каталога кладёт их рядом с собой
+test-results/
+playwright-report/
+
 # Собираются deploy.sh при развёртывании за Cloudflare
 nginx/snippets/cloudflare-real-ip.conf
 nginx/snippets/cloudflare-origin-pull.conf

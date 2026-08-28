@@ -420,3 +420,33 @@ async def test_session_can_be_limited_to_a_continent(
         headers=auth_headers,
     )
     assert empty.status_code == 404
+
+
+async def test_result_carries_zone_statistics(
+    client: AsyncClient,
+    auth_headers: dict,
+    zone: LocationZone,
+):
+    """
+    Свой промах игроку не с чем сравнить, пока он не видит чужие.
+
+    Зона считает средний промах по всем сыгранным раундам, и после догадки он
+    приезжает вместе с результатом.
+    """
+    started = await client.post(
+        "/api/sessions",
+        json={"rounds_total": 1, "zone_id": zone.id},
+        headers=auth_headers,
+    )
+    round_id = started.json()["current_round"]["id"]
+
+    result = (
+        await client.post(
+            f"/api/rounds/{round_id}/guess",
+            json={"longitude": 37.6, "latitude": 55.7},
+            headers=auth_headers,
+        )
+    ).json()["result"]
+
+    assert result["zone"]["total_rounds"] == 1
+    assert result["zone"]["average_distance"] is not None

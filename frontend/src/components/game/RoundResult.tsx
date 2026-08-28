@@ -7,7 +7,7 @@ import styles from "~/components/game/RoundResult.module.css";
 import { Button } from "~/components/ui/Button";
 import { useFocusTrap } from "~/components/ui/useFocusTrap";
 import { formatDistance, formatNumber, formatPercent } from "~/domain/format";
-import { scoreRatio, scoreTier } from "~/domain/score";
+import { scoreRatio, scoreTier, zoneStanding } from "~/domain/score";
 import { COLOR_GUESS, COLOR_TARGET } from "~/map/styles";
 import { createResultMap, type ResultMap } from "~/map/result";
 
@@ -53,6 +53,14 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
 
   const tier = scoreTier(result.score, result.max_score);
   const ratio = scoreRatio(result.score, result.max_score);
+
+  // Промах в километрах сам по себе ничего не говорит: 340 км — это много
+  // или мало? Ответ даёт то, как ту же зону отыграли остальные
+  const standing = zoneStanding(
+    result.distance_km === null ? null : Number.parseFloat(result.distance_km),
+    result.zone.total_rounds,
+    result.zone.average_distance,
+  );
 
   const place = [result.zone.country, result.zone.region]
     .filter((value): value is string => value !== null && value !== "")
@@ -102,6 +110,15 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
           <div className={styles.place}>
             <p className={styles.placeName}>{result.zone.name}</p>
             {place !== "" && <p className={styles.placeMeta}>{place}</p>}
+
+            {standing !== null && (
+              <p className={styles.standing}>
+                Здесь обычно промахиваются на {formatDistance(standing.averageKm)} —{" "}
+                <span className={standing.better ? styles.betterThanOthers : undefined}>
+                  {standing.better ? "ты точнее" : "ты дальше"}
+                </span>
+              </p>
+            )}
 
             <div className={styles.legend}>
               <span className={styles.legendItem}>

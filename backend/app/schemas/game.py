@@ -79,6 +79,12 @@ class ZoneView(BaseModel):
     region: str | None
     tags: list[str] = Field(default_factory=list)
 
+    #: Сколько раз зона сыграна всеми игроками и какой у них средний промах.
+    #: Нужно, чтобы игрок видел свой результат не в пустоте: «промахнулся на
+    #: 340 км» само по себе ничего не говорит
+    total_rounds: int
+    average_distance: float | None
+
 
 class HintView(BaseModel):
     """

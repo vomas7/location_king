@@ -43,6 +43,10 @@ export interface Zone {
   country: string | null;
   region: string | null;
   tags: string[];
+  /** Сколько раз зона сыграна всеми игроками. */
+  total_rounds: number;
+  /** Средний промах по этим раундам в километрах. */
+  average_distance: number | null;
 }
 
 /** Раскрытая подсказка: подпись поля и его значение. Координат в ней нет. */

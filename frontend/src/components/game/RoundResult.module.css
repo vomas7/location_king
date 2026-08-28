@@ -141,6 +141,20 @@
   font-size: 13px;
 }
 
+/* Как ту же зону отыграли остальные. Мятный — та же кодировка, что и у
+   хорошего результата: это не украшение, а «ты справился лучше» */
+.standing {
+  margin-top: 8px;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-wrap: pretty;
+}
+
+.betterThanOthers {
+  color: var(--positive);
+  font-weight: 600;
+}
+
 .legend {
   display: flex;
   gap: 16px;

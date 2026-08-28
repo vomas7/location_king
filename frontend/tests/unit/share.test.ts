@@ -27,6 +27,8 @@ function result(score: number, distanceKm: string | null = "12.500"): RoundResul
       country: null,
       region: null,
       tags: [],
+      total_rounds: 0,
+      average_distance: null,
     },
     guessed_at: null,
   };

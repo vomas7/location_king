@@ -31,3 +31,35 @@ export function scoreTier(score: number, maxScore: number): ScoreTier {
   const ratio = scoreRatio(score, maxScore);
   return TIERS.find((entry) => ratio >= entry.min)?.tier ?? FALLBACK;
 }
+
+/**
+ * Сколько раундов по зоне должно быть сыграно, чтобы среднее что-то значило.
+ *
+ * По одному-двум раундам «обычно промахиваются на столько-то» — это чужой
+ * единственный ответ, выданный за общее правило.
+ */
+export const ENOUGH_ROUNDS = 5;
+
+/** Как игрок отыграл зону по сравнению с остальными. */
+export interface ZoneStanding {
+  averageKm: number;
+  /** Промах игрока меньше среднего. */
+  better: boolean;
+}
+
+/**
+ * Сравнение промаха со средним по зоне.
+ *
+ * Пусто, когда сравнивать не с чем: зону играли слишком мало раз или игрок
+ * так и не поставил точку.
+ */
+export function zoneStanding(
+  distanceKm: number | null,
+  totalRounds: number,
+  averageDistanceKm: number | null,
+): ZoneStanding | null {
+  if (distanceKm === null || averageDistanceKm === null) return null;
+  if (totalRounds < ENOUGH_ROUNDS) return null;
+
+  return { averageKm: averageDistanceKm, better: distanceKm < averageDistanceKm };
+}
