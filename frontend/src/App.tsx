@@ -153,6 +153,7 @@ export function App() {
             session={state.session}
             results={state.results}
             previousBest={bestBeforeGame}
+            options={state.options}
             {...(state.session.challenge_day === null
               ? {}
               : { challengeDay: state.session.challenge_day })}

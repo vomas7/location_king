@@ -1,12 +1,16 @@
 /** Итоги партии. */
 
-import type { RoundResult, SessionView } from "~/api/types";
+import { useEffect, useState } from "react";
+
+import { leaderboard as leaderboardApi } from "~/api/endpoints";
+import type { RoundResult, SessionView, StartSessionOptions } from "~/api/types";
 import styles from "~/components/game/SummaryScreen.module.css";
 import { ShareButton } from "~/components/game/ShareButton";
 import { Button } from "~/components/ui/Button";
 import { Card, Eyebrow } from "~/components/ui/Card";
 import { formatDistance, formatNumber, plural } from "~/domain/format";
 import { scoreRatio } from "~/domain/score";
+import { scopeLabel, scopeQuery } from "~/domain/scope";
 
 interface SummaryScreenProps {
   session: SessionView;
@@ -15,6 +19,8 @@ interface SummaryScreenProps {
   previousBest: number;
   /** Заполнено, если это была партия челленджа. */
   challengeDay?: string;
+  /** Условия партии: по ним считается место в зачёте. Пусто у продолженной. */
+  options: StartSessionOptions | null;
   onPlayAgain: () => void;
   onHome: () => void;
 }
@@ -24,12 +30,37 @@ export function SummaryScreen({
   results,
   previousBest,
   challengeDay,
+  options,
   onPlayAgain,
   onHome,
 }: SummaryScreenProps) {
   const played = results.length;
   const average = played === 0 ? 0 : Math.round(session.total_score / played);
   const isRecord = played > 0 && session.total_score > previousBest;
+
+  const [rank, setRank] = useState<number | null>(null);
+
+  // Место в зачёте именно тех условий, на которых играли: иначе рекорд на
+  // лёгком уровне сравнивался бы с чужим хардкором
+  useEffect(() => {
+    if (options === null || played === 0) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const table = await leaderboardApi.top("best", 1, scopeQuery(options));
+        if (!cancelled) setRank(table.me?.rank ?? null);
+      } catch {
+        // Место — приятная мелочь, а не итог партии: молча обходимся без него
+        if (!cancelled) setRank(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [options, played]);
 
   return (
     <div className={styles.screen}>
@@ -48,6 +79,12 @@ export function SummaryScreen({
         </p>
 
         {isRecord && <p className={styles.record}>Это твой лучший результат</p>}
+
+        {rank !== null && options !== null && (
+          <p className={styles.rank}>
+            <strong>{rank}</strong> место в зачёте <span>{scopeLabel(options)}</span>
+          </p>
+        )}
 
         <ol className={styles.rounds}>
           {results.map((result) => (

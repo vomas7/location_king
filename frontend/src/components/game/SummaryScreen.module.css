@@ -116,3 +116,21 @@
   flex-direction: column;
   gap: 10px;
 }
+
+/* Место в зачёте: связывает партию с таблицей лидеров, ради которой в неё и
+   играют второй раз */
+.rank {
+  margin: 0 0 18px;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.rank strong {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.rank span {
+  color: var(--text-faint);
+}

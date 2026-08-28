@@ -28,6 +28,8 @@ export type GamePhase =
 
 export interface GameState {
   phase: GamePhase;
+  /** Условия, с которыми начали партию. Пусто у продолженной: их уже не узнать */
+  options: StartSessionOptions | null;
   session: SessionView | null;
   round: RoundView | null;
   guess: LonLat | null;
@@ -41,7 +43,13 @@ export interface GameState {
 type Action =
   | { type: "loading"; text: string }
   | { type: "failed"; error: string }
-  | { type: "opened"; session: SessionView; round: RoundView; results: RoundResult[] }
+  | {
+      type: "opened";
+      session: SessionView;
+      round: RoundView;
+      results: RoundResult[];
+      options: StartSessionOptions | null;
+    }
   | { type: "picked"; guess: LonLat }
   | { type: "guessed"; session: SessionView; result: RoundResult; next: RoundView | null }
   | { type: "advanced" }
@@ -50,6 +58,7 @@ type Action =
 
 const INITIAL: GameState = {
   phase: "idle",
+  options: null,
   session: null,
   round: null,
   guess: null,
@@ -72,6 +81,7 @@ function reducer(state: GameState, action: Action): GameState {
       return {
         ...state,
         phase: "playing",
+        options: action.options,
         session: action.session,
         round: action.round,
         results: action.results,
@@ -158,6 +168,7 @@ export function useGame(onSessionEnd: () => void): GameController {
         session: opened.session,
         round: opened.current_round,
         results: opened.results,
+        options,
       });
     } catch (error) {
       dispatch({ type: "failed", error: describe(error) });
@@ -173,6 +184,9 @@ export function useGame(onSessionEnd: () => void): GameController {
       session: session.session,
       round: session.current_round,
       results: session.results,
+      // Продолженная партия про свои условия уже не знает: их выбирали в
+      // прошлый раз и никуда не сохраняли
+      options: null,
     });
   }, []);
 
