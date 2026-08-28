@@ -19,11 +19,16 @@ import { useAuth } from "~/state/authContext";
 
 const ROUNDS = [3, 5, 10].map((value) => ({ value, label: String(value) }));
 
+/**
+ * Сколько земли попадает в кадр. Пять километров плотного города — это одна
+ * текстура кварталов без ориентиров, поэтому лестница начинается там, где
+ * в кадр уже попадает река, шоссе или берег.
+ */
 const EXTENTS = [
-  { value: 2, label: "2 км" },
   { value: 5, label: "5 км" },
-  { value: 20, label: "20 км" },
-  { value: 60, label: "60 км" },
+  { value: 15, label: "15 км" },
+  { value: 40, label: "40 км" },
+  { value: 100, label: "100 км" },
 ];
 
 const TIME_LIMITS = [null, 120, 60, 30].map((value) => ({
@@ -63,7 +68,7 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
   const { user } = useAuth();
 
   const [rounds, setRounds] = useState(5);
-  const [extent, setExtent] = useState(5);
+  const [extent, setExtent] = useState(15);
   const [difficulty, setDifficulty] = useState<number | null>(null);
   const [timeLimit, setTimeLimit] = useState<number | null>(null);
   const [continent, setContinent] = useState<string | null>(null);

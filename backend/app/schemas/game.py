@@ -25,7 +25,7 @@ class RoundsRequest(BaseModel):
 
     rounds_total: int = Field(default=5, ge=MIN_ROUNDS, le=MAX_ROUNDS)
     view_extent_km: float = Field(
-        default=5.0,
+        default=15.0,
         gt=0.2,
         le=200.0,
         description="Желаемый размер показываемой области в километрах",

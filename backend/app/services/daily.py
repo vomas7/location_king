@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # Условия челленджа одинаковы каждый день: сравнивать результаты можно только
 # при равных правилах
 ROUNDS_TOTAL = 5
-VIEW_EXTENT_KM = 5.0
+VIEW_EXTENT_KM = 15.0
 
 
 def today() -> date:
