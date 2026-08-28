@@ -10,7 +10,6 @@ from app.observability import (
     REQUEST_ID_HEADER,
     JsonFormatter,
     RequestIdFilter,
-    metrics,
 )
 
 
@@ -36,11 +35,23 @@ async def test_identifiers_differ_between_requests(client: AsyncClient):
     assert first != second
 
 
+async def counter(client: AsyncClient, needle: str) -> int:
+    """Значение счётчика из отдаваемого Prometheus текста."""
+    body = (await client.get("/api/metrics")).text
+
+    for line in body.splitlines():
+        if line.startswith(needle):
+            return int(float(line.rsplit(" ", 1)[1]))
+    return 0
+
+
 async def test_metrics_count_requests(client: AsyncClient):
-    before = metrics.requests[("GET", "/api/health", 200)]
+    needle = 'location_king_requests_total{method="GET",route="/api/health",status="200"}'
+
+    before = await counter(client, needle)
     await client.get("/api/health")
 
-    assert metrics.requests[("GET", "/api/health", 200)] == before + 1
+    assert await counter(client, needle) == before + 1
 
 
 async def test_metrics_are_rendered_for_prometheus(client: AsyncClient):

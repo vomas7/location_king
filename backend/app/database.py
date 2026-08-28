@@ -7,12 +7,17 @@ from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
 
+# Пул считается на один процесс, а процессов у приложения столько, сколько
+# воркеров у uvicorn. Прежние 10 + 20 на четыре воркера давали до ста двадцати
+# соединений при сотне разрешённых в PostgreSQL — под нагрузкой часть запросов
+# просто получала бы отказ базы.
 engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=settings.db_pool_size,
+    max_overflow=settings.db_pool_overflow,
     pool_pre_ping=True,
+    pool_recycle=1800,
 )
 
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

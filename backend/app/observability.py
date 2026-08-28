@@ -13,12 +13,14 @@ import os
 import re
 import time
 import uuid
-from collections import Counter
 from contextvars import ContextVar
-from dataclasses import dataclass, field
 
 from fastapi import Request, Response
+from redis.asyncio.client import Pipeline
+from redis.exceptions import RedisError
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+
+from app.cache import redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -37,36 +39,75 @@ ALLOWED_REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 LATENCY_BUCKETS = (0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)
 
 
-@dataclass
+#: Префикс ключей в Redis. Счётчики переживают перезапуск приложения — для
+#: Prometheus это даже лучше: меньше обрывов в графиках.
+METRICS_KEY = "metrics"
+
+
 class Metrics:
-    """Счётчики за время жизни процесса."""
+    """
+    Счётчики за время жизни контура.
 
-    requests: Counter[tuple[str, str, int]] = field(default_factory=Counter)
-    latency_buckets: Counter[tuple[str, float]] = field(default_factory=Counter)
-    latency_sum: Counter[str] = field(default_factory=Counter)
-    latency_count: Counter[str] = field(default_factory=Counter)
-    events: Counter[str] = field(default_factory=Counter)
+    Лежат в Redis, а не в памяти процесса: воркеров у приложения несколько,
+    запрос попадает в случайный, и показатели из памяти показывали бы то одну
+    четверть правды, то другую — графики прыгали бы без всякой связи с
+    нагрузкой.
 
-    def observe_request(self, method: str, route: str, status: int, seconds: float) -> None:
-        self.requests[method, route, status] += 1
-        self.latency_sum[route] += seconds
-        self.latency_count[route] += 1
+    Недоступный Redis не должен ронять запрос: игра важнее счётчика, поэтому
+    ошибка записи только пишется в лог.
+    """
+
+    def _pipeline(self) -> Pipeline:
+        return redis_client().pipeline()
+
+    async def observe_request(self, method: str, route: str, status: int, seconds: float) -> None:
+        pipeline = self._pipeline()
+        pipeline.hincrby(f"{METRICS_KEY}:requests", f"{method}|{route}|{status}", 1)
+        pipeline.hincrbyfloat(f"{METRICS_KEY}:latency_sum", route, seconds)
+        pipeline.hincrby(f"{METRICS_KEY}:latency_count", route, 1)
 
         for bucket in LATENCY_BUCKETS:
             if seconds <= bucket:
-                self.latency_buckets[route, bucket] += 1
+                pipeline.hincrby(f"{METRICS_KEY}:latency_bucket", f"{route}|{bucket}", 1)
 
-    def count(self, event: str) -> None:
+        await self._run(pipeline)
+
+    async def count(self, event: str) -> None:
         """Отметить событие: попадание в кэш, поход к провайдеру и подобное."""
-        self.events[event] += 1
+        pipeline = self._pipeline()
+        pipeline.hincrby(f"{METRICS_KEY}:events", event, 1)
 
-    def render(self) -> str:
+        await self._run(pipeline)
+
+    async def _run(self, pipeline: Pipeline) -> None:
+        try:
+            await pipeline.execute()
+        except RedisError as e:
+            logger.warning("Счётчик показателей недоступен: %s", e)
+
+    async def _read(self, name: str) -> dict[str, str]:
+        try:
+            raw = await redis_client().hgetall(f"{METRICS_KEY}:{name}")
+        except RedisError as e:
+            logger.warning("Показатели недоступны на чтении: %s", e)
+            return {}
+
+        return {key.decode(): value.decode() for key, value in raw.items()}
+
+    async def render(self) -> str:
         """Показатели в текстовом формате Prometheus."""
+        requests = await self._read("requests")
+        buckets = await self._read("latency_bucket")
+        sums = await self._read("latency_sum")
+        counts = await self._read("latency_count")
+        events = await self._read("events")
+
         lines = [
             "# HELP location_king_requests_total Обработанные запросы",
             "# TYPE location_king_requests_total counter",
         ]
-        for (method, route, status), value in sorted(self.requests.items()):
+        for key, value in sorted(requests.items()):
+            method, route, status = key.split("|")
             lines.append(
                 f'location_king_requests_total{{method="{method}",route="{route}",'
                 f'status="{status}"}} {value}'
@@ -76,26 +117,27 @@ class Metrics:
             "# HELP location_king_request_seconds Время обработки запроса",
             "# TYPE location_king_request_seconds histogram",
         ]
-        for (route, bucket), value in sorted(self.latency_buckets.items()):
+        for key, value in sorted(buckets.items()):
+            route, bucket = key.split("|")
             lines.append(
                 f'location_king_request_seconds_bucket{{route="{route}",le="{bucket}"}} {value}'
             )
         # Без верхней корзины и общего числа наблюдений Prometheus не считает
         # это гистограммой и не умеет брать по ней квантили
-        for route, count in sorted(self.latency_count.items()):
+        for route, count in sorted(counts.items()):
             lines.append(
                 f'location_king_request_seconds_bucket{{route="{route}",le="+Inf"}} {count}'
             )
-        for route, total in sorted(self.latency_sum.items()):
-            lines.append(f'location_king_request_seconds_sum{{route="{route}"}} {total:.3f}')
-        for route, count in sorted(self.latency_count.items()):
+        for route, total in sorted(sums.items()):
+            lines.append(f'location_king_request_seconds_sum{{route="{route}"}} {float(total):.3f}')
+        for route, count in sorted(counts.items()):
             lines.append(f'location_king_request_seconds_count{{route="{route}"}} {count}')
 
         lines += [
             "# HELP location_king_events_total Внутренние события",
             "# TYPE location_king_events_total counter",
         ]
-        for event, value in sorted(self.events.items()):
+        for event, value in sorted(events.items()):
             lines.append(f'location_king_events_total{{event="{event}"}} {value}')
 
         return "\n".join(lines) + "\n"
@@ -162,7 +204,7 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
         except Exception:
             # Ошибку залогирует обработчик выше, но в метрики она попасть должна
-            metrics.observe_request(
+            await metrics.observe_request(
                 request.method,
                 _route_of(request),
                 500,
@@ -176,7 +218,9 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
             request_id.reset(token)
 
         elapsed = time.perf_counter() - started
-        metrics.observe_request(request.method, _route_of(request), response.status_code, elapsed)
+        await metrics.observe_request(
+            request.method, _route_of(request), response.status_code, elapsed
+        )
         response.headers[REQUEST_ID_HEADER] = current
 
         return response

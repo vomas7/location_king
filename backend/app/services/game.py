@@ -80,7 +80,7 @@ async def start_session(
 
     round_obj = await series_service.open_round(db, session, position=1)
 
-    metrics.count("session_started")
+    await metrics.count("session_started")
     logger.info("Сессия %s начата пользователем %s", session.id, user.id)
     return session, round_obj
 
@@ -233,7 +233,7 @@ async def _close_timed_out(db: AsyncSession, round_obj: Round) -> tuple[Round, R
     next_round = await _advance(db, session)
     await _update_zone_statistics(db, round_obj.zone_id)
 
-    metrics.count("round_timed_out")
+    await metrics.count("round_timed_out")
     logger.info("Раунд %s закрыт по времени", round_obj.id)
     return round_obj, next_round
 
@@ -277,7 +277,7 @@ async def finish_session(db: AsyncSession, session: GameSession) -> GameSession:
     await db.flush()
     await _update_user_statistics(db, session.user_id)
 
-    metrics.count("session_finished")
+    await metrics.count("session_finished")
     logger.info("Сессия %s завершена со счётом %s", session.id, session.total_score)
     return session
 

@@ -143,7 +143,7 @@ async def rename(db: AsyncSession, user: User, display_name: str) -> User:
     user.display_name = name
     await db.flush()
 
-    metrics.count("user_renamed")
+    await metrics.count("user_renamed")
     logger.info("Игрок %s сменил имя с %r на %r", user.id, previous, name)
     return user
 
@@ -182,7 +182,7 @@ async def register(db: AsyncSession, email: str, password: str, display_name: st
         await db.rollback()
         raise ConflictError("Пользователь с таким email уже зарегистрирован") from e
 
-    metrics.count("user_registered")
+    await metrics.count("user_registered")
     logger.info("Зарегистрирован пользователь %s", user.id)
     return user
 

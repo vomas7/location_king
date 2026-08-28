@@ -77,4 +77,4 @@ async def prometheus_metrics() -> str:
 
     Наружу этот путь отдавать не нужно: в nginx он закрыт.
     """
-    return metrics.render()
+    return await metrics.render()

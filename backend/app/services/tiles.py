@@ -16,9 +16,9 @@ import hashlib
 import logging
 
 import httpx
-from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
+from app.cache import close_redis, redis_client
 from app.config import settings
 from app.exceptions import NotFoundError, UpstreamError
 from app.models.round import Round
@@ -33,7 +33,6 @@ TILE_CONTENT_TYPE = "image/jpeg"
 MAX_LOCAL_ZOOM = 4
 
 _http_client: httpx.AsyncClient | None = None
-_redis_client: Redis | None = None
 
 # Разные шаблоны провайдера не должны делить кэш
 _provider_key = hashlib.sha256(settings.satellite_tile_url.encode()).hexdigest()[:8]
@@ -49,14 +48,6 @@ def _get_http_client() -> httpx.AsyncClient:
             headers={"User-Agent": "LocationKing/1.0 (+https://github.com/vomas7/location_king)"},
         )
     return _http_client
-
-
-def redis_client() -> Redis:
-    global _redis_client
-
-    if _redis_client is None:
-        _redis_client = Redis.from_url(settings.redis_url)
-    return _redis_client
 
 
 def max_local_zoom(round_obj: Round) -> int:
@@ -89,10 +80,10 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
 
     cached = await cache_get(cache_key)
     if cached is not None:
-        metrics.count("tile_cache_hit")
+        await metrics.count("tile_cache_hit")
         return cached
 
-    metrics.count("tile_cache_miss")
+    await metrics.count("tile_cache_miss")
 
     url = settings.satellite_tile_url.format(z=source_z, x=source_x, y=source_y)
 
@@ -100,7 +91,7 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
         response = await _get_http_client().get(url)
         response.raise_for_status()
     except httpx.HTTPError as e:
-        metrics.count("tile_provider_error")
+        await metrics.count("tile_provider_error")
         logger.error("Провайдер снимков не отдал тайл %s: %s", url, e)
         raise UpstreamError("Провайдер снимков недоступен") from e
 
@@ -110,7 +101,7 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
     # Провайдер может ответить двухсоткой и страницей с ошибкой. Положив её в
     # кэш, мы бы неделю отдавали игроку HTML под видом снимка.
     if not content_type.startswith("image/") or not tile:
-        metrics.count("tile_provider_error")
+        await metrics.count("tile_provider_error")
         logger.error("Провайдер снимков вернул не картинку (%s) для %s", content_type, url)
         raise UpstreamError("Провайдер снимков вернул не картинку")
 
@@ -182,12 +173,10 @@ async def cache_set(key: str, tile: bytes) -> None:
 
 async def close_clients() -> None:
     """Закрыть соединения при остановке приложения."""
-    global _http_client, _redis_client
+    global _http_client
 
     if _http_client is not None:
         await _http_client.aclose()
         _http_client = None
 
-    if _redis_client is not None:
-        await _redis_client.aclose()
-        _redis_client = None
+    await close_redis()

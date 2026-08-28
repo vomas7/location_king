@@ -16,9 +16,9 @@ from enum import StrEnum
 
 from redis.exceptions import RedisError
 
+from app.cache import redis_client
 from app.exceptions import TooManyRequestsError
 from app.observability import metrics
-from app.services.tiles import redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ async def check(limit: Limit, identity: str) -> None:
 
         if used > rule.limit:
             ttl = max(await client.ttl(key), 1)
-            metrics.count(f"rate_limited_{limit.value}")
+            await metrics.count(f"rate_limited_{limit.value}")
             raise TooManyRequestsError(
                 f"Слишком часто. Разрешено {rule.description}, попробуй позже",
                 retry_after=ttl,
