@@ -39,6 +39,7 @@ class RateLimit:
 class Limit(StrEnum):
     """Что именно ограничиваем. Значение попадает в ключ Redis."""
 
+    DELETE_ACCOUNT = "delete-account"
     LOGIN = "login"
     REGISTER = "register"
     RENAME = "rename"
@@ -55,6 +56,10 @@ class Limit(StrEnum):
 # порядки. Настоящая защита от массовой регистрации — подтверждение почты.
 RULES: dict[Limit, RateLimit] = {
     Limit.LOGIN: RateLimit(limit=20, window_seconds=15 * 60),
+    # Удаление тоже проверяет пароль. Без своего лимита это был бы способ
+    # перебирать его в обход лимита на вход: угнанного токена доступа хватило
+    # бы, чтобы подбирать пароль без ограничений
+    Limit.DELETE_ACCOUNT: RateLimit(limit=5, window_seconds=60 * 60),
     Limit.REGISTER: RateLimit(limit=30, window_seconds=60 * 60),
     # Имя видно другим игрокам. Частая смена — способ запутать соперников в
     # комнате: только что был один игрок, а в таблице уже другой

@@ -86,6 +86,24 @@ function refreshTokens(): Promise<boolean> {
   return refreshing;
 }
 
+/**
+ * Запрос с авторизацией, минуя разбор JSON.
+ *
+ * Нужен загрузчику тайлов: он забирает картинку, а не объект. Обновление
+ * токена при этом обязано быть общим — токен доступа живёт пятнадцать минут,
+ * и раунд запросто длится дольше. Без обновления снимок посреди партии
+ * начинал бы отвечать 401, и игрок видел бы дыры вместо карты.
+ */
+export async function authorizedFetch(url: string): Promise<Response> {
+  const response = await fetch(url, { headers: authHeaders() });
+
+  if (response.status !== 401 || !(await refreshTokens())) {
+    return response;
+  }
+
+  return fetch(url, { headers: authHeaders() });
+}
+
 /** Запрос к API. При 401 один раз пробует обновить токен и повторить. */
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, skipRefresh = false } = options;

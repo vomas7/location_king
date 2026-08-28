@@ -24,8 +24,7 @@ import TileGrid from "ol/tilegrid/TileGrid";
 import { defaults as defaultControls } from "ol/control/defaults";
 import type ImageTile from "ol/ImageTile";
 
-import { tileUrl } from "~/api/client";
-import { authHeaders } from "~/api/tokens";
+import { authorizedFetch, tileUrl } from "~/api/client";
 import type { RoundView } from "~/api/types";
 import { STYLE_CENTER } from "~/map/styles";
 
@@ -60,7 +59,7 @@ function wait(ms: number): Promise<void> {
 function loadTile(track: TrackTile) {
   const fetchTile = async (src: string): Promise<Blob | null> => {
     try {
-      const response = await fetch(src, { headers: authHeaders() });
+      const response = await authorizedFetch(src);
       return response.ok ? await response.blob() : null;
     } catch {
       return null;
@@ -167,6 +166,19 @@ export function createSatelliteMap(
       showFullExtent: true,
       constrainOnlyCenter: false,
     }),
+  });
+
+  /**
+   * Приближение всегда идёт к цели.
+   *
+   * Колесо мыши и щипок пальцами приближают к курсору, а не к центру, и
+   * смещение от цели удваивается на каждом шаге зума. Через три-четыре шага
+   * перекрестие уезжает за край экрана — игроки и жаловались, что оно есть
+   * только на маленьком зуме. Двигать карту при этом никто не мешает: цель
+   * возвращается в кадр следующим же приближением или клавишей R.
+   */
+  map.getView().on("change:resolution", () => {
+    map.getView().setCenter(center);
   });
 
   /**

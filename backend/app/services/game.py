@@ -244,6 +244,15 @@ async def _advance(db: AsyncSession, session: GameSession) -> Round | None:
         await finish_session(db, session)
         return None
 
+    # Партии, начатые до перехода на серии, раундов про запас не имеют. Продолжить
+    # их нечем: условия набора нигде не сохранены. Завершаем со счётом, который
+    # игрок успел набрать, — иначе каждая догадка отвечала бы ошибкой, и партия
+    # осталась бы висеть навсегда.
+    if session.series_id is None:
+        logger.info("Партия %s без серии завершена: она от прошлой версии", session.id)
+        await finish_session(db, session)
+        return None
+
     return await series_service.open_round(db, session, session.rounds_done + 1)
 
 

@@ -83,7 +83,11 @@ async def rename_me(
     return UserProfile.model_validate(updated)
 
 
-@router.post("/me/delete", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/me/delete",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(limit_by_user(Limit.DELETE_ACCOUNT))],
+)
 async def delete_me(
     payload: DeleteAccountRequest,
     user: User = Depends(get_current_user),
