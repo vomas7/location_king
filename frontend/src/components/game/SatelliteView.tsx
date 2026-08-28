@@ -16,16 +16,14 @@ interface SatelliteViewProps {
 export function SatelliteView({ round, resetSignal }: SatelliteViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const instance = useRef<SatelliteMap | null>(null);
-  const [tilesFailed, setTilesFailed] = useState(false);
+  const [tilesMissing, setTilesMissing] = useState(false);
 
   useEffect(() => {
     const element = container.current;
     if (element === null) return;
 
-    setTilesFailed(false);
-    const map = createSatelliteMap(element, round, () => {
-      setTilesFailed(true);
-    });
+    setTilesMissing(false);
+    const map = createSatelliteMap(element, round, setTilesMissing);
     instance.current = map;
 
     return () => {
@@ -56,10 +54,9 @@ export function SatelliteView({ round, resetSignal }: SatelliteViewProps) {
         </span>
       </div>
 
-      {tilesFailed && (
+      {tilesMissing && (
         <p className={styles.tileError} role="alert">
-          Часть снимка не загрузилась. Проверь соединение — карту можно подвигать, тайлы подгрузятся
-          снова.
+          Часть снимка не загрузилась. Подвигай карту — тайлы подгрузятся снова.
         </p>
       )}
     </>

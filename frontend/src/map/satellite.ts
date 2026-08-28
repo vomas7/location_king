@@ -31,6 +31,9 @@ import { STYLE_CENTER } from "~/map/styles";
 
 const TILE_SIZE = 256;
 
+/** Сколько ждать перед повторной попыткой загрузить тайл, мс. */
+const RETRY_DELAY_MS = 700;
+
 export interface SatelliteMap {
   readonly map: OlMap;
   /** Вернуть вид к исходному масштабу, показывающему участок целиком. */
@@ -38,39 +41,62 @@ export interface SatelliteMap {
   destroy: () => void;
 }
 
+/** Отметить тайл как загруженный или как не загрузившийся. */
+type TrackTile = (key: string, failed: boolean) => void;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Загрузка тайла с заголовком авторизации.
  *
  * Обычный <img src> заголовки не отправляет, поэтому тайл забирается через
  * fetch и подставляется как blob.
+ *
+ * Неудачу не считаем окончательной с первого раза: мобильная сеть рвётся на
+ * секунду, а обновлённый токен доступа приезжает не мгновенно.
  */
-function loadTile(onError: () => void) {
+function loadTile(track: TrackTile) {
+  const fetchTile = async (src: string): Promise<Blob | null> => {
+    try {
+      const response = await fetch(src, { headers: authHeaders() });
+      return response.ok ? await response.blob() : null;
+    } catch {
+      return null;
+    }
+  };
+
   return (tile: ImageTile, src: string): void => {
+    const key = tile.getTileCoord().join("/");
+
     void (async () => {
-      try {
-        const response = await fetch(src, { headers: authHeaders() });
-        if (!response.ok) {
-          tile.setState(TileState.ERROR);
-          onError();
-          return;
-        }
+      let blob = await fetchTile(src);
 
-        const objectUrl = URL.createObjectURL(await response.blob());
-        const image = tile.getImage() as HTMLImageElement;
-
-        image.onload = () => {
-          URL.revokeObjectURL(objectUrl);
-        };
-        image.onerror = () => {
-          URL.revokeObjectURL(objectUrl);
-          tile.setState(TileState.ERROR);
-          onError();
-        };
-        image.src = objectUrl;
-      } catch {
-        tile.setState(TileState.ERROR);
-        onError();
+      if (blob === null) {
+        await wait(RETRY_DELAY_MS);
+        blob = await fetchTile(src);
       }
+
+      if (blob === null) {
+        tile.setState(TileState.ERROR);
+        track(key, true);
+        return;
+      }
+
+      const objectUrl = URL.createObjectURL(blob);
+      const image = tile.getImage() as HTMLImageElement;
+
+      image.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        track(key, false);
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        tile.setState(TileState.ERROR);
+        track(key, true);
+      };
+      image.src = objectUrl;
     })();
   };
 }
@@ -78,8 +104,24 @@ function loadTile(onError: () => void) {
 export function createSatelliteMap(
   target: HTMLElement,
   round: RoundView,
-  onTileError: () => void,
+  onMissingTiles: (missing: boolean) => void,
 ): SatelliteMap {
+  // Считаем именно текущие дыры в снимке, а не то, была ли ошибка когда-либо:
+  // подгрузившийся тайл убирает себя отсюда, и предупреждение исчезает само
+  const missing = new Set<string>();
+
+  const track: TrackTile = (key, failed) => {
+    const before = missing.size;
+
+    if (failed) {
+      missing.add(key);
+    } else {
+      missing.delete(key);
+    }
+
+    if (missing.size !== before) onMissingTiles(missing.size > 0);
+  };
+
   const size = TILE_SIZE * 2 ** round.max_zoom;
   const extent: [number, number, number, number] = [0, -size, size, 0];
   const center: [number, number] = [size / 2, -size / 2];
@@ -101,7 +143,7 @@ export function createSatelliteMap(
     // Координата тайла приходит как кортеж [z, x, y]; noUncheckedIndexedAccess
     // делает элементы возможно-неопределёнными, поэтому подставляем нули
     tileUrlFunction: ([z = 0, x = 0, y = 0]) => tileUrl(round.tiles_url, z, x, y),
-    tileLoadFunction: loadTile(onTileError) as never,
+    tileLoadFunction: loadTile(track) as never,
     wrapX: false,
     attributions: round.attribution,
   });
