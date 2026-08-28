@@ -6,10 +6,12 @@
  * поисковик видит в разметке JSON-LD в index.html.
  */
 
+import { useRef } from "react";
+
 import { AuthCard } from "~/components/auth/AuthCard";
 import { MODES, QUESTIONS, STEPS } from "~/components/landing/content";
+import { HeroSight } from "~/components/landing/HeroSight";
 import styles from "~/components/landing/LandingScreen.module.css";
-import { Reticle } from "~/components/landing/Reticle";
 import type { LegalDocumentId } from "~/legal/documents";
 
 interface LandingScreenProps {
@@ -17,9 +19,11 @@ interface LandingScreenProps {
 }
 
 export function LandingScreen({ onOpenLegal }: LandingScreenProps) {
+  const hero = useRef<HTMLElement>(null);
+
   return (
     <div className={styles.screen}>
-      <section className={styles.hero}>
+      <section className={styles.hero} ref={hero}>
         <div className={styles.pitch}>
           <p className={styles.eyebrow}>Геогессер по спутниковым снимкам</p>
 
@@ -50,7 +54,7 @@ export function LandingScreen({ onOpenLegal }: LandingScreenProps) {
           <AuthCard onOpenLegal={onOpenLegal} />
         </div>
 
-        <Reticle className={styles.decor} />
+        <HeroSight hero={hero} />
       </section>
 
       <section className={styles.band} id="how">

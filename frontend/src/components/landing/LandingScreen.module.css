@@ -21,6 +21,11 @@
   margin: 0 auto;
   padding: clamp(48px, 9vh, 96px) 24px clamp(56px, 10vh, 104px);
   grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+
+  /* Первый экран — поверхность, по которой водят прицелом. Ссылки и поля
+     ставят свой курсор сами, поэтому перекрестие остаётся там, где по сетке
+     действительно целятся */
+  cursor: crosshair;
 }
 
 .pitch {
@@ -107,20 +112,7 @@
 .card {
   position: relative;
   z-index: 1;
-}
-
-/* Знак игры лежит за текстом: он задаёт настроение, а не спорит за внимание */
-.decor {
-  position: absolute;
-  z-index: 0;
-  top: 50%;
-  left: -90px;
-  width: 460px;
-  height: 460px;
-  color: var(--accent);
-  opacity: 0.16;
-  transform: translateY(-50%);
-  pointer-events: none;
+  cursor: auto;
 }
 
 /* ── Полосы содержания ────────────────────────────────────────────── */
@@ -304,15 +296,6 @@
   .hero {
     gap: 36px;
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .decor {
-    top: 0;
-    left: auto;
-    right: -120px;
-    width: 320px;
-    height: 320px;
-    transform: none;
   }
 
   .fair {

@@ -1,0 +1,106 @@
+/*
+ * Прицел и сетка на первом экране.
+ *
+ * Всё здесь лежит под текстом и ничего не перехватывает мышью: это фон,
+ * который отзывается на движение, а не элемент управления.
+ */
+/* Без своего z-index: слои прицела встают в общий порядок первого экрана,
+   и подпись может оказаться над текстом, а нити — под ним */
+.sight {
+  position: absolute;
+  overflow: hidden;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* К краям сетка растворяется: иначе она обрывается прямоугольником и
+   выглядит наклеенной поверх страницы */
+.grid {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  mask-image: radial-gradient(88% 96% at 46% 46%, #000 22%, transparent 76%);
+}
+
+.line,
+.minor {
+  stroke: color-mix(in srgb, var(--line) 62%, transparent);
+  stroke-width: 1;
+}
+
+/* Экватор — единственная линия, у которой есть имя, и он же делит сетку
+   пополам: пунктир отличает его от остальных, не делая громче */
+.equator {
+  stroke: color-mix(in srgb, var(--line) 85%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 2 6;
+}
+
+/* Меридианы между шестидесятыми: на узком экране их убираем, иначе сетка
+   превращается в штриховку */
+@media (max-width: 900px) {
+  .minor {
+    display: none;
+  }
+}
+
+.cross {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+/* Нити тянутся через весь экран: прицел смотрит по всей сетке, а не в
+   маленьком окошке вокруг курсора */
+.horizontal,
+.vertical {
+  position: absolute;
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.horizontal {
+  top: 0;
+  left: -100vw;
+  width: 200vw;
+  height: 1px;
+}
+
+.vertical {
+  top: -100vh;
+  left: 0;
+  width: 1px;
+  height: 200vh;
+}
+
+.ring {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.readout {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  will-change: transform;
+}

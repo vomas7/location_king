@@ -147,21 +147,6 @@ a {
   color: var(--text);
 }
 
-/* Луч сканирования на знаке игры: медленно проходит по сетке сверху вниз */
-@keyframes reticle-scan {
-  from {
-    transform: translateY(-70px);
-  }
-
-  to {
-    transform: translateY(320px);
-  }
-}
-
-.reticle-scan {
-  animation: reticle-scan 6s linear infinite;
-}
-
 /* Подпись об источнике карты: обязательна по лицензии, поэтому читаемая,
    но негромкая */
 .ol-attribution {
