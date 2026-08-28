@@ -39,13 +39,17 @@ async def create(
     difficulty: int | None = None,
     category: str | None = None,
     continent: str | None = None,
+    country_group: str | None = None,
+    zone_id: int | None = None,
 ) -> RoundSeries:
     """Собрать серию раундов и сохранить её."""
     if not MIN_ROUNDS <= rounds_total <= MAX_ROUNDS:
         raise ConflictError(f"Раундов в серии должно быть от {MIN_ROUNDS} до {MAX_ROUNDS}")
 
     rounds = [
-        await _build_round(db, position, view_extent_km, difficulty, category, continent)
+        await _build_round(
+            db, position, view_extent_km, difficulty, category, continent, country_group, zone_id
+        )
         for position in range(1, rounds_total + 1)
     ]
 
@@ -113,9 +117,23 @@ async def _build_round(
     difficulty: int | None,
     category: str | None,
     continent: str | None,
+    country_group: str | None,
+    zone_id: int | None = None,
 ) -> SeriesRound:
-    """Собрать заготовку раунда так же, как это делает обычная игра."""
-    zone = await zones_service.pick_random_zone(db, difficulty, category, continent)
+    """
+    Заготовка одного раунда серии.
+
+    Внутри зоны выбирается случайная точка, под неё подбирается тайл нужного
+    масштаба, и целью раунда становится центр этого тайла — именно его игрок
+    и видит в центре снимка.
+    """
+    zone = (
+        await zones_service.get_zone(db, zone_id)
+        if zone_id is not None
+        else await zones_service.pick_random_zone(
+            db, difficulty, category, continent, country_group
+        )
+    )
     lon, lat = await zones_service.random_point_in_zone(db, zone)
 
     zoom = zoom_for_extent(lat, view_extent_km, max_zoom=settings.satellite_max_zoom - 1)

@@ -10,7 +10,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models.enums import Continent
+from app.models.enums import Continent, CountryGroup
 from app.services.round_timer import ALLOWED_TIME_LIMITS
 from app.services.series import MAX_ROUNDS, MIN_ROUNDS
 
@@ -33,6 +33,7 @@ class RoundsRequest(BaseModel):
     difficulty: int | None = Field(default=None, ge=1, le=5)
     category: str | None = None
     continent: Continent | None = None
+    country_group: CountryGroup | None = None
     time_limit_seconds: int | None = Field(
         default=None,
         description="Сколько секунд даётся на раунд. Пусто — без ограничения",

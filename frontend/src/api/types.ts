@@ -147,6 +147,8 @@ export interface StartSessionOptions {
   difficulty: number | null;
   /** Часть света, из которой берутся зоны. null — со всего мира. */
   continent: string | null;
+  /** Страна или объединение стран. null — не ограничивать. */
+  country_group: string | null;
   /** Сколько секунд даётся на раунд. null — без ограничения. */
   time_limit_seconds: number | null;
 }

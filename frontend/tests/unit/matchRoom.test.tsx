@@ -37,6 +37,7 @@ const OPTIONS = {
   view_extent_km: 5,
   difficulty: null,
   continent: null,
+  country_group: null,
   time_limit_seconds: null,
 };
 

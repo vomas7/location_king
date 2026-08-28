@@ -15,6 +15,8 @@ import { Button } from "~/components/ui/Button";
 import { Card, CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { Segmented } from "~/components/ui/Segmented";
 import { formatDistance, formatNumber, formatTimeLimit } from "~/domain/format";
+import type { PlaceKey } from "~/domain/place";
+import { placeFilter } from "~/domain/place";
 import { useAuth } from "~/state/authContext";
 
 const ROUNDS = [3, 5, 10].map((value) => ({ value, label: String(value) }));
@@ -37,17 +39,25 @@ const TIME_LIMITS = [null, 120, 60, 30].map((value) => ({
 }));
 
 /**
- * Части света. Список фиксирован: он должен совпадать с тем, что понимает
- * сервер, и не зависеть от того, какие зоны сейчас загружены.
+ * Откуда берутся зоны. Список фиксирован: он должен совпадать с тем, что
+ * понимает сервер, и не зависеть от того, какие зоны сейчас загружены.
+ *
+ * Страны и части света в одном переключателе намеренно: на сервере это разные
+ * фильтры, но игроку нужно выбрать одно место, а не пересечение двух условий.
+ * Евросоюз не совпадает с Европой — в неё входят ещё Британия, Норвегия,
+ * Швейцария и Исландия.
  */
-const CONTINENTS = [
+const PLACES: { value: PlaceKey; label: string }[] = [
   { value: null, label: "Весь мир" },
-  { value: "europe", label: "Европа" },
-  { value: "asia", label: "Азия" },
-  { value: "africa", label: "Африка" },
-  { value: "north_america", label: "Сев. Америка" },
-  { value: "south_america", label: "Юж. Америка" },
-  { value: "oceania", label: "Океания" },
+  { value: "country:russia", label: "Россия" },
+  { value: "country:usa", label: "США" },
+  { value: "country:eu", label: "Евросоюз" },
+  { value: "continent:europe", label: "Европа" },
+  { value: "continent:asia", label: "Азия" },
+  { value: "continent:africa", label: "Африка" },
+  { value: "continent:north_america", label: "Сев. Америка" },
+  { value: "continent:south_america", label: "Юж. Америка" },
+  { value: "continent:oceania", label: "Океания" },
 ];
 
 const DIFFICULTIES = [
@@ -71,7 +81,7 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
   const [extent, setExtent] = useState(15);
   const [difficulty, setDifficulty] = useState<number | null>(null);
   const [timeLimit, setTimeLimit] = useState<number | null>(null);
-  const [continent, setContinent] = useState<string | null>(null);
+  const [place, setPlace] = useState<PlaceKey>(null);
   const [zoneCount, setZoneCount] = useState<number | null>(null);
   const [unfinished, setUnfinished] = useState<SessionState | null>(null);
 
@@ -80,8 +90,11 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
   useEffect(() => {
     let cancelled = false;
 
+    const { continent, country_group } = placeFilter(place);
+
     const query = new URLSearchParams();
     if (continent !== null) query.set("continent", continent);
+    if (country_group !== null) query.set("country_group", country_group);
     if (difficulty !== null) query.set("difficulty", String(difficulty));
 
     void (async () => {
@@ -96,7 +109,7 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
     return () => {
       cancelled = true;
     };
-  }, [continent, difficulty]);
+  }, [place, difficulty]);
 
   // Незавершённая партия — предлагаем продолжить, а не начинать заново
   useEffect(() => {
@@ -161,10 +174,10 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
               onChange={setDifficulty}
             />
             <Segmented
-              label="Часть света"
-              options={CONTINENTS}
-              value={continent}
-              onChange={setContinent}
+              label="Где играем"
+              options={PLACES}
+              value={place}
+              onChange={setPlace}
               {...(zoneCount === null
                 ? {}
                 : {
@@ -192,7 +205,7 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
                 rounds_total: rounds,
                 view_extent_km: extent,
                 difficulty,
-                continent,
+                ...placeFilter(place),
                 time_limit_seconds: timeLimit,
               });
             }}
@@ -214,7 +227,7 @@ export function HomeScreen({ error, onStart, onResume, onError, refreshKey }: Ho
             rounds_total: rounds,
             view_extent_km: extent,
             difficulty,
-            continent,
+            ...placeFilter(place),
             time_limit_seconds: timeLimit,
           }}
           refreshKey={refreshKey}

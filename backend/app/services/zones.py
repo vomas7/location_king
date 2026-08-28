@@ -6,6 +6,7 @@ from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import NotFoundError
+from app.models.enums import group_countries
 from app.models.location_zone import LocationZone
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,7 @@ def _filtered(
     difficulty: int | None,
     category: str | None,
     continent: str | None,
+    country_group: str | None = None,
 ) -> Select:
     """Запрос активных зон с общими фильтрами."""
     stmt = select(LocationZone).where(LocationZone.is_active.is_(True))
@@ -25,6 +27,8 @@ def _filtered(
         stmt = stmt.where(LocationZone.category == category)
     if continent is not None:
         stmt = stmt.where(LocationZone.continent == continent)
+    if country_group is not None:
+        stmt = stmt.where(LocationZone.country.in_(group_countries(country_group)))
 
     return stmt
 
@@ -34,10 +38,11 @@ async def list_zones(
     difficulty: int | None = None,
     category: str | None = None,
     continent: str | None = None,
+    country_group: str | None = None,
     limit: int = 200,
 ) -> list[LocationZone]:
-    """Активные зоны с фильтрами по сложности, категории и части света."""
-    stmt = _filtered(difficulty, category, continent)
+    """Активные зоны с фильтрами по сложности, категории и месту."""
+    stmt = _filtered(difficulty, category, continent, country_group)
     stmt = stmt.order_by(LocationZone.difficulty, LocationZone.name).limit(limit)
 
     return list((await db.execute(stmt)).scalars().all())
@@ -61,9 +66,10 @@ async def pick_random_zone(
     difficulty: int | None = None,
     category: str | None = None,
     continent: str | None = None,
+    country_group: str | None = None,
 ) -> LocationZone:
     """Случайная активная зона под заданные фильтры."""
-    stmt = _filtered(difficulty, category, continent)
+    stmt = _filtered(difficulty, category, continent, country_group)
     zone = (await db.execute(stmt.order_by(func.random()).limit(1))).scalar_one_or_none()
 
     if zone is None:

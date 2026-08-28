@@ -50,6 +50,7 @@ async def create(
     difficulty: int | None = None,
     category: str | None = None,
     continent: str | None = None,
+    country_group: str | None = None,
     time_limit_seconds: int | None = None,
 ) -> Match:
     """Собрать комнату вместе с её серией раундов."""
@@ -60,6 +61,7 @@ async def create(
         difficulty,
         category,
         continent,
+        country_group,
     )
 
     for _ in range(CODE_ATTEMPTS):

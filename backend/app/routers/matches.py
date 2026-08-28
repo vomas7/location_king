@@ -37,6 +37,7 @@ async def create_match(
         difficulty=payload.difficulty,
         category=payload.category,
         continent=payload.continent,
+        country_group=payload.country_group,
         time_limit_seconds=payload.time_limit_seconds,
     )
     return await _match_view(db, match, user)

@@ -39,6 +39,7 @@ async def start_session(
         difficulty=payload.difficulty,
         category=payload.category,
         continent=payload.continent,
+        country_group=payload.country_group,
         zone_id=payload.zone_id,
         time_limit_seconds=payload.time_limit_seconds,
     )

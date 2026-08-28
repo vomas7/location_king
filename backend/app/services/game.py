@@ -16,7 +16,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.config import settings
 from app.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models.enums import RoundStatus, SessionStatus
 from app.models.game_session import GameSession
@@ -24,12 +23,10 @@ from app.models.location_zone import LocationZone
 from app.models.match import Match
 from app.models.round import Round
 from app.models.user import User
-from app.services import daily, matches, tiles
+from app.services import daily, matches
 from app.services import series as series_service
-from app.services import zones as zones_service
-from app.services.round_timer import deadline_for, is_late, time_left_fraction
-from app.services.scoring import MAX_ROUND_SCORE, evaluate_guess
-from app.utils.geo import lonlat_to_tile, tile_center, tile_width_km, zoom_for_extent
+from app.services.round_timer import is_late, time_left_fraction
+from app.services.scoring import evaluate_guess
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +39,7 @@ async def start_session(
     difficulty: int | None = None,
     category: str | None = None,
     continent: str | None = None,
+    country_group: str | None = None,
     zone_id: int | None = None,
     time_limit_seconds: int | None = None,
 ) -> tuple[GameSession, Round]:
@@ -56,23 +54,30 @@ async def start_session(
     if previous is not None:
         await finish_session(db, previous)
 
-    session = GameSession(
-        user_id=user.id,
-        rounds_total=rounds_total,
-        time_limit_seconds=time_limit_seconds,
-    )
-    db.add(session)
-    await db.flush()
-
-    round_obj = await create_round(
+    # Раунды собираются заранее, все сразу: иначе условия набора пришлось бы
+    # хранить рядом с сессией и применять их к каждому следующему раунду
+    # отдельно — а серия помнит их сама
+    series = await series_service.create(
         db,
-        session,
+        rounds_total,
         view_extent_km,
         difficulty,
         category,
         continent,
+        country_group,
         zone_id,
     )
+
+    session = GameSession(
+        user_id=user.id,
+        rounds_total=rounds_total,
+        time_limit_seconds=time_limit_seconds,
+        series_id=series.id,
+    )
+    db.add(session)
+    await db.flush()
+
+    round_obj = await series_service.open_round(db, session, position=1)
 
     logger.info("Сессия %s начата пользователем %s", session.id, user.id)
     return session, round_obj
@@ -124,58 +129,6 @@ async def start_match(
         # войти в комнату из другой вкладки
         await db.rollback()
         raise ConflictError("Ты уже играл в этой комнате") from e
-
-
-async def create_round(
-    db: AsyncSession,
-    session: GameSession,
-    view_extent_km: float,
-    difficulty: int | None = None,
-    category: str | None = None,
-    continent: str | None = None,
-    zone_id: int | None = None,
-) -> Round:
-    """
-    Сгенерировать раунд.
-
-    Внутри зоны выбирается случайная точка, под неё подбирается тайл нужного
-    масштаба, и целью раунда становится центр этого тайла — именно его игрок
-    и видит в центре снимка.
-    """
-    zone = (
-        await zones_service.get_zone(db, zone_id)
-        if zone_id is not None
-        else await zones_service.pick_random_zone(db, difficulty, category, continent)
-    )
-
-    lon, lat = await zones_service.random_point_in_zone(db, zone)
-
-    zoom = zoom_for_extent(lat, view_extent_km, max_zoom=settings.satellite_max_zoom - 1)
-    tile_x, tile_y = lonlat_to_tile(lon, lat, zoom)
-    target_lon, target_lat = tile_center(tile_x, tile_y, zoom)
-
-    round_obj = Round(
-        session_id=session.id,
-        position=session.rounds_done + 1,
-        zone_id=zone.id,
-        target_point=WKTElement(f"POINT({target_lon} {target_lat})", srid=4326),
-        tile_zoom=zoom,
-        tile_x=tile_x,
-        tile_y=tile_y,
-        status=RoundStatus.ACTIVE,
-        view_extent_km=Decimal(str(round(tile_width_km(tile_x, tile_y, zoom), 3))),
-        max_score=MAX_ROUND_SCORE,
-        deadline_at=deadline_for(session),
-    )
-    db.add(round_obj)
-
-    await db.flush()
-    await db.refresh(round_obj, ["zone"])
-
-    tiles.schedule_prewarm(round_obj)
-
-    logger.info("Раунд %s создан в зоне %s (зум %s)", round_obj.id, zone.id, zoom)
-    return round_obj
 
 
 async def submit_guess(
@@ -288,11 +241,7 @@ async def _advance(db: AsyncSession, session: GameSession) -> Round | None:
         await finish_session(db, session)
         return None
 
-    if session.series_id is not None:
-        return await series_service.open_round(db, session, session.rounds_done + 1)
-
-    previous = await _first_round(db, session)
-    return await create_round(db, session, view_extent_km=float(previous.view_extent_km))
+    return await series_service.open_round(db, session, session.rounds_done + 1)
 
 
 def _elapsed(round_obj: Round) -> Decimal:
@@ -456,12 +405,6 @@ async def guess_coordinates(db: AsyncSession, round_obj: Round) -> tuple[float, 
 
     row = (await db.execute(stmt)).one()
     return float(row[0]), float(row[1])
-
-
-async def _first_round(db: AsyncSession, session: GameSession) -> Round:
-    """Первый раунд сессии — по нему выравнивается масштаб остальных."""
-    stmt = select(Round).where(Round.session_id == session.id, Round.position == 1)
-    return (await db.execute(stmt)).scalar_one()
 
 
 async def _update_user_statistics(db: AsyncSession, user_id: int) -> None:
