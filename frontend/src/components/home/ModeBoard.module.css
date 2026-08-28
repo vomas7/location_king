@@ -1,0 +1,87 @@
+/* Две колонки на любой ширине: четыре режима читаются как одно поле выбора,
+   а в одну колонку они снова растянулись бы на весь экран телефона */
+.board {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 76px;
+  padding: 13px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.16s var(--ease),
+    border-color 0.16s var(--ease),
+    box-shadow 0.16s var(--ease);
+}
+
+.tile:hover {
+  border-color: var(--line);
+  background: var(--surface-2);
+}
+
+/* Тот же янтарный контур, что и у выбранного значения в переключателе: выбор
+   в игре выглядит одинаково, где бы его ни делали */
+.tileActive,
+.tileActive:hover {
+  border-color: transparent;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.name {
+  color: var(--text-dim);
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.tileActive .name {
+  color: var(--text);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+/* Точка означает «здесь тебя ждут»: соперник в очереди, несыгранный
+   челлендж. Это не украшение — без повода она не загорается */
+.dot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  animation: blink 2s var(--ease) infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+  }
+}

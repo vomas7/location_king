@@ -1,30 +1,5 @@
 .metrics {
-  display: flex;
-  gap: 4px;
   margin-bottom: 16px;
-  padding: 4px;
-  border-radius: var(--radius);
-  background: var(--bg-deep);
-}
-
-.metric {
-  flex: 1;
-  padding: 7px 8px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-faint);
-  font-size: 12px;
-  font-weight: 550;
-  cursor: pointer;
-  transition:
-    background 0.16s var(--ease),
-    color 0.16s var(--ease);
-}
-
-.metricActive {
-  background: var(--surface-3);
-  color: var(--text);
 }
 
 .table {
@@ -53,7 +28,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 14px;
 }
 
 .scopeLabel {
@@ -79,10 +54,4 @@
 .scopeSelect:focus-visible {
   border-color: var(--accent);
   outline: none;
-}
-
-.caption {
-  margin-bottom: 10px;
-  color: var(--text-faint);
-  font-size: 12px;
 }

@@ -60,7 +60,15 @@ function room(overrides: Partial<MatchView> = {}): MatchView {
 
 /** Отрисовать карточку и дождаться, пока подтянется список своих комнат. */
 async function renderRoom(onJoined = vi.fn(), onError = vi.fn()) {
-  render(<MatchRoom options={OPTIONS} refreshKey={0} onJoined={onJoined} onError={onError} />);
+  render(
+    <MatchRoom
+      options={OPTIONS}
+      summary="5 раундов · Средне · 15 км · Весь мир · без таймера"
+      refreshKey={0}
+      onJoined={onJoined}
+      onError={onError}
+    />,
+  );
 
   await waitFor(() => {
     expect(mine).toHaveBeenCalled();

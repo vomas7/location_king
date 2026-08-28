@@ -14,7 +14,7 @@ import type { Friend } from "~/api/types";
 import styles from "~/components/home/Friends.module.css";
 import { Avatar } from "~/components/ui/Avatar";
 import { Button } from "~/components/ui/Button";
-import { Card, CardSubtitle, CardTitle } from "~/components/ui/Card";
+import { CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { Field } from "~/components/ui/Field";
 import { formatNumber } from "~/domain/format";
 import { CODE_LENGTH, isCompleteCode, normalizeCode } from "~/domain/codes";
@@ -74,7 +74,7 @@ export function Friends({ onError }: FriendsProps) {
   const incoming = list.filter((friend) => friend.incoming).length;
 
   return (
-    <Card>
+    <section>
       <CardTitle>Друзья</CardTitle>
       <CardSubtitle>
         {incoming === 0
@@ -165,6 +165,6 @@ export function Friends({ onError }: FriendsProps) {
           ))}
         </ul>
       )}
-    </Card>
+    </section>
   );
 }

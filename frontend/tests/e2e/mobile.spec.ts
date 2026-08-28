@@ -8,7 +8,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-import { register } from "./helpers";
+import { openSetup, register } from "./helpers";
 
 test.use({
   viewport: { width: 390, height: 844 },
@@ -38,6 +38,7 @@ test("раунд играется пальцем: карта открывает�
   await register(page);
   await expectNoSideScroll(page);
 
+  await openSetup(page);
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
   await page.getByRole("button", { name: "Начать игру" }).click();
   await expect(page.locator("canvas").first()).toBeVisible();

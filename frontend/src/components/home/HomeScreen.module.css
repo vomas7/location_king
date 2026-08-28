@@ -1,3 +1,7 @@
+/*
+ * Две колонки: слева играют, справа смотрят. На телефоне они складываются в
+ * одну, и порядок тот же — сначала во что играть, потом всё остальное.
+ */
 .screen {
   display: grid;
   overflow-y: auto;
@@ -9,14 +13,14 @@
   background:
     radial-gradient(900px 500px at 15% -5%, var(--glow-warm), transparent 60%),
     radial-gradient(700px 500px at 95% 105%, var(--glow-cool), transparent 60%), var(--bg);
-  grid-template-columns: minmax(0, 480px) minmax(0, 340px);
+  grid-template-columns: minmax(0, 460px) minmax(0, 360px);
   justify-content: center;
 }
 
 .column {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -25,6 +29,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  margin-bottom: 4px;
   padding: 16px 20px;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: var(--radius);
@@ -40,92 +45,55 @@
   font-size: 12px;
 }
 
-.options {
+/*
+ * Разделы набраны тише плиток режимов и подчёркиванием, а не заливкой: играть
+ * и читать про себя — разные по весу занятия, и выглядеть одинаково они не
+ * должны. Ряд прокручивается вбок, чтобы не переносить четыре слова на две
+ * строки на узком экране.
+ */
+.sections {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-bottom: 22px;
-}
-
-.metrics {
-  display: flex;
-  flex-direction: column;
   gap: 2px;
-}
-
-.metric {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 11px 0;
+  overflow-x: auto;
+  padding-bottom: 2px;
   border-bottom: 1px solid var(--line-soft);
+  scrollbar-width: none;
 }
 
-.metric:last-child {
-  border-bottom: 0;
+.sections::-webkit-scrollbar {
+  display: none;
 }
 
-.metric dt {
+.section {
+  padding: 9px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
   color: var(--text-faint);
+  font-family: inherit;
   font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.16s var(--ease),
+    border-color 0.16s var(--ease);
 }
 
-.metric dd {
-  font-family: var(--mono);
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.history {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.historyRow {
-  display: grid;
-  align-items: baseline;
-  gap: 4px 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line-soft);
-  grid-template-columns: 1fr auto;
-}
-
-.historyRow:last-child {
-  border-bottom: 0;
-}
-
-.historyDate {
+.section:hover {
   color: var(--text-dim);
-  font-size: 13px;
 }
 
-.historyMeta {
-  grid-column: 1;
-  color: var(--text-faint);
-  font-size: 12px;
-}
-
-.historyScore {
-  grid-row: 1 / span 2;
-  grid-column: 2;
-  align-self: center;
-  color: var(--accent);
-  font-family: var(--mono);
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.empty {
-  padding: 18px 0;
-  color: var(--text-faint);
-  font-size: 13px;
-  text-align: center;
+.sectionActive,
+.sectionActive:hover {
+  border-bottom-color: var(--accent);
+  color: var(--text);
 }
 
 @media (max-width: 900px) {
   .screen {
     grid-template-columns: minmax(0, 520px);
+    gap: 24px;
     padding: 20px 14px 40px;
   }
 }

@@ -11,6 +11,7 @@ import type {
 import styles from "~/components/home/Leaderboard.module.css";
 import { PlayerRow } from "~/components/ui/PlayerRow";
 import { CardTitle } from "~/components/ui/Card";
+import { Segmented } from "~/components/ui/Segmented";
 import { Skeleton } from "~/components/ui/Skeleton";
 import { formatDistance, formatNumber } from "~/domain/format";
 
@@ -118,23 +119,14 @@ export function Leaderboard({ refreshKey }: { refreshKey: number }) {
     <section>
       <CardTitle>Таблица лидеров</CardTitle>
 
-      <div className={styles.metrics} role="tablist" aria-label="Метрика таблицы лидеров">
-        {METRICS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            role="tab"
-            aria-selected={option.value === metric}
-            className={[styles.metric, option.value === metric ? styles.metricActive : ""]
-              .filter(Boolean)
-              .join(" ")}
-            onClick={() => {
-              setMetric(option.value);
-            }}
-          >
-            {option.label}
-          </button>
-        ))}
+      <div className={styles.metrics}>
+        <Segmented
+          label="Метрика"
+          options={METRICS}
+          value={metric}
+          onChange={setMetric}
+          hint={CAPTIONS[metric]}
+        />
       </div>
 
       <label className={styles.scope}>
@@ -153,8 +145,6 @@ export function Leaderboard({ refreshKey }: { refreshKey: number }) {
           ))}
         </select>
       </label>
-
-      <p className={styles.caption}>{CAPTIONS[metric]}</p>
 
       {failed && <p className={styles.empty}>Не удалось загрузить таблицу</p>}
 

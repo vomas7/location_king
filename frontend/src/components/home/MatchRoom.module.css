@@ -1,15 +1,10 @@
-.card {
-  position: relative;
-  overflow: hidden;
-}
-
-.card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 1px;
-  background: var(--accent);
-  opacity: 0.75;
+/* Условия, по которым соберётся комната: их выбирают в одиночной партии, и
+   без этой строки было бы непонятно, откуда взялись пять раундов */
+.summary {
+  margin: 14px 0 16px;
+  color: var(--text-faint);
+  font-size: 12px;
+  text-wrap: pretty;
 }
 
 .header {

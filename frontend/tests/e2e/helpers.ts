@@ -33,6 +33,19 @@ export async function register(page: Page): Promise<Player> {
   return player;
 }
 
+/**
+ * Открыть режим игры или раздел в меню: и то и другое — вкладки, и раскрыта
+ * всегда ровно одна.
+ */
+export async function open(page: Page, name: string): Promise<void> {
+  await page.getByRole("tab", { name }).click();
+}
+
+/** Развернуть условия одиночной партии: по умолчанию они свёрнуты в строку. */
+export async function openSetup(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Настроить" }).click();
+}
+
 /** Поставить точку на карте догадки и ответить. */
 export async function answerRound(page: Page): Promise<void> {
   const guessMap = page.locator(".ol-viewport").nth(1);

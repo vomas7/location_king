@@ -122,6 +122,7 @@ export function App() {
             onStart={startGame}
             onResume={resumeGame}
             onError={show}
+            onOpenLegal={setLegal}
             refreshKey={refreshKey}
           />
         )}
@@ -178,15 +179,15 @@ export function App() {
         )}
       </main>
 
+      {/* Подвала в меню нет: документы и правообладатели переехали в раздел
+          «Профиль». На телефоне подвал занимал экран строками, которые
+          открывают раз в жизни */}
       {!playing && (
-        <>
-          <StorageNotice
-            onDetails={() => {
-              setLegal("storage");
-            }}
-          />
-          <Footer onOpen={setLegal} />
-        </>
+        <StorageNotice
+          onDetails={() => {
+            setLegal("storage");
+          }}
+        />
       )}
 
       {state.phase === "loading" && <Loader text={state.loadingText} />}

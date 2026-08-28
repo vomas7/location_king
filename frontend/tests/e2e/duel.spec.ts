@@ -7,13 +7,15 @@
 
 import { expect, test } from "@playwright/test";
 
-import { register } from "./helpers";
+import { open, register } from "./helpers";
 
 test("двое находят друг друга и играют дуэль", async ({ browser, page }) => {
   await register(page);
 
-  // Счётчик виден до того, как игрок встал в очередь
+  // Счётчик виден на плитке режима, до того как игрок его открыл
   await expect(page.getByText("Сейчас никто не ищет")).toBeVisible();
+
+  await open(page, "Дуэль");
   await page.getByRole("button", { name: "Найти соперника" }).click();
   await expect(page.getByText("Пока ищешь только ты")).toBeVisible();
 
@@ -22,6 +24,7 @@ test("двое находят друг друга и играют дуэль", a
   const rivalPage = await rivalContext.newPage();
   await register(rivalPage);
 
+  await open(rivalPage, "Дуэль");
   await rivalPage.getByRole("button", { name: "Найти соперника" }).click();
 
   // Пара находится опросом, поэтому ждём дольше обычного
@@ -37,6 +40,7 @@ test("двое находят друг друга и играют дуэль", a
 test("рейтинг виден до первой дуэли", async ({ page }) => {
   await register(page);
 
+  await open(page, "Дуэль");
   await expect(page.getByText("твой рейтинг", { exact: false })).toBeVisible();
   await expect(page.getByText("дуэлей ещё не было", { exact: false })).toBeVisible();
 });
@@ -44,6 +48,7 @@ test("рейтинг виден до первой дуэли", async ({ page }) 
 test("поиск можно отменить", async ({ page }) => {
   await register(page);
 
+  await open(page, "Дуэль");
   await page.getByRole("button", { name: "Найти соперника" }).click();
   await expect(page.getByRole("button", { name: "Отменить поиск" })).toBeVisible();
 

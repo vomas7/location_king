@@ -5,17 +5,19 @@
 
 import { expect, test } from "@playwright/test";
 
-import { playRounds, register } from "./helpers";
+import { open, openSetup, playRounds, register } from "./helpers";
 
 test("двое играют одну серию и сравнивают результаты", async ({ browser, page }) => {
   const host = await register(page);
 
-  // Условия комнаты берутся из карточки новой партии
+  // Условия комнаты берутся из одиночной партии
+  await openSetup(page);
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
+
+  await open(page, "Комната");
   await page.getByRole("button", { name: "Создать комнату" }).click();
 
-  // Шестизначный код есть и у комнаты, и у самого игрока в карточке друзей.
-  // Код комнаты — абзац, код игрока — <code>, по этому их и различаем
+  // Код комнаты — единственный шестизначный абзац на экране
   const shown = page
     .locator("p")
     .filter({ hasText: /^[A-Z2-9]{6}$/ })
@@ -32,6 +34,7 @@ test("двое играют одну серию и сравнивают резу
   const guestPage = await guestContext.newPage();
   const guest = await register(guestPage);
 
+  await open(guestPage, "Комната");
   await guestPage.getByLabel("Код комнаты").fill(code!);
   await guestPage.getByRole("button", { name: "Войти" }).click();
 
@@ -53,9 +56,10 @@ test("двое играют одну серию и сравнивают резу
 test("в закрытую комнату войти нельзя", async ({ browser, page }) => {
   await register(page);
 
+  await open(page, "Комната");
   await page.getByRole("button", { name: "Создать комнату" }).click();
-  // Шестизначный код есть и у комнаты, и у самого игрока в карточке друзей.
-  // Код комнаты — абзац, код игрока — <code>, по этому их и различаем
+
+  // Код комнаты — единственный шестизначный абзац на экране
   const shown = page
     .locator("p")
     .filter({ hasText: /^[A-Z2-9]{6}$/ })

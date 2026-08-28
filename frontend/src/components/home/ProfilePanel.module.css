@@ -1,0 +1,39 @@
+.metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.metric:last-child {
+  border-bottom: 0;
+}
+
+.metric dt {
+  color: var(--text-faint);
+  font-size: 13px;
+}
+
+.metric dd {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Документы и правообладатели — сноски раздела, а не его содержание:
+   отделены чертой и набраны тише всего на экране */
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-soft);
+}

@@ -1,20 +1,26 @@
-/** Челлендж дня: одна серия раундов на сутки для всех игроков. */
+/**
+ * Челлендж дня: одна серия раундов на сутки для всех игроков.
+ *
+ * Состояние приходит сверху: то же самое видно на плитке режима, а запрос
+ * должен быть один.
+ */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
+import { errorMessage } from "~/api/client";
 import { challenge as challengeApi } from "~/api/endpoints";
 import type { DailyChallenge as DailyChallengeData, SessionState } from "~/api/types";
 import styles from "~/components/home/DailyChallenge.module.css";
 import { PlayerRow } from "~/components/ui/PlayerRow";
 import { Button } from "~/components/ui/Button";
-import { Card, CardTitle } from "~/components/ui/Card";
+import { CardTitle } from "~/components/ui/Card";
 import { Skeleton } from "~/components/ui/Skeleton";
 import { formatNumber, plural } from "~/domain/format";
 import { useAuth } from "~/state/authContext";
 
 interface DailyChallengeProps {
-  /** Меняется после каждой партии, чтобы таблица дня перечиталась. */
-  refreshKey: number;
+  /** Пусто, пока состояние челленджа не приехало. */
+  data: DailyChallengeData | null;
   onStarted: (session: SessionState) => void;
   onError: (message: string) => void;
 }
@@ -23,41 +29,23 @@ function formatDay(iso: string): string {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
 }
 
-export function DailyChallenge({ refreshKey, onStarted, onError }: DailyChallengeProps) {
+export function DailyChallenge({ data, onStarted, onError }: DailyChallengeProps) {
   const { user } = useAuth();
 
-  const [data, setData] = useState<DailyChallengeData | null>(null);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const loaded = await challengeApi.today();
-        if (!cancelled) setData(loaded);
-      } catch {
-        if (!cancelled) setData(null);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
 
   if (user === null) return null;
 
-  // Карточка занимает своё место сразу: иначе весь столбец подпрыгивает,
-  // когда ответ приходит
+  // Панель занимает своё место сразу: иначе меню подпрыгивает, когда ответ
+  // приходит
   if (data === null) {
     return (
-      <Card className={styles.card}>
+      <section>
         <div className={styles.header}>
           <CardTitle>Челлендж дня</CardTitle>
         </div>
         <Skeleton rows={4} />
-      </Card>
+      </section>
     );
   }
 
@@ -69,14 +57,14 @@ export function DailyChallenge({ refreshKey, onStarted, onError }: DailyChalleng
     try {
       onStarted(await challengeApi.start());
     } catch (error) {
-      onError(error instanceof Error ? error.message : "Не удалось начать челлендж");
+      onError(errorMessage(error, "Не удалось начать челлендж"));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Card className={styles.card}>
+    <section>
       <div className={styles.header}>
         <CardTitle>Челлендж дня</CardTitle>
         <span className={styles.day}>{formatDay(data.day)}</span>
@@ -150,6 +138,6 @@ export function DailyChallenge({ refreshKey, onStarted, onError }: DailyChalleng
           Продолжить челлендж
         </Button>
       )}
-    </Card>
+    </section>
   );
 }

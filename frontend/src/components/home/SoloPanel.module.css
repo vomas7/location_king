@@ -1,0 +1,55 @@
+/* Условия и кнопка их развернуть — одна строка: так видно, что строка и есть
+   настройки, просто свёрнутые */
+.setup {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 11px 13px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+}
+
+.summary {
+  flex: 1 1 auto;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.toggle {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  color: var(--text);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.warning {
+  margin-bottom: 14px;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-wrap: pretty;
+}
+
+.alertSlot {
+  margin-bottom: 14px;
+}

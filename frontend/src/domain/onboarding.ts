@@ -8,6 +8,7 @@
  */
 
 import type { UserProfile } from "~/api/types";
+import type { GameSetup } from "~/domain/setup";
 
 /** Ещё ни одной законченной партии. */
 export function isNewPlayer(user: UserProfile | null): boolean {
@@ -21,12 +22,13 @@ export function isNewPlayer(user: UserProfile | null): boolean {
  * раундом получил пустыню в кадре шириной пятнадцать километров, второй
  * партии не начинает. Дальше он выставит всё сам.
  */
-export const FIRST_GAME_SETUP = {
+export const FIRST_GAME_SETUP: GameSetup = {
   rounds: 5,
   extent: 40,
   level: "easy",
+  place: null,
   timeLimit: null,
-} as const;
+};
 
 /** Шаг подсказки в первом раунде. */
 export type CoachStep = "look" | "map" | "answer";

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { game } from "~/api/endpoints";
 import type { SessionSummary } from "~/api/types";
-import styles from "~/components/home/HomeScreen.module.css";
+import styles from "~/components/home/GameHistory.module.css";
 import { CardTitle } from "~/components/ui/Card";
 import { Skeleton } from "~/components/ui/Skeleton";
 import { formatDate, formatNumber, plural } from "~/domain/format";

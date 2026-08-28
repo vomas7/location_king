@@ -1,6 +1,10 @@
 /**
  * Поиск соперника.
  *
+ * Сам поиск живёт выше, в меню: очередь не должна обрываться от того, что
+ * игрок переключился на таблицу лидеров. Здесь только рейтинг, условия и
+ * кнопка.
+ *
  * Условия дуэли решает сервер и он же их называет: пересказывать их здесь
  * своими словами означало бы однажды разойтись с правдой.
  */
@@ -8,31 +12,31 @@
 import { useEffect, useState } from "react";
 
 import { duels as duelsApi } from "~/api/endpoints";
-import type { DuelFormat, SessionState } from "~/api/types";
+import type { DuelFormat } from "~/api/types";
 import styles from "~/components/home/DuelSearch.module.css";
 import { Button } from "~/components/ui/Button";
-import { Card, CardSubtitle, CardTitle } from "~/components/ui/Card";
+import { CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { formatNumber, formatTimeLimit, plural } from "~/domain/format";
 import { useAuth } from "~/state/authContext";
-import { useDuelSearch } from "~/state/useDuelSearch";
+import type { DuelPhase, DuelSearchController } from "~/state/useDuelSearch";
 
 interface DuelSearchProps {
-  onJoined: (session: SessionState) => void;
-  onError: (message: string) => void;
+  search: DuelSearchController;
 }
 
-function searchingText(searching: number, mine: boolean): string {
-  if (searching === 0) return "Сейчас никто не ищет";
+/**
+ * Строка под кнопкой говорит про сам поиск, а не про очередь: сколько человек
+ * в ней стоит, написано на плитке режима прямо над панелью, и повторять это
+ * дважды на одном экране незачем.
+ */
+const QUEUE_TEXTS: Record<DuelPhase, string> = {
+  idle: "",
+  searching: "Ищем соперника",
+  joining: "Соперник найден",
+};
 
-  const others = mine ? searching - 1 : searching;
-  if (others === 0) return "Пока ищешь только ты";
-
-  return `${String(others)} ${plural(others, "игрок ищет", "игрока ищут", "игроков ищут")} соперника`;
-}
-
-export function DuelSearch({ onJoined, onError }: DuelSearchProps) {
+export function DuelSearch({ search }: DuelSearchProps) {
   const { user } = useAuth();
-  const { phase, searching, error, start, stop } = useDuelSearch(onJoined);
   const [format, setFormat] = useState<DuelFormat | null>(null);
 
   useEffect(() => {
@@ -52,17 +56,13 @@ export function DuelSearch({ onJoined, onError }: DuelSearchProps) {
     };
   }, []);
 
-  useEffect(() => {
-    if (error !== null) onError(error);
-  }, [error, onError]);
-
   const rules =
     format === null
       ? "Одни и те же раунды у обоих"
       : `${String(format.rounds_total)} ${plural(format.rounds_total, "раунд", "раунда", "раундов")} · ${formatTimeLimit(format.time_limit_seconds)} на раунд · одни и те же места у обоих`;
 
   return (
-    <Card>
+    <section>
       <CardTitle>Дуэль</CardTitle>
       <CardSubtitle>Соперник подбирается по рейтингу</CardSubtitle>
 
@@ -76,20 +76,26 @@ export function DuelSearch({ onJoined, onError }: DuelSearchProps) {
 
       <p className={styles.rules}>{rules}</p>
 
-      {phase === "idle" ? (
-        <Button variant="primary" size="large" block onClick={start}>
+      {search.phase === "idle" ? (
+        <Button variant="primary" size="large" block onClick={search.start}>
           Найти соперника
         </Button>
       ) : (
-        <Button variant="ghost" size="large" block onClick={stop} disabled={phase === "joining"}>
-          {phase === "joining" ? "Соперник найден…" : "Отменить поиск"}
+        <Button
+          variant="ghost"
+          size="large"
+          block
+          onClick={search.stop}
+          disabled={search.phase === "joining"}
+        >
+          {search.phase === "joining" ? "Соперник найден…" : "Отменить поиск"}
         </Button>
       )}
 
       <p className={styles.queue} aria-live="polite">
-        {phase === "searching" && <span className={styles.pulse} aria-hidden="true" />}
-        {searchingText(searching, phase !== "idle")}
+        {search.phase === "searching" && <span className={styles.pulse} aria-hidden="true" />}
+        {QUEUE_TEXTS[search.phase]}
       </p>
-    </Card>
+    </section>
   );
 }

@@ -1,0 +1,46 @@
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.historyRow {
+  display: grid;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+  grid-template-columns: 1fr auto;
+}
+
+.historyRow:last-child {
+  border-bottom: 0;
+}
+
+.historyDate {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.historyMeta {
+  grid-column: 1;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.historyScore {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.empty {
+  padding: 18px 0;
+  color: var(--text-faint);
+  font-size: 13px;
+  text-align: center;
+}

@@ -14,15 +14,17 @@ import type { MatchSummary, MatchView, SessionState, StartSessionOptions } from 
 import styles from "~/components/home/MatchRoom.module.css";
 import { PlayerRow } from "~/components/ui/PlayerRow";
 import { Button } from "~/components/ui/Button";
-import { Card, CardSubtitle, CardTitle } from "~/components/ui/Card";
+import { CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { formatNumber, formatTimeLimit, plural } from "~/domain/format";
 import { CODE_LENGTH, isCompleteCode, normalizeCode } from "~/domain/codes";
 import { roomFromSearch, roomLink } from "~/domain/room";
 import { type ShareState, useShare } from "~/state/useShare";
 
 interface MatchRoomProps {
-  /** Условия из карточки «Новая партия»: комната собирается по ним же. */
+  /** Условия одиночной партии: комната собирается по ним же. */
   options: StartSessionOptions;
+  /** Те же условия словами — их видно до того, как комната создана. */
+  summary: string;
   /** Меняется после каждой партии, чтобы таблица комнаты перечиталась. */
   refreshKey: number;
   onJoined: (session: SessionState) => void;
@@ -39,7 +41,7 @@ const LINK_LABELS: Record<ShareState, string> = {
   failed: "Не получилось скопировать",
 };
 
-export function MatchRoom({ options, refreshKey, onJoined, onError }: MatchRoomProps) {
+export function MatchRoom({ options, summary, refreshKey, onJoined, onError }: MatchRoomProps) {
   const [room, setRoom] = useState<MatchView | null>(null);
   const [mine, setMine] = useState<MatchSummary[]>([]);
   const [code, setCode] = useState("");
@@ -150,12 +152,13 @@ export function MatchRoom({ options, refreshKey, onJoined, onError }: MatchRoomP
 
   if (room === null) {
     return (
-      <Card>
-        <CardTitle>Играть с друзьями</CardTitle>
+      <section>
+        <CardTitle>Комната</CardTitle>
         <CardSubtitle>
-          Комната — те же раунды для всех, кто вошёл. Играете каждый в своём темпе и сравниваете
-          результаты.
+          Те же раунды для всех, кто вошёл. Играете каждый в своём темпе и сравниваете результаты.
         </CardSubtitle>
+
+        <p className={styles.summary}>Условия берутся из одиночной партии: {summary}</p>
 
         <Button
           variant="primary"
@@ -215,7 +218,7 @@ export function MatchRoom({ options, refreshKey, onJoined, onError }: MatchRoomP
             </div>
           </div>
         )}
-      </Card>
+      </section>
     );
   }
 
@@ -224,7 +227,7 @@ export function MatchRoom({ options, refreshKey, onJoined, onError }: MatchRoomP
   const finished = room.my_session?.status === "finished";
 
   return (
-    <Card className={styles.card}>
+    <section>
       <div className={styles.header}>
         <CardTitle>Комната</CardTitle>
         <button
@@ -328,6 +331,6 @@ export function MatchRoom({ options, refreshKey, onJoined, onError }: MatchRoomP
           </Button>
         )}
       </div>
-    </Card>
+    </section>
   );
 }

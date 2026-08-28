@@ -1,17 +1,3 @@
-.card {
-  position: relative;
-  overflow: hidden;
-}
-
-.card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 1px;
-  background: var(--accent);
-  opacity: 0.75;
-}
-
 .header {
   display: flex;
   align-items: baseline;
