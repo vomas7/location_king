@@ -30,6 +30,15 @@
   color: var(--text);
 }
 
+/* Правая половина подвала: подпись к карте и ссылка на исходники. Обе
+   строки одинаково приглушены — это сноски, а не призывы что-то нажать */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+}
+
 .credits {
   color: var(--text-faint);
   font-size: 12px;

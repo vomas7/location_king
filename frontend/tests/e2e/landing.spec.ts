@@ -17,6 +17,12 @@ test("рассказывает про игру и ведёт к регистра
   // Главная кнопка возвращает к форме входа
   await page.getByRole("link", { name: "Играть бесплатно" }).click();
   await expect(page.getByRole("tab", { name: "Регистрация" })).toBeInViewport();
+
+  // В подвале — ссылка на исходники: игра открыта, и это видно со страницы
+  await expect(page.getByRole("link", { name: "Исходный код" })).toHaveAttribute(
+    "href",
+    /github\.com\/[^/]+\/location_king/,
+  );
 });
 
 test("страница описана для поисковика", async ({ page }) => {
