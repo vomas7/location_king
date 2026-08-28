@@ -6,9 +6,7 @@ import { DEFAULT_SETUP, describeSetup, levelHint, toOptions } from "~/domain/set
 
 describe("describeSetup", () => {
   it("называет все пять условий подряд", () => {
-    expect(describeSetup(DEFAULT_SETUP)).toBe(
-      "5 раундов · Средне · 15 км · Весь мир · без лимита",
-    );
+    expect(describeSetup(DEFAULT_SETUP)).toBe("5 раундов · Средне · 15 км · Весь мир · без лимита");
   });
 
   it("склоняет раунды", () => {
@@ -24,6 +22,11 @@ describe("describeSetup", () => {
   it("называет таймер", () => {
     expect(describeSetup({ ...DEFAULT_SETUP, timeLimit: 30 })).toContain("30 сек");
   });
+
+  it("предупреждает про ответ страной и молчит про обычный ответ", () => {
+    expect(describeSetup({ ...DEFAULT_SETUP, answerMode: "country" })).toContain("ответ страной");
+    expect(describeSetup(DEFAULT_SETUP)).not.toContain("ответ");
+  });
 });
 
 describe("toOptions", () => {
@@ -34,8 +37,13 @@ describe("toOptions", () => {
       difficulty: "normal",
       continent: "europe",
       country_group: null,
+      answer_mode: "point",
       time_limit_seconds: null,
     });
+  });
+
+  it("передаёт выбранный способ ответа", () => {
+    expect(toOptions({ ...DEFAULT_SETUP, answerMode: "country" }).answer_mode).toBe("country");
   });
 
   it("весь мир не ограничивает ничем", () => {

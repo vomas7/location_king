@@ -257,6 +257,30 @@ test("часть света ограничивает выбор зон", async (
   await expect(dialog.getByText(/Австралия|Новая Зеландия|Полинезия|Папуа/).first()).toBeVisible();
 });
 
+test("в режиме стран очки объясняет страна, а не километры", async ({ page }) => {
+  await register(page);
+
+  await openSetup(page);
+  await page.getByRole("radio", { name: "3", exact: true }).first().click();
+  await page.getByRole("radio", { name: "Страной" }).click();
+
+  // Выбор виден и в свёрнутых условиях: играть будут не в то, что обычно
+  await expect(page.getByText(/ответ страной/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+  await expect(page.getByText("Ткни в страну, из которой снимок")).toBeVisible();
+
+  await answerRound(page);
+
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("Страна", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("Твой ответ")).toBeVisible();
+  // Ни промаха, ни разбора «здесь обычно промахиваются»: очки дали не за
+  // километры, и объяснять их километрами нечестно
+  await expect(dialog.getByText(/промах/i)).toHaveCount(0);
+});
+
 test("аватарка видна в шапке и меняется в профиле", async ({ page }) => {
   await register(page);
 

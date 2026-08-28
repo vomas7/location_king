@@ -28,6 +28,7 @@ export const FIRST_GAME_SETUP: GameSetup = {
   level: "easy",
   place: null,
   timeLimit: null,
+  answerMode: "point",
 };
 
 /** Шаг подсказки в первом раунде. */

@@ -75,6 +75,8 @@ export interface RoundView {
   tiles_url: string;
   attribution: string;
   created_at: string;
+  /** Чем отвечать на этот раунд: point — точкой, country — страной. */
+  answer_mode: string;
   /** Сколько очков ещё можно взять за раунд. Подсказка это число уменьшает. */
   max_score: number;
   /** Заполнено, если игрок взял подсказку. */
@@ -97,6 +99,13 @@ export interface RoundResult {
   score: number;
   max_score: number;
   accuracy: string | null;
+  /**
+   * Страна цели и страна, куда попал игрок. Заполнены только в режиме стран:
+   * в обычном раунде вопрос был не про страну. Пустая страна догадки
+   * означает, что точка легла мимо суши.
+   */
+  country: string | null;
+  guess_country: string | null;
   answer_seconds: string | null;
   zone: Zone;
   guessed_at: string | null;
@@ -181,6 +190,8 @@ export interface StartSessionOptions {
   country_group: string | null;
   /** Уровень: easy, normal, hard или hardcore. Он же выбирает, что покажут. */
   difficulty: string;
+  /** Чем отвечать: point — точкой на карте, country — страной. */
+  answer_mode: string;
   /** Сколько секунд даётся на раунд. null — без ограничения. */
   time_limit_seconds: number | null;
 }

@@ -39,6 +39,7 @@ const OPTIONS = {
   continent: null,
   country_group: null,
   difficulty: "normal",
+  answer_mode: "point",
   time_limit_seconds: null,
 };
 

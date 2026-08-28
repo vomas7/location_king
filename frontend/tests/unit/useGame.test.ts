@@ -36,6 +36,7 @@ function round(index: number, overrides: Partial<RoundView> = {}): RoundView {
     tiles_url: `/api/rounds/${String(index)}/tiles/{z}/{x}/{y}.jpg`,
     attribution: "Провайдер",
     created_at: "2026-08-27T10:00:00Z",
+    answer_mode: "point",
     max_score: 5000,
     hint: null,
     hint_cost: 1500,
@@ -72,6 +73,8 @@ function result(index: number, score: number): RoundResult {
     score,
     max_score: 5000,
     accuracy: "12.00",
+    country: null,
+    guess_country: null,
     answer_seconds: "8.40",
     zone: {
       id: 1,
@@ -97,6 +100,7 @@ const OPTIONS = {
   continent: null,
   country_group: null,
   difficulty: "normal",
+  answer_mode: "point",
   time_limit_seconds: null,
 };
 

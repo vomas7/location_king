@@ -54,8 +54,13 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
   const tier = scoreTier(result.score, result.max_score);
   const ratio = scoreRatio(result.score, result.max_score);
 
+  // Режим стран отличаем по заполненной стране цели: в обычном раунде
+  // вопрос был не про страну, и сервер её не считает
+  const byCountry = result.country !== null;
+
   // Промах в километрах сам по себе ничего не говорит: 340 км — это много
-  // или мало? Ответ даёт то, как ту же зону отыграли остальные
+  // или мало? Ответ даёт то, как ту же зону отыграли остальные. В режиме
+  // стран километров на экране нет вовсе: очки дали не за них
   const standing = zoneStanding(
     result.distance_km === null ? null : Number.parseFloat(result.distance_km),
     result.zone.total_rounds,
@@ -96,22 +101,39 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
             />
           </div>
 
+          {/* В режиме стран вопрос был не про километры, и отвечать на него
+              промахом значило бы объяснять очки не тем, за что их дали */}
           <div className={styles.readouts}>
-            <div className={styles.readout}>
-              <span className={styles.readoutLabel}>Промах</span>
-              <span className={styles.readoutValue}>{formatDistance(result.distance_km)}</span>
-            </div>
-            <div className={styles.readout}>
-              <span className={styles.readoutLabel}>Точность</span>
-              <span className={styles.readoutValue}>{formatPercent(result.accuracy)}</span>
-            </div>
+            {byCountry ? (
+              <>
+                <div className={styles.readout}>
+                  <span className={styles.readoutLabel}>Страна</span>
+                  <span className={styles.readoutName}>{result.country}</span>
+                </div>
+                <div className={styles.readout}>
+                  <span className={styles.readoutLabel}>Твой ответ</span>
+                  <span className={styles.readoutName}>{result.guess_country ?? "мимо суши"}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={styles.readout}>
+                  <span className={styles.readoutLabel}>Промах</span>
+                  <span className={styles.readoutValue}>{formatDistance(result.distance_km)}</span>
+                </div>
+                <div className={styles.readout}>
+                  <span className={styles.readoutLabel}>Точность</span>
+                  <span className={styles.readoutValue}>{formatPercent(result.accuracy)}</span>
+                </div>
+              </>
+            )}
           </div>
 
           <div className={styles.place}>
             <p className={styles.placeName}>{result.zone.name}</p>
             {place !== "" && <p className={styles.placeMeta}>{place}</p>}
 
-            {standing !== null && (
+            {!byCountry && standing !== null && (
               <p className={styles.standing}>
                 Здесь обычно промахиваются на {formatDistance(standing.averageKm)} —{" "}
                 <span className={standing.better ? styles.betterThanOthers : undefined}>

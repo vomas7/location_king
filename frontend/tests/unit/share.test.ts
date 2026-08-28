@@ -15,6 +15,8 @@ function result(score: number, distanceKm: string | null = "12.500"): RoundResul
     score,
     max_score: 5000,
     accuracy: "50.00",
+    country: null,
+    guess_country: null,
     answer_seconds: null,
     zone: {
       id: 1,

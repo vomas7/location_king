@@ -16,6 +16,8 @@ import { CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { Segmented } from "~/components/ui/Segmented";
 import type { GameSetup } from "~/domain/setup";
 import {
+  ANSWER_MODES,
+  answerModeHint,
   describeSetup,
   EXTENTS,
   LEVELS,
@@ -74,6 +76,15 @@ export function SoloPanel({
 
       {open && (
         <div id="solo-setup" className={styles.options}>
+          <Segmented
+            label="Чем отвечать"
+            options={ANSWER_MODES}
+            value={setup.answerMode}
+            onChange={(answerMode) => {
+              onChange({ answerMode });
+            }}
+            hint={answerModeHint(setup.answerMode)}
+          />
           <Segmented
             label="Раундов"
             options={ROUNDS}

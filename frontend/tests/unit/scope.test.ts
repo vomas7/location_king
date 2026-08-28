@@ -8,6 +8,7 @@ function options(overrides: Partial<StartSessionOptions> = {}): StartSessionOpti
     rounds_total: 5,
     view_extent_km: 15,
     difficulty: "normal",
+    answer_mode: "point",
     continent: null,
     country_group: null,
     time_limit_seconds: null,

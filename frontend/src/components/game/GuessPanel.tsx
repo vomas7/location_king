@@ -9,6 +9,18 @@ import { formatNumber } from "~/domain/format";
 import { createGuessMap, type GuessMap, type LonLat } from "~/map/guess";
 import { useHoverPointer } from "~/state/usePointer";
 
+/**
+ * Что просят сделать. В режиме стран точка ставится та же, но важно в неё не
+ * целиться, а попасть в нужную страну: об этом и говорит подпись.
+ */
+function promptFor(answerMode: string, picked: boolean): string {
+  if (answerMode === "country") {
+    return picked ? "Точка поставлена — засчитается страна" : "Ткни в страну, из которой снимок";
+  }
+
+  return picked ? "Точка поставлена" : "Отметь место на карте мира";
+}
+
 interface GuessPanelProps {
   round: RoundView;
   guess: LonLat | null;
@@ -111,9 +123,7 @@ export function GuessPanel({
 
         {open ? (
           <>
-            <p className={styles.hint}>
-              {guess === null ? "Отметь место на карте мира" : "Точка поставлена"}
-            </p>
+            <p className={styles.hint}>{promptFor(round.answer_mode, guess !== null)}</p>
             <Button variant="primary" block disabled={guess === null || busy} onClick={onSubmit}>
               Ответить
             </Button>

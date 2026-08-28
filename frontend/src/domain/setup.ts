@@ -17,12 +17,28 @@ export interface GameSetup {
   level: string;
   place: PlaceKey;
   timeLimit: number | null;
+  /** Чем отвечать: point — точкой на карте, country — страной. */
+  answerMode: string;
 }
 
 export interface Choice<T> {
   value: T;
   label: string;
 }
+
+/**
+ * Чем отвечать. Точку игрок ставит в обоих случаях — в режиме стран сервер
+ * смотрит, в какую страну она попала, и считает очки по ней. Поэтому это не
+ * другая игра, а другой вопрос к тому же снимку.
+ */
+export const ANSWER_MODES: (Choice<string> & { hint: string })[] = [
+  { value: "point", label: "Точкой", hint: "Очки за то, насколько близко к цели" },
+  {
+    value: "country",
+    label: "Страной",
+    hint: "Очки за страну: попал — максимум, мимо — по промаху",
+  },
+];
 
 export const ROUNDS: Choice<number>[] = [3, 5, 10].map((value) => ({
   value,
@@ -96,6 +112,7 @@ export const DEFAULT_SETUP: GameSetup = {
   level: "normal",
   place: null,
   timeLimit: null,
+  answerMode: "point",
 };
 
 function labelOf<T>(choices: Choice<T>[], value: T, fallback: string): string {
@@ -105,6 +122,11 @@ function labelOf<T>(choices: Choice<T>[], value: T, fallback: string): string {
 /** Подсказка под выбранным уровнем: что именно достанется на этом уровне. */
 export function levelHint(level: string): string {
   return LEVELS.find((choice) => choice.value === level)?.hint ?? "";
+}
+
+/** Подсказка под выбором ответа: за что дадут очки. */
+export function answerModeHint(mode: string): string {
+  return ANSWER_MODES.find((choice) => choice.value === mode)?.hint ?? "";
 }
 
 /**
@@ -120,6 +142,9 @@ export function describeSetup(setup: GameSetup): string {
     labelOf(EXTENTS, setup.extent, `${String(setup.extent)} км`),
     labelOf(PLACES, setup.place, "Весь мир"),
     labelOf(TIME_LIMITS, setup.timeLimit, formatTimeLimit(setup.timeLimit)).toLowerCase(),
+    // Ответ точкой — обычный ход игры, называть его каждый раз незачем.
+    // А вот про страны игрок должен знать до того, как нажал «Начать»
+    ...(setup.answerMode === "country" ? ["ответ страной"] : []),
   ].join(" · ");
 }
 
@@ -130,6 +155,7 @@ export function toOptions(setup: GameSetup): StartSessionOptions {
     view_extent_km: setup.extent,
     difficulty: setup.level,
     ...placeFilter(setup.place),
+    answer_mode: setup.answerMode,
     time_limit_seconds: setup.timeLimit,
   };
 }
