@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { challenge as challengeApi } from "~/api/endpoints";
 import type { DailyChallenge as DailyChallengeData, SessionState } from "~/api/types";
 import styles from "~/components/home/DailyChallenge.module.css";
-import { Avatar } from "~/components/ui/Avatar";
+import { PlayerRow } from "~/components/ui/PlayerRow";
 import { Button } from "~/components/ui/Button";
 import { Card, CardTitle } from "~/components/ui/Card";
 import { Skeleton } from "~/components/ui/Skeleton";
@@ -112,26 +112,15 @@ export function DailyChallenge({ refreshKey, onStarted, onError }: DailyChalleng
       ) : (
         <div className={styles.results}>
           {data.results.map((entry) => (
-            <div
+            <PlayerRow
               key={`${String(entry.rank)}-${entry.display_name}`}
-              className={[
-                styles.row,
-                entry.display_name === (user.display_name ?? user.username) ? styles.rowMe : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <span
-                className={[styles.rank, entry.rank <= 3 ? styles.rankTop : ""]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                {entry.rank}
-              </span>
-              <Avatar avatar={entry.avatar} size={22} name={entry.display_name} />
-              <span className={styles.player}>{entry.display_name}</span>
-              <span className={styles.score}>{formatNumber(entry.total_score)}</span>
-            </div>
+              rank={entry.rank}
+              avatar={entry.avatar}
+              name={entry.display_name}
+              value={formatNumber(entry.total_score)}
+              mine={entry.display_name === (user.display_name ?? user.username)}
+              medals
+            />
           ))}
         </div>
       )}

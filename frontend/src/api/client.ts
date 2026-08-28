@@ -23,6 +23,17 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Что показать игроку, когда запрос не удался.
+ *
+ * У ApiError есть человеческое объяснение от сервера — его и показываем.
+ * Всё остальное (обрыв связи, отказ разбора) объяснить нечем, поэтому туда
+ * подставляется запасной текст, свой у каждого места.
+ */
+export function errorMessage(error: unknown, fallback = "Сервер недоступен. Попробуй ещё раз") {
+  return error instanceof ApiError ? error.detail : fallback;
+}
+
 interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;

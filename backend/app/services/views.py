@@ -24,6 +24,7 @@ from app.schemas.auth import AvatarView
 from app.schemas.daily import DailyResult
 from app.schemas.friend import FriendView
 from app.schemas.game import (
+    GuessResponse,
     HintView,
     RoundResult,
     RoundView,
@@ -91,6 +92,26 @@ async def round_view(db: AsyncSession, round_obj: Round) -> RoundView:
             else round_obj.max_score - score_after_hint(round_obj.max_score)
         ),
         deadline_at=round_obj.deadline_at,
+    )
+
+
+async def guess_response(
+    db: AsyncSession,
+    finished: Round,
+    session: GameSession,
+    next_round: Round | None,
+) -> GuessResponse:
+    """
+    Ответ на закрытый раунд: результат, партия и следующий раунд.
+
+    Одинаковый и для догадки, и для истёкшего времени: раунд закрывается
+    по-разному, а показать после этого нужно одно и то же.
+    """
+    return GuessResponse(
+        result=await round_result(db, finished),
+        session=session_view(session),
+        next_round=(await round_view(db, next_round) if next_round is not None else None),
+        is_session_finished=not session.is_active,
     )
 
 

@@ -8,7 +8,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 
-import { ApiError } from "~/api/client";
+import { errorMessage } from "~/api/client";
 import { auth } from "~/api/endpoints";
 import styles from "~/components/home/DeleteAccount.module.css";
 import { Alert } from "~/components/ui/Alert";
@@ -48,7 +48,7 @@ export function DeleteAccount() {
       await auth.deleteAccount(password);
       logout();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.detail : "Не удалось удалить учётную запись");
+      setError(errorMessage(caught, "Не удалось удалить учётную запись"));
     } finally {
       setBusy(false);
     }

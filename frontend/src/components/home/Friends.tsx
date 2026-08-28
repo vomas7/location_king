@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { ApiError } from "~/api/client";
+import { errorMessage } from "~/api/client";
 import { friends as friendsApi } from "~/api/endpoints";
 import type { Friend } from "~/api/types";
 import styles from "~/components/home/Friends.module.css";
@@ -17,15 +17,11 @@ import { Button } from "~/components/ui/Button";
 import { Card, CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { Field } from "~/components/ui/Field";
 import { formatNumber } from "~/domain/format";
-import { CODE_LENGTH, isCompleteCode, normalizeCode } from "~/domain/room";
+import { CODE_LENGTH, isCompleteCode, normalizeCode } from "~/domain/codes";
 import { useShare } from "~/state/useShare";
 
 interface FriendsProps {
   onError: (message: string) => void;
-}
-
-function errorText(error: unknown, fallback: string): string {
-  return error instanceof ApiError ? error.detail : fallback;
 }
 
 /** Сначала входящие заявки, потом друзья, потом свои неотвеченные. */
@@ -48,7 +44,7 @@ export function Friends({ onError }: FriendsProps) {
       setList(loaded.friends);
       setMyCode(loaded.my_code);
     } catch (error) {
-      onError(errorText(error, "Не удалось прочитать список друзей"));
+      onError(errorMessage(error, "Не удалось прочитать список друзей"));
     }
   }, [onError]);
 
@@ -62,7 +58,7 @@ export function Friends({ onError }: FriendsProps) {
       await action();
       await reload();
     } catch (error) {
-      onError(errorText(error, fallback));
+      onError(errorMessage(error, fallback));
     } finally {
       setBusy(false);
     }

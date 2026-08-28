@@ -82,7 +82,10 @@ async def look(db: AsyncSession, user: User) -> SearchState:
     if found is not None:
         return SearchState(searching=0, code=found)
 
-    await matchmaking.join(user.id, user.rating)
+    # Очередь может отказать: пара нашлась ровно между двумя строчками выше
+    if not await matchmaking.join(user.id, user.rating):
+        return SearchState(searching=0, code=await matchmaking.take_found(user.id))
+
     code = await _try_to_pair(db, user)
 
     if code is not None:
@@ -148,6 +151,20 @@ async def get_duel(db: AsyncSession, code: str) -> Match:
     if match.kind != MatchKind.DUEL:
         raise NotFoundError(f"Дуэль {code} не найдена")
     return match
+
+
+async def settle_for_session(db: AsyncSession, session: GameSession) -> bool:
+    """
+    Досчитать дуэль, к которой относится законченная партия.
+
+    Вызывающему не нужно знать ни про комнаты, ни про то, что дуэль — одна из
+    них: он сообщает, что партия закончилась, остальное решается здесь.
+    """
+    if session.match_code is None:
+        return False
+
+    match = await matches_service.get(db, session.match_code)
+    return await settle(db, match)
 
 
 async def settle(db: AsyncSession, match: Match) -> bool:

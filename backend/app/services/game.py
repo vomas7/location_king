@@ -283,8 +283,7 @@ async def finish_session(db: AsyncSession, session: GameSession) -> GameSession:
 
     # Дуэль считается сыгранной, когда закончил второй: рейтинг начисляет тот,
     # кто дошёл до конца последним. Обычной комнаты это не касается
-    if session.match_code is not None:
-        await duels.settle(db, await matches.get(db, session.match_code))
+    await duels.settle_for_session(db, session)
 
     return session
 

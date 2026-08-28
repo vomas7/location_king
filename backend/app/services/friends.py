@@ -22,7 +22,6 @@ from app.models.enums import FriendshipStatus
 from app.models.friendship import Friendship
 from app.models.user import User
 from app.observability import metrics
-from app.utils import codes
 
 logger = logging.getLogger(__name__)
 
@@ -36,18 +35,6 @@ class Connection:
     other: User
     #: Заявка пришла к смотрящему и ждёт его ответа
     incoming: bool
-
-
-async def unique_code(db: AsyncSession) -> str:
-    """Свободный код игрока."""
-    for _ in range(10):
-        code = codes.new_code()
-        taken = await db.execute(select(User.id).where(User.friend_code == code).limit(1))
-
-        if taken.scalar_one_or_none() is None:
-            return code
-
-    raise ConflictError("Не удалось подобрать свободный код игрока")
 
 
 async def by_code(db: AsyncSession, code: str) -> User:
@@ -164,12 +151,13 @@ async def connections(db: AsyncSession, user: User) -> list[Connection]:
     ]
 
 
-async def friend_ids(db: AsyncSession, user: User) -> list[int]:
+async def circle(db: AsyncSession, user: User) -> tuple[int, ...]:
     """
-    Идентификаторы подтверждённых друзей.
+    Круг игрока: подтверждённые друзья и он сам.
 
-    Нужны таблице лидеров: зачёт среди друзей — это тот же зачёт, но по
-    короткому списку игроков.
+    Нужен таблице лидеров: зачёт среди друзей — это тот же зачёт, но по
+    короткому списку. Себя в этот список включаем здесь, а не в таблице:
+    «среди друзей» без самого игрока — это чужая таблица, а не своя.
     """
     stmt = select(Friendship).where(
         Friendship.status == FriendshipStatus.ACCEPTED,
@@ -177,7 +165,10 @@ async def friend_ids(db: AsyncSession, user: User) -> list[int]:
     )
     rows = (await db.execute(stmt)).scalars().all()
 
-    return [row.addressee_id if row.requester_id == user.id else row.requester_id for row in rows]
+    return (
+        *(row.addressee_id if row.requester_id == user.id else row.requester_id for row in rows),
+        user.id,
+    )
 
 
 async def _own(db: AsyncSession, user: User, friendship_id: int) -> Friendship:

@@ -7,7 +7,7 @@
 
 import { useCallback, useReducer } from "react";
 
-import { ApiError } from "~/api/client";
+import { errorMessage } from "~/api/client";
 import { game } from "~/api/endpoints";
 import type {
   RoundResult,
@@ -137,10 +137,6 @@ function reducer(state: GameState, action: Action): GameState {
   }
 }
 
-function describe(error: unknown): string {
-  return error instanceof ApiError ? error.detail : "Сервер недоступен. Попробуй ещё раз";
-}
-
 export interface GameController {
   state: GameState;
   start: (options: StartSessionOptions) => Promise<void>;
@@ -177,7 +173,7 @@ export function useGame(onSessionEnd: () => void): GameController {
         options,
       });
     } catch (error) {
-      dispatch({ type: "failed", error: describe(error) });
+      dispatch({ type: "failed", error: errorMessage(error) });
       throw error;
     }
   }, []);
@@ -209,7 +205,7 @@ export function useGame(onSessionEnd: () => void): GameController {
     try {
       dispatch({ type: "hinted", round: await game.hint(round.id) });
     } catch (error) {
-      dispatch({ type: "failed", error: describe(error) });
+      dispatch({ type: "failed", error: errorMessage(error) });
     }
   }, [state.phase, state.round]);
 
@@ -237,7 +233,7 @@ export function useGame(onSessionEnd: () => void): GameController {
 
       if (response.is_session_finished) onSessionEnd();
     } catch (error) {
-      dispatch({ type: "failed", error: describe(error) });
+      dispatch({ type: "failed", error: errorMessage(error) });
     }
   }, [state.phase, state.round, state.guess, onSessionEnd]);
 
@@ -258,7 +254,7 @@ export function useGame(onSessionEnd: () => void): GameController {
 
       if (response.is_session_finished) onSessionEnd();
     } catch (error) {
-      dispatch({ type: "failed", error: describe(error) });
+      dispatch({ type: "failed", error: errorMessage(error) });
     }
   }, [state.phase, state.round, onSessionEnd]);
 
@@ -276,7 +272,7 @@ export function useGame(onSessionEnd: () => void): GameController {
       dispatch({ type: "finished", session: closed.session, results: closed.results });
       onSessionEnd();
     } catch (error) {
-      dispatch({ type: "failed", error: describe(error) });
+      dispatch({ type: "failed", error: errorMessage(error) });
     }
   }, [state.session, onSessionEnd]);
 

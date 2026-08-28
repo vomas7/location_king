@@ -84,45 +84,6 @@
   margin-bottom: 16px;
 }
 
-.row {
-  display: grid;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  grid-template-columns: 24px auto 1fr auto;
-}
-
-.rowMe {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-
-.rank {
-  color: var(--text-faint);
-  font-family: var(--mono);
-  font-size: 13px;
-  text-align: right;
-}
-
-.rankTop {
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.player {
-  overflow: hidden;
-  font-size: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.score {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 700;
-}
-
 .empty {
   padding: 14px 0;
   color: var(--text-faint);

@@ -48,12 +48,7 @@ async def submit_guess(
 
     session = await game_service.get_session_for_user(db, user, round_obj.session_id)
 
-    return GuessResponse(
-        result=await views.round_result(db, finished_round),
-        session=views.session_view(session),
-        next_round=(await views.round_view(db, next_round) if next_round is not None else None),
-        is_session_finished=not session.is_active,
-    )
+    return await views.guess_response(db, finished_round, session, next_round)
 
 
 @router.post(
@@ -95,12 +90,7 @@ async def timeout_round(
 
     session = await game_service.get_session_for_user(db, user, round_obj.session_id)
 
-    return GuessResponse(
-        result=await views.round_result(db, finished_round),
-        session=views.session_view(session),
-        next_round=(await views.round_view(db, next_round) if next_round is not None else None),
-        is_session_finished=not session.is_active,
-    )
+    return await views.guess_response(db, finished_round, session, next_round)
 
 
 @router.get(

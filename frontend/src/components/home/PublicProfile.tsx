@@ -11,7 +11,7 @@
 
 import { useState, type FormEvent } from "react";
 
-import { ApiError } from "~/api/client";
+import { errorMessage } from "~/api/client";
 import { auth } from "~/api/endpoints";
 import styles from "~/components/home/PublicProfile.module.css";
 import { Alert } from "~/components/ui/Alert";
@@ -78,7 +78,7 @@ export function PublicProfile() {
       );
       setEditing(false);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.detail : "Не удалось сохранить");
+      setError(errorMessage(caught, "Не удалось сохранить"));
     } finally {
       setBusy(false);
     }

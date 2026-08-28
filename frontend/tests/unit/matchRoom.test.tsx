@@ -8,6 +8,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ApiError } from "~/api/client";
 import type { MatchView, SessionState } from "~/api/types";
 
 const create = vi.fn();
@@ -248,8 +249,10 @@ describe("MatchRoom", () => {
     expect(screen.queryByRole("button", { name: "Закрыть набор" })).toBeNull();
   });
 
-  it("сообщает об ошибке, если комнаты нет", async () => {
-    get.mockRejectedValue(new Error("Комната ZZZZZZ не найдена"));
+  it("показывает объяснение сервера, а не своё", async () => {
+    // Из api/ приходит ApiError с человеческим объяснением. Обычная ошибка
+    // объяснением не является: её текст игроку показывать нельзя
+    get.mockRejectedValue(new ApiError(404, "Комната ZZZZZZ не найдена"));
 
     const { onError } = await renderRoom();
     fireEvent.change(screen.getByLabelText("Код комнаты"), { target: { value: "zzzzzz" } });

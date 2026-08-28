@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  CODE_LENGTH,
-  isCompleteCode,
-  normalizeCode,
-  roomFromSearch,
-  roomLink,
-} from "~/domain/room";
+import { CODE_LENGTH, isCompleteCode, normalizeCode } from "~/domain/codes";
+import { roomFromSearch, roomLink } from "~/domain/room";
 
 describe("normalizeCode", () => {
   it("приводит к заглавным", () => {

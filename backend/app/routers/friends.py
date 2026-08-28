@@ -43,7 +43,11 @@ async def invite_friend(
     return views.friend_view(await friends_service.invite(db, user, payload.code))
 
 
-@router.post("/{friendship_id}/accept", response_model=FriendView)
+@router.post(
+    "/{friendship_id}/accept",
+    response_model=FriendView,
+    dependencies=[Depends(limit_by_user(Limit.FRIEND_MANAGE))],
+)
 async def accept_friend(
     friendship_id: int,
     user: User = Depends(get_current_user),
@@ -53,7 +57,11 @@ async def accept_friend(
     return views.friend_view(await friends_service.accept(db, user, friendship_id))
 
 
-@router.delete("/{friendship_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{friendship_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(limit_by_user(Limit.FRIEND_MANAGE))],
+)
 async def remove_friend(
     friendship_id: int,
     user: User = Depends(get_current_user),

@@ -45,7 +45,7 @@ async def get_leaderboard(
     if among_friends:
         if user is None:
             raise AuthError("Зачёт среди друзей — только для своих")
-        players = (*await friends_service.friend_ids(db, user), user.id)
+        players = await friends_service.circle(db, user)
 
     filters = LeaderboardFilter(
         difficulty=difficulty,

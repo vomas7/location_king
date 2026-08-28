@@ -23,10 +23,12 @@ from app.config import settings
 from app.exceptions import AuthError, ConflictError, ValidationError
 from app.models.user import User
 from app.observability import metrics
-from app.services import friends
-from app.utils import avatar
+from app.utils import avatar, codes
 
 logger = logging.getLogger(__name__)
+
+# Сколько раз пробовать сгенерировать свободный код, прежде чем сдаться
+CODE_ATTEMPTS = 10
 
 TokenType = Literal["access", "refresh"]
 
@@ -166,7 +168,7 @@ async def update_profile(
         user.avatar_shape, user.avatar_color = shape, color
 
     await db.flush()
-    await metrics.count("user_renamed")
+    await metrics.count("profile_updated")
 
     return user
 
@@ -193,7 +195,7 @@ async def register(db: AsyncSession, email: str, password: str, display_name: st
         email=email,
         password_hash=hash_password(password),
         display_name=(display_name or "").strip() or default_display_name(),
-        friend_code=await friends.unique_code(db),
+        friend_code=await _unique_friend_code(db),
         last_login_at=datetime.now(UTC),
     )
     db.add(user)
@@ -258,6 +260,23 @@ async def delete_account(db: AsyncSession, user: User, password: str) -> None:
     await db.flush()
 
     logger.info("Учётная запись %s удалена по просьбе владельца", user_id)
+
+
+async def _unique_friend_code(db: AsyncSession) -> str:
+    """
+    Свободный код игрока: по нему его добавляют в друзья.
+
+    Выдаётся здесь, а не в сервисе друзей: код — это свойство игрока, и
+    заводить его должен тот, кто заводит самого игрока.
+    """
+    for _ in range(CODE_ATTEMPTS):
+        code = codes.new_code()
+        taken = await db.execute(select(User.id).where(User.friend_code == code).limit(1))
+
+        if taken.scalar_one_or_none() is None:
+            return code
+
+    raise ConflictError("Не удалось подобрать свободный код игрока")
 
 
 async def _unique_username(db: AsyncSession, base: str) -> str:

@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { ApiError } from "~/api/client";
+import { errorMessage } from "~/api/client";
 import { duels, matches } from "~/api/endpoints";
 import type { SessionState } from "~/api/types";
 
@@ -31,10 +31,6 @@ export interface DuelSearchController {
   error: string | null;
   start: () => void;
   stop: () => void;
-}
-
-function describe(error: unknown): string {
-  return error instanceof ApiError ? error.detail : "Сервер недоступен. Попробуй ещё раз";
 }
 
 export function useDuelSearch(onFound: (session: SessionState) => void): DuelSearchController {
@@ -91,7 +87,7 @@ export function useDuelSearch(onFound: (session: SessionState) => void): DuelSea
         if (state.code !== null) setFound(state.code);
       } catch (error) {
         if (cancelled) return;
-        setError(describe(error));
+        setError(errorMessage(error));
         setPhase("idle");
       }
     };
@@ -118,7 +114,7 @@ export function useDuelSearch(onFound: (session: SessionState) => void): DuelSea
         const session = await matches.join(found);
         if (!cancelled) onFoundRef.current(session);
       } catch (error) {
-        if (!cancelled) setError(describe(error));
+        if (!cancelled) setError(errorMessage(error));
       } finally {
         if (!cancelled) {
           setFound(null);
@@ -154,7 +150,7 @@ export function useDuelSearch(onFound: (session: SessionState) => void): DuelSea
         setSearching(state.searching);
         setPhase("searching");
       } catch (error) {
-        setError(describe(error));
+        setError(errorMessage(error));
       }
     })();
   }, []);

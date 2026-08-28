@@ -8,20 +8,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { errorMessage } from "~/api/client";
 import { game as gameApi, matches as matchesApi } from "~/api/endpoints";
 import type { MatchSummary, MatchView, SessionState, StartSessionOptions } from "~/api/types";
 import styles from "~/components/home/MatchRoom.module.css";
-import { Avatar } from "~/components/ui/Avatar";
+import { PlayerRow } from "~/components/ui/PlayerRow";
 import { Button } from "~/components/ui/Button";
 import { Card, CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { formatNumber, formatTimeLimit, plural } from "~/domain/format";
-import {
-  CODE_LENGTH,
-  isCompleteCode,
-  normalizeCode,
-  roomFromSearch,
-  roomLink,
-} from "~/domain/room";
+import { CODE_LENGTH, isCompleteCode, normalizeCode } from "~/domain/codes";
+import { roomFromSearch, roomLink } from "~/domain/room";
 import { type ShareState, useShare } from "~/state/useShare";
 
 interface MatchRoomProps {
@@ -43,10 +39,6 @@ const LINK_LABELS: Record<ShareState, string> = {
   failed: "Не получилось скопировать",
 };
 
-function errorText(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
-
 export function MatchRoom({ options, refreshKey, onJoined, onError }: MatchRoomProps) {
   const [room, setRoom] = useState<MatchView | null>(null);
   const [mine, setMine] = useState<MatchSummary[]>([]);
@@ -61,7 +53,7 @@ export function MatchRoom({ options, refreshKey, onJoined, onError }: MatchRoomP
       try {
         setRoom(await matchesApi.get(wanted));
       } catch (error) {
-        onError(errorText(error, "Комната не найдена"));
+        onError(errorMessage(error, "Комната не найдена"));
       } finally {
         setBusy(false);
       }
@@ -123,7 +115,7 @@ export function MatchRoom({ options, refreshKey, onJoined, onError }: MatchRoomP
     try {
       setRoom(await matchesApi.create(options));
     } catch (error) {
-      onError(errorText(error, "Не удалось создать комнату"));
+      onError(errorMessage(error, "Не удалось создать комнату"));
     } finally {
       setBusy(false);
     }
@@ -139,7 +131,7 @@ export function MatchRoom({ options, refreshKey, onJoined, onError }: MatchRoomP
           : await gameApi.session(current.my_session.id),
       );
     } catch (error) {
-      onError(errorText(error, "Не удалось войти в комнату"));
+      onError(errorMessage(error, "Не удалось войти в комнату"));
     } finally {
       setBusy(false);
     }
@@ -150,7 +142,7 @@ export function MatchRoom({ options, refreshKey, onJoined, onError }: MatchRoomP
     try {
       setRoom(await matchesApi.close(wanted));
     } catch (error) {
-      onError(errorText(error, "Не удалось закрыть набор"));
+      onError(errorMessage(error, "Не удалось закрыть набор"));
     } finally {
       setBusy(false);
     }
@@ -270,19 +262,20 @@ export function MatchRoom({ options, refreshKey, onJoined, onError }: MatchRoomP
       ) : (
         <div className={styles.table}>
           {room.standings.map((entry) => (
-            <div
+            <PlayerRow
               key={`${String(entry.rank)}-${entry.display_name}`}
-              className={[styles.row, entry.is_you ? styles.rowMe : ""].filter(Boolean).join(" ")}
-            >
-              <span className={styles.rank}>{entry.rank}</span>
-              <Avatar avatar={entry.avatar} size={22} name={entry.display_name} />
-              <span className={styles.player}>{entry.display_name}</span>
-              <span className={styles.progress}>
-                {entry.is_finished
+              rank={entry.rank}
+              avatar={entry.avatar}
+              name={entry.display_name}
+              // Пока игрок не дошёл до конца, вместо очков — сколько раундов
+              // сыграно: иначе лидером выглядел бы тот, кто просто быстрее
+              value={
+                entry.is_finished
                   ? formatNumber(entry.total_score)
-                  : `${String(entry.rounds_done)}/${String(room.rounds_total)}`}
-              </span>
-            </div>
+                  : `${String(entry.rounds_done)}/${String(room.rounds_total)}`
+              }
+              mine={entry.is_you}
+            />
           ))}
         </div>
       )}

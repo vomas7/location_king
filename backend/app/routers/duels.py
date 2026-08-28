@@ -73,7 +73,11 @@ async def count_searching(user: User = Depends(get_current_user)) -> DuelSearchV
     return DuelSearchView(searching=await duels_service.count(), code=None)
 
 
-@router.delete("/queue", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/queue",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(limit_by_user(Limit.DUEL_QUEUE))],
+)
 async def leave_queue(user: User = Depends(get_current_user)) -> None:
     """Прекратить поиск."""
     await duels_service.leave(user)

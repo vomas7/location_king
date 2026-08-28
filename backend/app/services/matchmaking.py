@@ -93,15 +93,22 @@ def _decode(user_id: str, raw: str) -> Searcher | None:
         return None
 
 
-async def join(user_id: int, rating: int) -> None:
+async def join(user_id: int, rating: int) -> bool:
     """
-    Встать в очередь или продлить запись.
+    Встать в очередь или продлить запись. False — вставать уже незачем.
 
     Момент, когда игрок встал, сохраняется: от него считается, насколько
     широко искать соперника.
+
+    Того, кому пара уже нашлась, очередь не принимает. Иначе он остался бы в
+    ней до истечения записи и мог бы получить вторую дуэль, в которую никогда
+    не войдёт, — а соперник по ней десять минут ждал бы победы над пустотой.
     """
     now = time.time()
     client = redis_client()
+
+    if await client.exists(f"{FOUND_KEY}:{user_id}"):
+        return False
 
     existing = await client.hget(QUEUE_KEY, str(user_id))
     joined_at = now
@@ -113,6 +120,8 @@ async def join(user_id: int, rating: int) -> None:
 
     searcher = Searcher(user_id=user_id, rating=rating, joined_at=joined_at, seen_at=now)
     await client.hset(QUEUE_KEY, str(user_id), _encode(searcher))
+
+    return True
 
 
 async def leave(user_id: int) -> None:

@@ -137,6 +137,18 @@ async def test_queue_forgets_those_who_stopped_asking():
     assert await matchmaking.searching(later) == []
 
 
+async def test_found_pair_is_not_put_back_in_the_queue():
+    """
+    Иначе игрок получил бы вторую дуэль, в которую никогда не войдёт, а
+    соперник по ней десять минут ждал бы победы над пустотой.
+    """
+    await matchmaking.join(1, 1000)
+    await matchmaking.announce((1, 2), "AB3K9X")
+
+    assert await matchmaking.join(1, 1000) is False
+    assert await matchmaking.searching() == []
+
+
 async def test_rejoining_keeps_the_original_wait():
     """Опрос продлевает запись, но не обнуляет ожидание — иначе полоса
     поиска никогда не расширится."""

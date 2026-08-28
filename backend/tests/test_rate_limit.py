@@ -4,6 +4,7 @@ import pytest
 from httpx import AsyncClient
 from redis.exceptions import ConnectionError as RedisConnectionError
 
+from app.main import app
 from app.models.location_zone import LocationZone
 from app.services import rate_limit
 from app.services.rate_limit import Limit, RateLimit
@@ -109,3 +110,66 @@ async def test_limiter_lets_requests_through_when_redis_is_down(
     # Ошибки нет: запрос просто не учитывается
     await rate_limit.check(Limit.LOGIN, "someone")
     await rate_limit.check(Limit.LOGIN, "someone")
+
+
+# ─── Правило, а не привычка ──────────────────────────────────────────────
+
+#: Пишущие эндпоинты без своего лимита. Каждый здесь — осознанное решение, а
+#: не забывчивость: все они ограничены не счётчиком, а самой игрой.
+UNLIMITED_BY_DESIGN = {
+    # Обновление токена ограничено сроком жизни самого токена, а лимит на нём
+    # выкинул бы из игры того, у кого просто открыто много вкладок
+    ("POST", "/api/auth/refresh"),
+    # Закрыть можно только свою комнату, и только один раз
+    ("POST", "/api/matches/{code}/close"),
+    # Открытый раунд у игрока один, а партии уже ограничены
+    ("POST", "/api/rounds/{round_id}/guess"),
+    ("POST", "/api/rounds/{round_id}/timeout"),
+    ("POST", "/api/sessions/{session_id}/finish"),
+}
+
+WRITING_METHODS = {"POST", "PATCH", "PUT", "DELETE"}
+
+
+def _is_rate_limit(dependency) -> bool:
+    """Это одна из обёрток limit_by_user или limit_by_address."""
+    call = dependency.call
+    return getattr(call, "__module__", "") == "app.dependencies" and (
+        getattr(call, "__qualname__", "").startswith(("limit_by_user", "limit_by_address"))
+    )
+
+
+def test_every_writing_endpoint_is_limited():
+    """
+    Всё, что пишет в базу, ограничено по частоте.
+
+    Это главное свойство игры, и держаться оно должно не на памяти того, кто
+    добавляет эндпоинт. Появился новый пишущий маршрут без лимита — тест
+    падает, и решение приходится принять осознанно.
+    """
+    unlimited: set[tuple[str, str]] = set()
+
+    for route in app.routes:
+        methods = getattr(route, "methods", set()) & WRITING_METHODS
+        dependant = getattr(route, "dependant", None)
+
+        if not methods or dependant is None:
+            continue
+
+        if not any(_is_rate_limit(item) for item in dependant.dependencies):
+            unlimited |= {(method, route.path) for method in methods}
+
+    assert unlimited <= UNLIMITED_BY_DESIGN, (
+        f"без лимита: {sorted(unlimited - UNLIMITED_BY_DESIGN)}"
+    )
+
+
+def test_exceptions_list_has_no_leftovers():
+    """Исключение, которого больше нет, — это ложь в списке причин."""
+    paths = {
+        (method, route.path) for route in app.routes for method in getattr(route, "methods", set())
+    }
+
+    assert UNLIMITED_BY_DESIGN <= paths, (
+        f"маршрутов больше нет: {sorted(UNLIMITED_BY_DESIGN - paths)}"
+    )

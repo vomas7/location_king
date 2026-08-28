@@ -43,6 +43,7 @@ class Limit(StrEnum):
     DUEL_POLL = "duel-poll"
     DUEL_QUEUE = "duel-queue"
     FRIEND_INVITE = "friend-invite"
+    FRIEND_MANAGE = "friend-manage"
     HINT = "hint"
     LOGIN = "login"
     REGISTER = "register"
@@ -73,6 +74,9 @@ RULES: dict[Limit, RateLimit] = {
     # Заявка в друзья приходит человеку. Перебирать коды в надежде попасть
     # в чужой — это спам, и лимит здесь именно от него
     Limit.FRIEND_INVITE: RateLimit(limit=30, window_seconds=60 * 60),
+    # Принять и убрать — ответ на то, что уже есть, поэтому лимит щедрее:
+    # он защищает базу от долбёжки, а не игрока от соседа
+    Limit.FRIEND_MANAGE: RateLimit(limit=120, window_seconds=60 * 60),
     Limit.HINT: RateLimit(limit=300, window_seconds=60 * 60),
     # Встать в очередь и выйти из неё — редкие действия, а вот опрос идёт
     # раз в три секунды, пока игрок ищет: это до 1200 запросов в час у

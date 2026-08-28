@@ -9,7 +9,7 @@ import type {
   LeaderboardMetric,
 } from "~/api/types";
 import styles from "~/components/home/Leaderboard.module.css";
-import { Avatar } from "~/components/ui/Avatar";
+import { PlayerRow } from "~/components/ui/PlayerRow";
 import { CardTitle } from "~/components/ui/Card";
 import { Skeleton } from "~/components/ui/Skeleton";
 import { formatDistance, formatNumber } from "~/domain/format";
@@ -34,9 +34,12 @@ const CAPTIONS: Record<LeaderboardMetric, string> = {
  * тайге стоят разного труда, а очки у них одни и те же. Значения ключей — те
  * же, что понимает сервер.
  */
+/** Зачёт среди друзей: он единственный зависит от того, кто спрашивает. */
+const FRIENDS_SCOPE = "among_friends=true";
+
 const SCOPES: { value: string; label: string }[] = [
   { value: "", label: "Все партии" },
-  { value: "among_friends=true", label: "Друзья" },
+  { value: FRIENDS_SCOPE, label: "Друзья" },
   { value: "difficulty=easy", label: "Легко" },
   { value: "difficulty=normal", label: "Средне" },
   { value: "difficulty=hard", label: "Сложно" },
@@ -45,6 +48,14 @@ const SCOPES: { value: string; label: string }[] = [
   { value: "country_group=usa", label: "США" },
   { value: "country_group=eu", label: "Евросоюз" },
 ];
+
+/** Почему таблица пуста — зависит от того, какой зачёт выбран. */
+function emptyText(scope: string): string {
+  if (scope === "") return "Пока никто не сыграл ни одной партии. Займи первое место";
+  if (scope === FRIENDS_SCOPE) return "Ни ты, ни твои друзья ещё не доиграли ни одной партии";
+
+  return "На этих условиях ещё никто не играл. Займи первое место";
+}
 
 function valueOf(entry: LeaderboardEntry, metric: LeaderboardMetric): string {
   if (metric === "best") return formatNumber(entry.best_score);
@@ -62,16 +73,14 @@ function Row({
   isMe: boolean;
 }) {
   return (
-    <div className={[styles.row, isMe ? styles.rowMe : ""].filter(Boolean).join(" ")}>
-      <span
-        className={[styles.rank, entry.rank <= 3 ? styles.rankTop : ""].filter(Boolean).join(" ")}
-      >
-        {entry.rank}
-      </span>
-      <Avatar avatar={entry.avatar} size={24} name={entry.display_name} />
-      <span className={styles.player}>{entry.display_name}</span>
-      <span className={styles.value}>{valueOf(entry, metric)}</span>
-    </div>
+    <PlayerRow
+      rank={entry.rank}
+      avatar={entry.avatar}
+      name={entry.display_name}
+      value={valueOf(entry, metric)}
+      mine={isMe}
+      medals
+    />
   );
 }
 
@@ -152,11 +161,7 @@ export function Leaderboard({ refreshKey }: { refreshKey: number }) {
       {!failed && data === null && <Skeleton rows={4} />}
 
       {!failed && data !== null && entries.length === 0 && (
-        <p className={styles.empty}>
-          {scope === ""
-            ? "Пока никто не сыграл ни одной партии. Займи первое место"
-            : "На этих условиях ещё никто не играл. Займи первое место"}
-        </p>
+        <p className={styles.empty}>{emptyText(scope)}</p>
       )}
 
       <div className={styles.table}>

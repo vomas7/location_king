@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 
-import { ApiError } from "~/api/client";
+import { errorMessage } from "~/api/client";
 import styles from "~/components/auth/AuthCard.module.css";
 import { Alert } from "~/components/ui/Alert";
 import { Button } from "~/components/ui/Button";
@@ -17,7 +17,7 @@ type Mode = "login" | "register";
 const MIN_PASSWORD_LENGTH = 8;
 
 function describe(error: unknown): string {
-  return error instanceof ApiError ? error.detail : "Сервер недоступен. Попробуй ещё раз";
+  return errorMessage(error);
 }
 
 interface AuthCardProps {
