@@ -49,6 +49,7 @@ class Limit(StrEnum):
     REGISTER = "register"
     RENAME = "rename"
     START_SESSION = "start-session"
+    THEME = "theme"
     TILES = "tiles"
 
 
@@ -84,6 +85,9 @@ RULES: dict[Limit, RateLimit] = {
     Limit.DUEL_QUEUE: RateLimit(limit=120, window_seconds=60 * 60),
     Limit.DUEL_POLL: RateLimit(limit=2000, window_seconds=60 * 60),
     Limit.START_SESSION: RateLimit(limit=60, window_seconds=60 * 60),
+    # Тема — переключатель, которым щёлкают, пока выбирают. Лимит здесь от
+    # долбёжки по базе, а не от игрока: своим выбором он никому не мешает
+    Limit.THEME: RateLimit(limit=120, window_seconds=60 * 60),
     Limit.TILES: RateLimit(limit=3000, window_seconds=60 * 60),
 }
 

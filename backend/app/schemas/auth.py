@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
+from app.models.enums import Theme
+
 
 class RegisterRequest(BaseModel):
     """Регистрация по email и паролю."""
@@ -51,6 +53,12 @@ class ProfileUpdateRequest(BaseModel):
         return self
 
 
+class ThemeRequest(BaseModel):
+    """Выбор оформления. Значения ровно те, что знает клиент."""
+
+    theme: Theme
+
+
 class TokenPair(BaseModel):
     """Пара токенов и срок жизни access-токена в секундах."""
 
@@ -95,6 +103,10 @@ class UserProfile(BaseModel):
     duels_played: int
 
     avatar: AvatarView
+
+    #: Оформление интерфейса. Приезжает вместе с профилем, чтобы тема
+    #: применилась в тот же момент, когда стало известно, кто вошёл
+    theme: Theme
 
     created_at: datetime
 

@@ -256,7 +256,7 @@ export function HomeScreen({
         </div>
 
         <Card id="section-panel" role="tabpanel" aria-labelledby={`section-${section}`}>
-          {section === "profile" && <ProfilePanel onOpenLegal={onOpenLegal} />}
+          {section === "profile" && <ProfilePanel onOpenLegal={onOpenLegal} onError={onError} />}
           {section === "friends" && <Friends onError={onError} />}
           {section === "board" && <Leaderboard refreshKey={refreshKey} />}
           {section === "history" && <GameHistory refreshKey={refreshKey} />}

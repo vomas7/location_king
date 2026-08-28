@@ -21,6 +21,7 @@ import { Loader } from "~/components/ui/Loader";
 import { Toast } from "~/components/ui/Toast";
 import { isNewPlayer } from "~/domain/onboarding";
 import type { LegalDocumentId } from "~/legal/documents";
+import { useAppTheme } from "~/state/useAppTheme";
 import { useAuth } from "~/state/authContext";
 import { useGame } from "~/state/useGame";
 import { useToast } from "~/state/useToast";
@@ -28,6 +29,8 @@ import { useToast } from "~/state/useToast";
 export function App() {
   const { status, user, logout, refresh } = useAuth();
   const { message, show } = useToast();
+
+  useAppTheme();
 
   // Таблица лидеров и история перечитываются после каждой партии
   const [refreshKey, setRefreshKey] = useState(0);

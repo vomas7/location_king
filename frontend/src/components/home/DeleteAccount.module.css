@@ -23,7 +23,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: color-mix(in srgb, var(--bg-deep) 82%, transparent);
+  background: var(--scrim);
   backdrop-filter: blur(6px);
 }
 

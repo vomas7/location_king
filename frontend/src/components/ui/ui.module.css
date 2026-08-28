@@ -224,7 +224,7 @@
   align-content: center;
   justify-items: center;
   gap: 20px;
-  background: color-mix(in srgb, var(--bg-deep) 84%, transparent);
+  background: var(--scrim);
   backdrop-filter: blur(4px);
 }
 

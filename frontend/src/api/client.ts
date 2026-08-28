@@ -35,7 +35,7 @@ export function errorMessage(error: unknown, fallback = "Сервер недос
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   /** Не пытаться обновить токен при 401 — для самих запросов авторизации. */
   skipRefresh?: boolean;

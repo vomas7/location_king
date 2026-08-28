@@ -5,7 +5,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: color-mix(in srgb, var(--bg-deep) 80%, transparent);
+  background: var(--scrim);
   backdrop-filter: blur(6px);
   animation: fade 0.2s var(--ease);
 }

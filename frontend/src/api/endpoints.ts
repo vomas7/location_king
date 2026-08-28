@@ -18,6 +18,7 @@ import type {
   SessionHistory,
   SessionState,
   StartSessionOptions,
+  Theme,
   UserProfile,
   Zone,
 } from "~/api/types";
@@ -46,6 +47,10 @@ export const auth = {
     avatar_shape?: number;
     avatar_color?: number;
   }) => request<UserProfile>("/api/auth/me", { method: "PATCH", body: changes }),
+
+  /** Запомнить оформление. Отдельно от имени и аватарки: у той свой лимит. */
+  setTheme: (theme: Theme) =>
+    request<UserProfile>("/api/auth/me/theme", { method: "PUT", body: { theme } }),
 
   /** Удалить учётную запись со всеми данными. Пароль подтверждает владельца. */
   deleteAccount: (password: string) =>

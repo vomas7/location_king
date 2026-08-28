@@ -6,23 +6,39 @@
  * найти документы игрок обязан, и раздел о себе для них самое место.
  */
 
+import { errorMessage } from "~/api/client";
+import { auth } from "~/api/endpoints";
+import type { Theme } from "~/api/types";
 import { DeleteAccount } from "~/components/home/DeleteAccount";
 import styles from "~/components/home/ProfilePanel.module.css";
 import { PublicProfile } from "~/components/home/PublicProfile";
 import { Credits, LegalLinks } from "~/components/layout/AboutLinks";
 import { CardTitle } from "~/components/ui/Card";
+import { Segmented } from "~/components/ui/Segmented";
 import { formatDistance, formatNumber } from "~/domain/format";
+import { THEMES } from "~/domain/theme";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useAuth } from "~/state/authContext";
 
 interface ProfilePanelProps {
   onOpenLegal: (document: LegalDocumentId) => void;
+  onError: (message: string) => void;
 }
 
-export function ProfilePanel({ onOpenLegal }: ProfilePanelProps) {
-  const { user } = useAuth();
+export function ProfilePanel({ onOpenLegal, onError }: ProfilePanelProps) {
+  const { user, accept } = useAuth();
 
   if (user === null) return null;
+
+  // Тема — свойство игрока: сервер отвечает обновлённым профилем, и от него
+  // же её берёт всё остальное приложение
+  const chooseTheme = async (theme: Theme) => {
+    try {
+      accept(await auth.setTheme(theme));
+    } catch (error) {
+      onError(errorMessage(error, "Не удалось запомнить оформление"));
+    }
+  };
 
   return (
     <section>
@@ -52,6 +68,17 @@ export function ProfilePanel({ onOpenLegal }: ProfilePanelProps) {
           <dd>{formatNumber(user.rating)}</dd>
         </div>
       </dl>
+
+      <div className={styles.theme}>
+        <Segmented
+          label="Оформление"
+          options={THEMES}
+          value={user.theme}
+          onChange={(theme) => {
+            void chooseTheme(theme);
+          }}
+        />
+      </div>
 
       <DeleteAccount />
 

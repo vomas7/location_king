@@ -7,6 +7,9 @@
  */
 
 /** Аватарка: форма узора и цвет. Картинку по ним рисует клиент. */
+/** Оформление интерфейса. Те же значения понимает сервер. */
+export type Theme = "dark" | "light" | "system";
+
 export interface AvatarView {
   shape: number;
   color: number;
@@ -27,6 +30,8 @@ export interface UserProfile {
   rating: number;
   duels_played: number;
   avatar: AvatarView;
+  /** Оформление интерфейса. Приезжает с профилем: выбор хранится у игрока. */
+  theme: Theme;
   created_at: string;
 }
 

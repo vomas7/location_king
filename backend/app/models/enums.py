@@ -26,6 +26,20 @@ class MatchStatus(StrEnum):
     CLOSED = "closed"  # хост закрыл набор
 
 
+class Theme(StrEnum):
+    """
+    Оформление интерфейса.
+
+    Хранится у игрока, а не в браузере: выбор пережил бы очистку хранилища,
+    но не переход на другое устройство, а игра одна и та же.
+    """
+
+    DARK = "dark"
+    LIGHT = "light"
+    #: Как в системе — то есть по prefers-color-scheme браузера
+    SYSTEM = "system"
+
+
 class AnswerMode(StrEnum):
     """
     Чем игрок отвечает на раунд.

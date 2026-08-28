@@ -14,6 +14,7 @@ from app.schemas.auth import (
     ProfileUpdateRequest,
     RefreshRequest,
     RegisterRequest,
+    ThemeRequest,
     TokenPair,
     UserProfile,
 )
@@ -86,6 +87,26 @@ async def update_me(
         avatar_shape=payload.avatar_shape,
         avatar_color=payload.avatar_color,
     )
+    return UserProfile.model_validate(updated)
+
+
+@router.put(
+    "/me/theme",
+    response_model=UserProfile,
+    dependencies=[Depends(limit_by_user(Limit.THEME))],
+)
+async def set_theme(
+    payload: ThemeRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserProfile:
+    """
+    Запомнить оформление.
+
+    Отдельно от смены имени и аватарки: у той свой лимит, и щёлкать темой
+    игрок не должен ценой права переименоваться.
+    """
+    updated = await auth_service.update_theme(db, user, payload.theme)
     return UserProfile.model_validate(updated)
 
 

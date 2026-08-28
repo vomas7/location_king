@@ -4,6 +4,7 @@ from sqlalchemy import BigInteger, Boolean, DateTime, Float, Integer, SmallInteg
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.enums import Theme
 from app.utils.elo import START_RATING
 
 
@@ -27,6 +28,10 @@ class User(Base):
     # По этому коду игрока добавляют в друзья. Не по имени: имена не
     # уникальны, а искать людей по чужому имени — способ найти не того
     friend_code: Mapped[str] = mapped_column(String(8), nullable=False, unique=True, index=True)
+
+    # Оформление хранится у игрока, а не в браузере: тема должна пережить и
+    # чистое хранилище, и другое устройство
+    theme: Mapped[str] = mapped_column(String(10), nullable=False, default=Theme.DARK)
 
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
 

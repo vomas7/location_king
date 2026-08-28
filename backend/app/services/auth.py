@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.exceptions import AuthError, ConflictError, ValidationError
+from app.models.enums import Theme
 from app.models.user import User
 from app.observability import metrics
 from app.utils import avatar, codes
@@ -169,6 +170,14 @@ async def update_profile(
 
     await db.flush()
     await metrics.count("profile_updated")
+
+    return user
+
+
+async def update_theme(db: AsyncSession, user: User, theme: Theme) -> User:
+    """Запомнить выбранное оформление."""
+    user.theme = theme
+    await db.flush()
 
     return user
 
