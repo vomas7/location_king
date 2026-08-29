@@ -1,81 +1,76 @@
 /* Условия, по которым соберётся комната: их выбирают в одиночной партии, и
    без этой строки было бы непонятно, откуда взялись пять раундов */
 .summary {
-  margin: 14px 0 16px;
+  margin: var(--space-4) 0 var(--space-4);
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
   text-wrap: pretty;
 }
 
 /* Условия комнаты правятся там же, где условия одиночной, — ссылка ведёт
-   туда, чтобы строка не была тупиком */
+   туда, чтобы строка не была тупиком. Отдельной строкой, а не хвостом
+   абзаца: внутри текста в неё не попасть пальцем, не растащив сам абзац */
 .edit {
-  padding: 0;
+  display: block;
+  min-height: var(--tap);
+  padding: var(--space-2) 0;
   border: 0;
   background: none;
   color: var(--text-faint);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--fs-micro);
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
-}
-
-.edit:hover {
-  color: var(--text);
 }
 
 .header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .leave {
-  padding: 0;
+  padding: var(--space-3) 0;
   border: 0;
   background: none;
   color: var(--text-faint);
-  font-size: 13px;
+  font-size: var(--fs-small);
   cursor: pointer;
-}
-
-.leave:hover {
-  color: var(--text);
 }
 
 /* Код диктуют голосом и набирают руками — он должен читаться издалека */
 .code {
-  margin: 10px 0 6px;
+  margin: var(--space-3) 0 var(--space-2);
   color: var(--accent);
   font-family: var(--mono);
-  font-size: 30px;
+  font-size: var(--fs-number);
   font-weight: 700;
   letter-spacing: 0.14em;
 }
 
 .meta {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: var(--fs-small);
 }
 
 .joinForm {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
 }
 
 .codeInput {
   flex: 1;
   min-width: 0;
-  padding: 11px 14px;
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--bg-deep);
   font-family: var(--mono);
-  font-size: 15px;
+  font-size: var(--fs-body);
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -86,35 +81,30 @@
 }
 
 .recent {
-  margin-top: 18px;
+  margin-top: var(--space-5);
 }
 
 .recentLabel {
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
 }
 
 .recentList {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 .recentItem {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  padding: 7px 12px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-sm);
   background: var(--bg-deep);
   cursor: pointer;
-}
-
-.recentItem:hover:not(:disabled) {
-  border-color: var(--line);
-  background: var(--surface-3);
 }
 
 .recentItem:disabled {
@@ -124,35 +114,35 @@
 
 .recentCode {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 700;
   letter-spacing: 0.1em;
 }
 
 .recentPlayers {
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
 }
 
 .table {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  margin: 16px 0;
+  margin: var(--space-4) 0;
 }
 
 .actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .myScore {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius);
   background: var(--bg-deep);
@@ -160,19 +150,35 @@
 
 .myScoreLabel {
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
 }
 
 .myScoreValue {
   color: var(--accent);
   font-family: var(--mono);
-  font-size: 22px;
+  font-size: var(--fs-screen);
   font-weight: 700;
 }
 
 .empty {
-  padding: 14px 0;
+  padding: var(--space-4) 0;
   color: var(--text-faint);
-  font-size: 13px;
+  font-size: var(--fs-small);
   text-align: center;
+}
+
+/* Наведение существует только там, где есть курсор */
+@media (hover: hover) and (pointer: fine) {
+  .edit:hover {
+    color: var(--text);
+  }
+
+  .leave:hover {
+    color: var(--text);
+  }
+
+  .recentItem:hover:not(:disabled) {
+    border-color: var(--line);
+    background: var(--surface-3);
+  }
 }

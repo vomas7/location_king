@@ -5,8 +5,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 10px 20px;
-  padding: 12px 24px;
+  gap: var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--space-6);
   border-top: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
   background: color-mix(in srgb, var(--accent) 7%, var(--bg-deep));
   animation: rise 0.28s var(--ease);
@@ -21,39 +21,42 @@
 
 .text {
   color: var(--text-dim);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--fs-small);
+  line-height: var(--lh-base);
   text-wrap: pretty;
 }
 
 .actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: var(--space-4);
 }
 
 .details {
-  padding: 0;
+  padding: var(--space-3) 0;
   border: 0;
   background: none;
   color: var(--text-faint);
-  font-size: 13px;
+  font-size: var(--fs-small);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
 }
 
-.details:hover {
-  color: var(--text);
-}
-
 @media (max-width: 560px) {
   .notice {
     justify-content: space-between;
-    padding: 10px 14px;
+    padding: var(--space-3) var(--space-4);
   }
 
   .text {
-    font-size: 12.5px;
+    font-size: var(--fs-small);
+  }
+}
+
+/* Наведение существует только там, где есть курсор */
+@media (hover: hover) and (pointer: fine) {
+  .details:hover {
+    color: var(--text);
   }
 }

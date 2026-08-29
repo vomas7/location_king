@@ -34,7 +34,9 @@ afterEach(() => {
 describe("FirstRoundCoach", () => {
   it("начинает с рассказа о снимке", () => {
     withPointer(true);
-    render(<FirstRoundCoach hasGuess={false} byCountry={false} onDismiss={vi.fn()} />);
+    render(
+      <FirstRoundCoach mapOpen={false} hasGuess={false} byCountry={false} onDismiss={vi.fn()} />,
+    );
 
     expect(screen.getByText("Осмотрись")).toBeTruthy();
     expect(screen.getByText("Шаг 1 из 3")).toBeTruthy();
@@ -42,7 +44,9 @@ describe("FirstRoundCoach", () => {
 
   it("после «Понятно» зовёт поставить точку", () => {
     withPointer(true);
-    render(<FirstRoundCoach hasGuess={false} byCountry={false} onDismiss={vi.fn()} />);
+    render(
+      <FirstRoundCoach mapOpen={false} hasGuess={false} byCountry={false} onDismiss={vi.fn()} />,
+    );
 
     fireEvent.click(screen.getByText("Понятно"));
 
@@ -52,7 +56,9 @@ describe("FirstRoundCoach", () => {
 
   it("на телефоне зовёт нажать кнопку, а не подвести курсор", () => {
     withPointer(false);
-    render(<FirstRoundCoach hasGuess={false} byCountry={false} onDismiss={vi.fn()} />);
+    render(
+      <FirstRoundCoach mapOpen={false} hasGuess={false} byCountry={false} onDismiss={vi.fn()} />,
+    );
 
     fireEvent.click(screen.getByText("Понятно"));
 
@@ -62,16 +68,33 @@ describe("FirstRoundCoach", () => {
 
   it("поставленная точка сразу переводит к ответу", () => {
     withPointer(true);
-    render(<FirstRoundCoach hasGuess byCountry={false} onDismiss={vi.fn()} />);
+    render(<FirstRoundCoach mapOpen={false} hasGuess byCountry={false} onDismiss={vi.fn()} />);
 
     expect(screen.getByText("Отвечай")).toBeTruthy();
     expect(screen.getByText("Шаг 3 из 3")).toBeTruthy();
   });
 
+  it("раскрытая карта снимает шаг о том, как её раскрыть", () => {
+    withPointer(false);
+    const { rerender } = render(
+      <FirstRoundCoach mapOpen={false} hasGuess={false} byCountry={false} onDismiss={vi.fn()} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Понятно" }));
+    expect(screen.getByRole("heading", { name: "Отметь место" })).toBeTruthy();
+
+    rerender(<FirstRoundCoach mapOpen hasGuess={false} byCountry={false} onDismiss={vi.fn()} />);
+
+    expect(screen.getByRole("heading", { name: "Отвечай" })).toBeTruthy();
+    expect(screen.queryByText(/Нажми «Открыть карту»/)).toBeNull();
+  });
+
   it("подсказки можно закрыть", () => {
     withPointer(true);
     const onDismiss = vi.fn();
-    render(<FirstRoundCoach hasGuess={false} byCountry={false} onDismiss={onDismiss} />);
+    render(
+      <FirstRoundCoach mapOpen={false} hasGuess={false} byCountry={false} onDismiss={onDismiss} />,
+    );
 
     fireEvent.click(screen.getByText("Не показывать"));
 
@@ -82,7 +105,7 @@ describe("FirstRoundCoach", () => {
 describe("подсказка в раунде про страны", () => {
   it("зовёт выбрать страну, а не ставить точку", () => {
     withPointer(true);
-    render(<FirstRoundCoach hasGuess={false} byCountry onDismiss={vi.fn()} />);
+    render(<FirstRoundCoach mapOpen={false} hasGuess={false} byCountry onDismiss={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Понятно" }));
 
@@ -91,9 +114,9 @@ describe("подсказка в раунде про страны", () => {
 
   it("не обещает очков за близость: их здесь не дают", () => {
     withPointer(true);
-    render(<FirstRoundCoach hasGuess byCountry onDismiss={vi.fn()} />);
+    render(<FirstRoundCoach mapOpen={false} hasGuess byCountry onDismiss={vi.fn()} />);
 
-    expect(screen.getByText(/Угадал — все пять тысяч/)).toBeTruthy();
-    expect(screen.queryByText(/Чем ближе она к центру участка/)).toBeNull();
+    expect(screen.getByText(/угадал — все пять тысяч/i)).toBeTruthy();
+    expect(screen.queryByText(/чем ближе к цели/i)).toBeNull();
   });
 });

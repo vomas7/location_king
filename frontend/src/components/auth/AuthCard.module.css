@@ -4,25 +4,25 @@
 
 .tabs {
   display: flex;
-  margin-bottom: 22px;
-  padding: 4px;
+  margin-bottom: var(--space-6);
+  padding: var(--space-1);
   border-radius: var(--radius);
   background: var(--bg-deep);
 }
 
 .tab {
   flex: 1;
-  padding: 9px 12px;
+  padding: var(--space-2) var(--space-3);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-faint);
-  font-size: 14px;
+  font-size: var(--fs-control);
   font-weight: 550;
   cursor: pointer;
   transition:
-    background 0.16s var(--ease),
-    color 0.16s var(--ease);
+    background var(--motion-base) var(--ease),
+    color var(--motion-base) var(--ease);
 }
 
 .tabActive {
@@ -33,13 +33,13 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .note {
-  margin-top: 18px;
+  margin-top: var(--space-5);
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
   text-align: center;
 }
 

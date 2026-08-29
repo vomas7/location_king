@@ -7,9 +7,9 @@
   overflow-y: auto;
   flex: 1 1 auto;
   align-content: start;
-  gap: 20px;
+  gap: var(--space-5);
   min-height: 0;
-  padding: 28px 20px 48px;
+  padding: var(--space-8) var(--space-5) var(--space-10);
   background:
     radial-gradient(900px 500px at 15% -5%, var(--glow-warm), transparent 60%),
     radial-gradient(700px 500px at 95% 105%, var(--glow-cool), transparent 60%), var(--bg);
@@ -20,7 +20,7 @@
 .column {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
   min-width: 0;
 }
 
@@ -28,21 +28,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 4px;
-  padding: 16px 20px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-1);
+  padding: var(--space-4) var(--space-5);
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
 
 .resumeText {
-  font-size: 14px;
+  font-size: var(--fs-control);
+  font-weight: 600;
 }
 
 .resumeHint {
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
 }
 
 /*
@@ -53,9 +54,9 @@
  */
 .sections {
   display: flex;
-  gap: 2px;
+  gap: var(--space-0);
   overflow-x: auto;
-  padding-bottom: 2px;
+  padding-bottom: var(--space-0);
   border-bottom: 1px solid var(--line-soft);
   scrollbar-width: none;
 }
@@ -65,23 +66,26 @@
 }
 
 .section {
-  padding: 9px 12px;
+  min-height: var(--tap);
+  padding: var(--space-3);
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-bottom: var(--space-0) solid transparent;
   background: none;
   color: var(--text-faint);
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 550;
+  font-size: var(--fs-small);
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
   transition:
-    color 0.16s var(--ease),
-    border-color 0.16s var(--ease);
+    color var(--motion-base) var(--ease),
+    border-color var(--motion-base) var(--ease);
 }
 
-.section:hover {
-  color: var(--text-dim);
+@media (hover: hover) and (pointer: fine) {
+  .section:hover {
+    color: var(--text-dim);
+  }
 }
 
 .sectionActive,
@@ -93,7 +97,7 @@
 @media (max-width: 900px) {
   .screen {
     grid-template-columns: minmax(0, 520px);
-    gap: 24px;
-    padding: 20px 14px 40px;
+    gap: var(--space-6);
+    padding: var(--space-5) var(--space-4) var(--space-10);
   }
 }

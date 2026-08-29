@@ -50,13 +50,19 @@ function texts(hoverPointer: boolean, byCountry: boolean): Record<CoachStep, Coa
       order: 3,
       title: "Отвечай",
       text: byCountry
-        ? "Страну можно менять сколько угодно, пока не нажал «Ответить». Угадал — все пять тысяч очков за раунд, как бы далеко от центра страны ты ни ткнул."
-        : "Точку можно двигать сколько угодно, пока не нажал «Ответить». Чем ближе она к центру участка, тем больше очков — до пяти тысяч за раунд.",
+        ? "Ткни на карте страну, из которой этот снимок. Менять её можно сколько угодно, пока не нажал «Ответить»: угадал — все пять тысяч очков за раунд."
+        : "Ткни на карте место, где, по-твоему, снят участок. Двигать точку можно, пока не нажал «Ответить»: чем ближе к цели, тем больше очков — до пяти тысяч за раунд.",
     },
   };
 }
 
 interface FirstRoundCoachProps {
+  /**
+   * Раскрыл ли карту сам игрок. Именно раскрыл, а не «карта видна»: мышью она
+   * раскрывается наведением, и на компьютере второй шаг — как раз про то,
+   * что курсор нужно к ней подвести.
+   */
+  mapOpen: boolean;
   /** Поставлена ли точка на карте мира или выбрана страна. */
   hasGuess: boolean;
   /** Раунд про страны: и просят другое, и очки считаются иначе. */
@@ -65,11 +71,11 @@ interface FirstRoundCoachProps {
   onDismiss: () => void;
 }
 
-export function FirstRoundCoach({ hasGuess, byCountry, onDismiss }: FirstRoundCoachProps) {
+export function FirstRoundCoach({ mapOpen, hasGuess, byCountry, onDismiss }: FirstRoundCoachProps) {
   const [acknowledged, setAcknowledged] = useState(false);
   const hoverPointer = useHoverPointer();
 
-  const step = coachStep(acknowledged, hasGuess);
+  const step = coachStep(acknowledged, mapOpen, hasGuess);
   const { order, title, text } = texts(hoverPointer, byCountry)[step];
 
   return (

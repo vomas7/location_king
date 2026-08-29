@@ -97,27 +97,33 @@ export function SummaryScreen({
 
   return (
     <div className={styles.screen}>
-      <Card className={styles.card}>
-        <Eyebrow>Партия окончена</Eyebrow>
+      {/* Разбор партии разводит экран на две колонки: карта высокая, а список
+          раундов узкий, и в одном столбце они не помещаются на экран целиком */}
+      <Card
+        className={[styles.card, played > 0 ? styles.cardReview : ""].filter(Boolean).join(" ")}
+      >
+        <div className={styles.head}>
+          <Eyebrow>Партия окончена</Eyebrow>
 
-        <h2 className={styles.score}>
-          {formatNumber(session.total_score)}
-          <small>очков</small>
-        </h2>
+          <h2 className={styles.score}>
+            {formatNumber(session.total_score)}
+            <small>очков</small>
+          </h2>
 
-        <p className={styles.subtitle}>
-          {played === 0
-            ? "Ни одного раунда не сыграно"
-            : `${String(played)} ${plural(played, "раунд", "раунда", "раундов")} · в среднем ${formatNumber(average)} за раунд`}
-        </p>
-
-        {isRecord && <p className={styles.record}>Это твой лучший результат</p>}
-
-        {rank !== null && options !== null && (
-          <p className={styles.rank}>
-            <strong>{rank}</strong> место в зачёте <span>{scopeLabel(options)}</span>
+          <p className={styles.subtitle}>
+            {played === 0
+              ? "Ни одного раунда не сыграно"
+              : `${String(played)} ${plural(played, "раунд", "раунда", "раундов")} · в среднем ${formatNumber(average)} за раунд`}
           </p>
-        )}
+
+          {isRecord && <p className={styles.record}>Это твой лучший результат</p>}
+
+          {rank !== null && options !== null && (
+            <p className={styles.rank}>
+              <strong>{rank}</strong> место в зачёте <span>{scopeLabel(options)}</span>
+            </p>
+          )}
+        </div>
 
         {played > 0 && (
           <div className={styles.review}>

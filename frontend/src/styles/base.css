@@ -141,10 +141,16 @@ a {
   backdrop-filter: blur(8px);
 }
 
-.ol-control button:hover,
 .ol-control button:focus {
   background: var(--surface-3);
   color: var(--text);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ol-control button:hover {
+    background: var(--surface-3);
+    color: var(--text);
+  }
 }
 
 /* Подпись об источнике карты: обязательна по лицензии, поэтому читаемая,

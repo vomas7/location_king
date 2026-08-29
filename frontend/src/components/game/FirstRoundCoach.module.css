@@ -2,11 +2,11 @@
    слева снизу — масштаб, справа снизу — панель догадки. Свободен один угол */
 .coach {
   position: absolute;
-  z-index: 15;
-  top: 14px;
-  left: 14px;
+  z-index: var(--z-coach);
+  top: var(--space-3);
+  left: var(--space-3);
   width: 300px;
-  padding: 14px 16px 12px;
+  padding: var(--space-4) var(--space-4) var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--surface) 94%, transparent);
@@ -17,55 +17,59 @@
 .counter {
   color: var(--text-faint);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .title {
-  margin-top: 6px;
+  margin-top: var(--space-1);
   color: var(--accent);
-  font-size: 16px;
+  font-size: var(--fs-title);
   font-weight: 700;
+  line-height: var(--lh-tight);
 }
 
 .text {
-  margin-top: 6px;
+  margin-top: var(--space-2);
   color: var(--text-dim);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--fs-small);
+  line-height: var(--lh-base);
   text-wrap: pretty;
 }
 
 .actions {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 12px;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
 }
 
 .skip {
   padding: 0;
   border: 0;
   background: none;
+  min-height: var(--tap);
   color: var(--text-faint);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--fs-micro);
   text-decoration: underline;
   cursor: pointer;
 }
 
-.skip:hover {
-  color: var(--text-dim);
+@media (hover: hover) and (pointer: fine) {
+  .skip:hover {
+    color: var(--text-dim);
+  }
 }
 
 /* На узком экране подсказка занимает всю ширину: колонкой в 300 пикселей она
    отъедала бы половину снимка */
-@media (max-width: 780px) {
+@media (max-width: 900px) {
   .coach {
-    top: 12px;
-    right: 12px;
-    left: 12px;
+    top: var(--space-3);
+    right: var(--space-3);
+    left: var(--space-3);
     width: auto;
   }
 }

@@ -1,11 +1,11 @@
 .topbar {
   display: flex;
-  z-index: 40;
+  z-index: var(--z-topbar);
   flex: 0 0 var(--topbar-h);
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 0 20px;
+  gap: var(--space-4);
+  padding: 0 var(--space-5);
   border-bottom: 1px solid var(--line-soft);
   background: color-mix(in srgb, var(--bg-deep) 88%, transparent);
   backdrop-filter: blur(14px);
@@ -14,7 +14,7 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   min-width: 0;
 }
 
@@ -30,7 +30,7 @@
 
 .name {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: var(--fs-body);
   font-weight: 700;
   letter-spacing: -0.02em;
   white-space: nowrap;
@@ -40,7 +40,7 @@
   display: flex;
   flex: 0 1 320px;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
   min-width: 0;
 }
 
@@ -48,8 +48,8 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
+  gap: var(--space-3);
+  font-size: var(--fs-micro);
 }
 
 .progressLabel {
@@ -61,7 +61,7 @@
 .progressScore {
   color: var(--accent);
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: var(--fs-control);
   font-weight: 700;
 }
 
@@ -75,7 +75,7 @@
   flex: 1;
   border-radius: var(--radius-pill);
   background: var(--surface-3);
-  transition: background 0.3s var(--ease);
+  transition: background var(--motion-slow) var(--ease);
 }
 
 .segmentDone {
@@ -96,37 +96,36 @@
 .user {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   min-width: 0;
 }
 
 .player {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   overflow: hidden;
   max-width: 180px;
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: var(--fs-small);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-@media (max-width: 780px) {
+@media (max-width: 900px) {
   /* Знак, кнопки и полоса прогресса в одну строку не помещаются: прогресс
      уходит вниз, а высота шапки перестаёт быть фиксированной */
   .topbar {
     flex: 0 0 auto;
     flex-wrap: wrap;
-    gap: 8px 10px;
-    padding: 10px 12px;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-2) var(--space-3);
   }
 
+  /* Название игры и имя игрока уступают место кнопкам: знак игры слева и так
+     говорит, где мы, а имя игрок и без шапки знает */
   .name,
   .player {
-    display: flex;
-    align-items: center;
-    gap: 8px;
     display: none;
   }
 
@@ -136,6 +135,6 @@
   }
 
   .user {
-    gap: 8px;
+    gap: var(--space-2);
   }
 }

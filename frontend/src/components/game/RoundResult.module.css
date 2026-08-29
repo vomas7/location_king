@@ -1,13 +1,13 @@
 .overlay {
   position: fixed;
-  z-index: 60;
+  z-index: var(--z-dialog);
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: var(--space-5);
   background: var(--scrim);
   backdrop-filter: blur(6px);
-  animation: fade 0.2s var(--ease);
+  animation: fade var(--motion-base) var(--ease);
 }
 
 @keyframes fade {
@@ -37,13 +37,13 @@
   display: flex;
   overflow-y: auto;
   flex-direction: column;
-  gap: 18px;
-  padding: 26px;
+  gap: var(--space-5);
+  padding: var(--space-6);
   border-left: 1px solid var(--line-soft);
 }
 
 .tier {
-  font-size: 12px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -66,18 +66,18 @@
 .score {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--space-2);
   font-family: var(--mono);
-  font-size: 46px;
+  font-size: clamp(38px, 11vw, 46px);
   font-weight: 700;
   letter-spacing: -0.03em;
-  line-height: 1;
+  line-height: var(--lh-flat);
 }
 
 .score small {
   color: var(--text-faint);
   font-family: var(--font);
-  font-size: 14px;
+  font-size: var(--fs-control);
   font-weight: 500;
   letter-spacing: 0;
 }
@@ -94,17 +94,17 @@
   height: 100%;
   border-radius: inherit;
   background: currentcolor;
-  transition: width 0.6s var(--ease);
+  transition: width var(--motion-count) var(--ease);
 }
 
 .readouts {
   display: grid;
-  gap: 10px;
+  gap: var(--space-3);
   grid-template-columns: 1fr 1fr;
 }
 
 .readout {
-  padding: 11px 13px;
+  padding: var(--space-3);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-sm);
   background: var(--bg-deep);
@@ -113,49 +113,51 @@
 .readoutLabel {
   display: block;
   color: var(--text-faint);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .readoutValue {
   font-family: var(--mono);
-  font-size: 17px;
+  font-size: var(--fs-title);
   font-weight: 700;
+  line-height: var(--lh-flat);
 }
 
 /* Название страны — слово, а не число: моноширинным шрифтом кегля цифр оно
    не помещается в половину строки, а «Южно-Африканская Республика» бывает */
 .readoutName {
-  font-size: 14px;
-  font-weight: 650;
-  line-height: 1.3;
+  font-size: var(--fs-control);
+  font-weight: 600;
+  line-height: var(--lh-tight);
   text-wrap: pretty;
 }
 
 .place {
   margin-top: auto;
-  padding-top: 16px;
+  padding-top: var(--space-4);
   border-top: 1px solid var(--line-soft);
 }
 
 .placeName {
-  font-size: 17px;
+  font-size: var(--fs-title);
   font-weight: 600;
   letter-spacing: -0.01em;
+  line-height: var(--lh-tight);
 }
 
 .placeMeta {
   color: var(--text-faint);
-  font-size: 13px;
+  font-size: var(--fs-small);
 }
 
 /* Как ту же зону отыграли остальные. Мятный — та же кодировка, что и у
    хорошего результата: это не украшение, а «ты справился лучше» */
 .standing {
-  margin-top: 8px;
+  margin-top: var(--space-2);
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: var(--fs-small);
   text-wrap: pretty;
 }
 
@@ -166,16 +168,16 @@
 
 .legend {
   display: flex;
-  gap: 16px;
-  margin-top: 6px;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
 }
 
 .legendItem {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .dot {

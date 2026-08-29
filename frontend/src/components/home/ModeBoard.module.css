@@ -2,30 +2,32 @@
    а в одну колонку они снова растянулись бы на весь экран телефона */
 .board {
   display: grid;
-  gap: 8px;
+  gap: var(--space-2);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .tile {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
   min-height: 76px;
-  padding: 13px 14px;
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius);
   background: var(--bg-deep);
   text-align: left;
   cursor: pointer;
   transition:
-    background 0.16s var(--ease),
-    border-color 0.16s var(--ease),
-    box-shadow 0.16s var(--ease);
+    background var(--motion-base) var(--ease),
+    border-color var(--motion-base) var(--ease),
+    box-shadow var(--motion-base) var(--ease);
 }
 
-.tile:hover {
-  border-color: var(--line);
-  background: var(--surface-2);
+@media (hover: hover) and (pointer: fine) {
+  .tile:hover {
+    border-color: var(--line);
+    background: var(--surface-2);
+  }
 }
 
 /* Тот же янтарный контур, что и у выбранного значения в переключателе: выбор
@@ -39,8 +41,8 @@
 
 .name {
   color: var(--text-dim);
-  font-size: 14px;
-  font-weight: 650;
+  font-size: var(--fs-control);
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
@@ -51,10 +53,10 @@
 .status {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   color: var(--text-faint);
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: var(--fs-micro);
+  line-height: var(--lh-base);
   text-wrap: pretty;
 }
 

@@ -97,7 +97,7 @@
   left: 0;
   color: var(--text-faint);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--fs-micro);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   white-space: nowrap;

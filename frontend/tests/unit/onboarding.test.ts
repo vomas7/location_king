@@ -41,19 +41,23 @@ describe("isNewPlayer", () => {
 
 describe("coachStep", () => {
   it("сначала объясняет, на что игрок смотрит", () => {
-    expect(coachStep(false, false)).toBe("look");
+    expect(coachStep(false, false, false)).toBe("look");
   });
 
-  it("после «понятно» зовёт на карту", () => {
-    expect(coachStep(true, false)).toBe("map");
+  it("после «понятно» зовёт открыть карту", () => {
+    expect(coachStep(true, false, false)).toBe("map");
+  });
+
+  it("раскрытая карта закрывает шаг о том, как её раскрыть", () => {
+    expect(coachStep(true, true, false)).toBe("answer");
   });
 
   it("поставленная точка переводит к ответу", () => {
-    expect(coachStep(true, true)).toBe("answer");
+    expect(coachStep(true, false, true)).toBe("answer");
   });
 
   it("точка важнее непрочитанного первого шага: подсказка не отстаёт от игрока", () => {
-    expect(coachStep(false, true)).toBe("answer");
+    expect(coachStep(false, false, true)).toBe("answer");
   });
 });
 

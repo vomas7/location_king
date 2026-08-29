@@ -95,15 +95,18 @@ export function TopBar({ playerName, playerAvatar, progress, onQuit, onLogout }:
           </span>
         )}
 
-        {onQuit !== undefined && (
+        {/* Во время партии выход из игры не показываем: он стоит рядом с
+            «Завершить», уводит из партии так же безвозвратно, и промах по
+            нему стоит игроку всех набранных очков */}
+        {onQuit === undefined ? (
+          <Button variant="ghost" size="small" onClick={onLogout}>
+            Выйти
+          </Button>
+        ) : (
           <Button variant="ghost" size="small" onClick={onQuit}>
             Завершить
           </Button>
         )}
-
-        <Button variant="ghost" size="small" onClick={onLogout}>
-          Выйти
-        </Button>
       </div>
     </header>
   );

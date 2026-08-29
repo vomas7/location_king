@@ -3,9 +3,9 @@
 .setup {
   display: flex;
   align-items: baseline;
-  gap: 12px;
-  margin-bottom: 18px;
-  padding: 11px 13px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) var(--space-3);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-sm);
   background: var(--bg-deep);
@@ -14,50 +14,55 @@
 .summary {
   flex: 1 1 auto;
   color: var(--text-dim);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: var(--fs-small);
+  line-height: var(--lh-base);
   text-wrap: pretty;
 }
 
 .toggle {
   flex: 0 0 auto;
-  padding: 0;
+  /* Надпись мелкая, а нажимают её пальцем: высоту добавляют отступы */
+  min-height: var(--tap);
+  padding: var(--space-3) 0;
   border: 0;
   background: none;
   color: var(--text-faint);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--fs-micro);
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
 }
 
-.toggle:hover {
-  color: var(--text);
-}
-
 .options {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  margin-bottom: 20px;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
 }
 
 .warning {
-  margin-bottom: 14px;
+  margin-bottom: var(--space-4);
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: var(--fs-small);
   text-wrap: pretty;
 }
 
 .alertSlot {
-  margin-bottom: 14px;
+  margin-bottom: var(--space-4);
 }
 
 /* Объяснение вместо переключателя, который в этом режиме не нужен */
 .note {
   color: var(--text-faint);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--fs-micro);
+  line-height: var(--lh-base);
   text-wrap: pretty;
+}
+
+/* Наведение существует только там, где есть курсор */
+@media (hover: hover) and (pointer: fine) {
+  .toggle:hover {
+    color: var(--text);
+  }
 }

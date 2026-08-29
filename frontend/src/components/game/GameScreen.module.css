@@ -14,113 +14,109 @@
   background: repeating-linear-gradient(45deg, var(--bg-deep) 0 12px, var(--surface) 12px 24px);
 }
 
-.badge {
-  position: absolute;
-  z-index: 10;
-  bottom: 14px;
-  left: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 7px 12px;
+/* Плашки поверх снимка: одно стекло на всех, чтобы масштаб, источник и
+   возврат к цели читались как один слой прибора, а не три разных наклейки */
+.glass {
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--bg-deep) 78%, transparent);
   backdrop-filter: blur(8px);
+}
+
+.badge {
+  position: absolute;
+  z-index: var(--z-map);
+  bottom: var(--space-3);
+  left: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0);
+  padding: var(--space-2) var(--space-3);
   pointer-events: none;
 }
 
 .scale {
   color: var(--text-dim);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--fs-micro);
   font-weight: 700;
+  line-height: var(--lh-flat);
 }
 
 .credit {
   color: var(--text-faint);
-  font-size: 10px;
+  font-size: var(--fs-micro);
+  line-height: var(--lh-flat);
 }
 
 .tileError {
   position: absolute;
-  z-index: 12;
+  z-index: var(--z-panel);
   top: 50%;
   left: 50%;
   max-width: 320px;
-  padding: 14px 18px;
+  padding: var(--space-4) var(--space-5);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--surface) 94%, transparent);
   box-shadow: var(--shadow);
-  font-size: 13px;
+  font-size: var(--fs-small);
   text-align: center;
   transform: translate(-50%, -50%);
 }
 
-/* Подсказки о клавишах бессмысленны на телефоне, поэтому по умолчанию их нет,
-   а появляются они только там, где есть курсор */
 /* Возврат к цели. Справа, потому что слева стоит подсказка новичка и в
    первом раунде накрывала бы эту кнопку собой */
 .recenter {
   position: absolute;
-  z-index: 10;
-  top: 14px;
-  right: 14px;
-  padding: 7px 12px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--bg-deep) 78%, transparent);
-  backdrop-filter: blur(8px);
+  z-index: var(--z-map);
+  top: var(--space-3);
+  right: var(--space-3);
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-4);
   color: var(--text-dim);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--fs-small);
   cursor: pointer;
   transition:
-    color 0.16s var(--ease),
-    border-color 0.16s var(--ease);
+    color var(--motion-base) var(--ease),
+    border-color var(--motion-base) var(--ease);
 }
 
-.recenter:hover {
-  border-color: var(--line);
-  color: var(--text);
-}
-
+/* Подсказки о клавишах бессмысленны на телефоне, поэтому по умолчанию их нет,
+   а появляются они только там, где есть курсор */
 .hints {
   display: none;
   position: absolute;
-  z-index: 10;
-  top: 14px;
-  right: 14px;
+  z-index: var(--z-map);
+  top: var(--space-3);
+  right: var(--space-3);
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 12px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--bg-deep) 72%, transparent);
-  backdrop-filter: blur(8px);
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
   color: var(--text-faint);
-  font-size: 11px;
+  font-size: var(--fs-micro);
+  line-height: var(--lh-base);
   pointer-events: none;
 }
 
 .hints kbd {
-  padding: 1px 5px;
+  padding: 1px var(--space-1);
   border: 1px solid var(--line);
   border-radius: 3px;
   background: var(--surface-2);
   color: var(--text-dim);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-micro);
 }
 
 /* ── Панель догадки ───────────────────────────────────────────────── */
 
 .panel {
   position: absolute;
-  z-index: 20;
-  right: 16px;
-  bottom: 16px;
+  z-index: var(--z-panel);
+  right: var(--space-4);
+  bottom: var(--space-4);
   display: flex;
   overflow: hidden;
   flex-direction: column;
@@ -130,8 +126,8 @@
   background: var(--surface);
   box-shadow: var(--shadow);
   transition:
-    width 0.22s var(--ease),
-    opacity 0.22s var(--ease);
+    width var(--motion-slow) var(--ease),
+    opacity var(--motion-slow) var(--ease);
 }
 
 .panelPinned {
@@ -141,20 +137,127 @@
 .map {
   height: 0;
   background: var(--surface-2);
-  transition: height 0.22s var(--ease);
+  transition: height var(--motion-slow) var(--ease);
 }
 
 .panelPinned .map {
   height: min(320px, 40vh);
 }
 
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--line-soft);
+}
+
+.hint {
+  color: var(--text-faint);
+  font-size: var(--fs-micro);
+  text-align: center;
+}
+
+/* ── Подсказка ────────────────────────────────────────────────────────
+   Кнопка намеренно не акцентная: подсказка — это отказ от очков, и звать
+   на неё ярче, чем на ответ, нечестно по отношению к игроку */
+.hintButton {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: var(--fs-small);
+  cursor: pointer;
+  transition: border-color var(--motion-base) var(--ease);
+}
+
+.hintButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.hintButton span {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+}
+
+.revealed {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  text-align: center;
+}
+
+.revealed span {
+  color: var(--text-faint);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.revealed strong {
+  color: var(--accent);
+  font-size: var(--fs-control);
+  font-weight: 700;
+}
+
+/* Свернуть карту. Палец попадает по всей площади, глаз видит стрелку */
+.pin {
+  position: absolute;
+  z-index: 2;
+  top: var(--space-1);
+  right: var(--space-1);
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  font-size: var(--fs-control);
+  line-height: var(--lh-flat);
+  cursor: pointer;
+}
+
+.pin::before {
+  content: "";
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.pin span {
+  position: relative;
+}
+
 /* Курсор раскрывает карту наведением: лишний клик каждый раунд не нужен.
-   Пальцем навести нельзя, поэтому там панель открывается кнопкой */
+   Пальцем навести нельзя, поэтому там панель открывается кнопкой. Все
+   правила наведения живут здесь же: без этого условия подсветка залипает
+   после нажатия пальцем и не снимается до следующего */
 @media (hover: hover) and (pointer: fine) {
   .hints {
     display: flex;
     /* Под кнопкой возврата к цели: она в том же углу и всегда на месте */
-    top: 58px;
+    top: 68px;
   }
 
   .map {
@@ -170,109 +273,27 @@
   .panel:focus-within .map {
     height: min(320px, 40vh);
   }
+
+  .recenter:hover {
+    border-color: var(--line);
+    color: var(--text);
+  }
+
+  .hintButton:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .pin:hover {
+    color: var(--text);
+  }
 }
 
-.actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  border-top: 1px solid var(--line-soft);
-}
-
-.hint {
-  color: var(--text-faint);
-  font-size: 12px;
-  text-align: center;
-}
-
-/* ── Подсказка ────────────────────────────────────────────────────────
-   Кнопка намеренно не акцентная: подсказка — это отказ от очков, и звать
-   на неё ярче, чем на ответ, нечестно по отношению к игроку */
-.hintButton {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px dashed var(--line);
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--text-dim);
-  font-family: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  transition: border-color 0.15s var(--ease);
-}
-
-.hintButton:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--text);
-}
-
-.hintButton:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.hintButton span {
-  color: var(--text-faint);
-  font-family: var(--mono);
-  font-size: 11px;
-}
-
-.revealed {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  text-align: center;
-}
-
-.revealed span {
-  color: var(--text-faint);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.revealed strong {
-  color: var(--accent);
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.pin {
-  position: absolute;
-  z-index: 2;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  color: var(--text-dim);
-  font-size: 13px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.pin:hover {
-  color: var(--text);
-}
-
-@media (max-width: 780px) {
+@media (max-width: 900px) {
   .panel {
-    right: 12px;
-    bottom: 12px;
-    left: 12px;
+    right: var(--space-3);
+    bottom: var(--space-3);
+    left: var(--space-3);
     width: auto;
   }
 
@@ -283,7 +304,7 @@
   }
 
   /* Раскрытая карта занимает столько, сколько нужно, чтобы по ней попасть
-     пальцем, но снимок под ней всё ещё виден */
+     пальцем, но снимок над ней всё ещё виден */
   .panelPinned .map,
   .panel:hover .map,
   .panel:focus-within .map {

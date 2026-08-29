@@ -19,11 +19,6 @@
     opacity var(--motion-base) var(--ease);
 }
 
-.button:hover:not(:disabled) {
-  border-color: var(--line);
-  background: var(--surface-2);
-}
-
 .button:active:not(:disabled) {
   transform: translateY(1px);
 }
@@ -42,23 +37,10 @@
   font-weight: 700;
 }
 
-.primary:hover:not(:disabled) {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent) 82%, white) 0%,
-    var(--accent) 100%
-  );
-}
-
 .ghost {
   border-color: var(--line);
   background: transparent;
   color: var(--text-dim);
-}
-
-.ghost:hover:not(:disabled) {
-  background: var(--surface-2);
-  color: var(--text);
 }
 
 .block {
@@ -67,7 +49,6 @@
 }
 
 .small {
-  min-height: 34px;
   padding: var(--space-2) var(--space-3);
   font-size: var(--fs-small);
 }
@@ -85,6 +66,14 @@
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   box-shadow: var(--shadow);
+}
+
+/* На телефоне карточка теснее: экран узкий, и двадцать четыре пикселя полей
+   с каждой стороны съедают строку текста */
+@media (max-width: 560px) {
+  .card {
+    padding: var(--space-5);
+  }
 }
 
 .cardTitle {
@@ -180,7 +169,7 @@
 }
 
 .groupLabel {
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1);
   padding: 0;
   color: var(--text-dim);
   font-size: var(--fs-small);
@@ -205,7 +194,7 @@
 .segmentedItem {
   flex: 1 1 auto;
   min-width: var(--tap);
-  min-height: 38px;
+  min-height: var(--tap);
   padding: var(--space-2) var(--space-3);
   border: 0;
   border-radius: var(--radius-sm);
@@ -217,10 +206,6 @@
   transition:
     background var(--motion-base) var(--ease),
     color var(--motion-base) var(--ease);
-}
-
-.segmentedItem:hover {
-  color: var(--text-dim);
 }
 
 .segmentedItemActive {
@@ -365,10 +350,6 @@
     border-color var(--motion-base) var(--ease);
 }
 
-.checkboxInput:hover {
-  border-color: var(--accent-deep);
-}
-
 .checkboxInput:checked {
   border-color: var(--accent);
   background:
@@ -436,4 +417,33 @@
   font-size: var(--fs-control);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+}
+
+/* Наведение существует только там, где есть курсор */
+@media (hover: hover) and (pointer: fine) {
+  .button:hover:not(:disabled) {
+    border-color: var(--line);
+    background: var(--surface-2);
+  }
+
+  .primary:hover:not(:disabled) {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 82%, white) 0%,
+      var(--accent) 100%
+    );
+  }
+
+  .ghost:hover:not(:disabled) {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  .segmentedItem:hover {
+    color: var(--text-dim);
+  }
+
+  .checkboxInput:hover {
+    border-color: var(--accent-deep);
+  }
 }

@@ -10,6 +10,7 @@ import { RoundTimer } from "~/components/game/RoundTimer";
 import { SatelliteView } from "~/components/game/SatelliteView";
 import type { Answer } from "~/api/types";
 import { useCountdown } from "~/state/useCountdown";
+import { useHoverPointer } from "~/state/usePointer";
 
 interface GameScreenProps {
   round: RoundView;
@@ -43,6 +44,11 @@ export function GameScreen({
   // партию, поэтому хранить этот отказ где-то ещё незачем
   const [coachDismissed, setCoachDismissed] = useState(false);
   const { secondsLeft, expired } = useCountdown(round.deadline_at);
+  const hoverPointer = useHoverPointer();
+
+  // Мышью карта раскрывается подводом курсора, пальцем — нажатием. Знать это
+  // нужно и панели, и подсказке новичка, поэтому считается здесь
+  const mapOpen = pinned || hoverPointer;
 
   // Время вышло: отправляем поставленную точку, а если её нет — закрываем
   // раунд. Решение всё равно принимает сервер, здесь только повод его позвать.
@@ -92,6 +98,7 @@ export function GameScreen({
 
       {coaching && !coachDismissed && (
         <FirstRoundCoach
+          mapOpen={pinned}
           hasGuess={guess !== null}
           byCountry={round.answer_mode === "country"}
           onDismiss={() => {
@@ -109,6 +116,7 @@ export function GameScreen({
         guess={guess}
         busy={busy}
         pinned={pinned}
+        open={mapOpen}
         onPin={setPinned}
         onPick={onPick}
         onHint={onHint}

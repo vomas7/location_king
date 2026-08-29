@@ -1,22 +1,22 @@
 .links {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 18px;
+  /* Между соседними целями остаётся зазор: иначе промах по ссылке попадает
+     в соседнюю, а строки здесь стоят вплотную */
+  gap: var(--space-2) var(--space-5);
 }
 
+/* Ссылка набрана мелко, но нажимают её пальцем: высоту строке добавляют
+   собственные отступы, а не невидимое поле — рядом стоят такие же строки */
 .link {
-  padding: 0;
+  padding: var(--space-3) 0;
   border: 0;
   background: none;
   color: var(--text-faint);
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   text-decoration: none;
   cursor: pointer;
-  transition: color 0.16s var(--ease);
-}
-
-.link:hover {
-  color: var(--text);
+  transition: color var(--motion-base) var(--ease);
 }
 
 /* Правая половина подвала: подпись к карте и ссылка на исходники. Обе
@@ -25,20 +25,30 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 16px;
+  gap: var(--space-2) var(--space-4);
 }
 
 .credits {
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
 }
 
 .credit {
+  display: inline-block;
+  min-height: var(--tap);
+  padding: var(--space-3) 0;
   color: var(--text-faint);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.credit:hover {
-  color: var(--text);
+/* Наведение существует только там, где есть курсор */
+@media (hover: hover) and (pointer: fine) {
+  .link:hover {
+    color: var(--text);
+  }
+
+  .credit:hover {
+    color: var(--text);
+  }
 }

@@ -5,7 +5,7 @@
   align-items: center;
   justify-content: center;
   min-height: 0;
-  padding: 32px 20px 48px;
+  padding: var(--space-8) var(--space-5) var(--space-10);
   background:
     radial-gradient(900px 500px at 50% -10%, var(--glow-warm), transparent 60%), var(--bg);
 }
@@ -16,37 +16,92 @@
   text-align: center;
 }
 
+.head {
+  display: contents;
+}
+
+/*
+ * На широком экране разбор уезжает влево, а счёт, раунды и кнопки встают
+ * справа: в одну колонку итоги не помещались на экран целиком, хотя места по
+ * бокам оставалось на вторую такую же карточку.
+ */
+@media (min-width: 900px) {
+  .cardReview {
+    display: grid;
+    max-width: 900px;
+    align-content: start;
+    gap: 0 var(--space-8);
+    grid-template-areas:
+      "review head"
+      "review rounds"
+      "review actions";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+    grid-template-rows: auto auto 1fr;
+    text-align: left;
+  }
+
+  .cardReview .head {
+    display: block;
+    grid-area: head;
+  }
+
+  .cardReview .review {
+    align-self: stretch;
+    margin-bottom: 0;
+    grid-area: review;
+  }
+
+  .cardReview .map {
+    height: 100%;
+    min-height: 360px;
+  }
+
+  .cardReview .rounds {
+    grid-area: rounds;
+  }
+
+  .cardReview .actions {
+    align-self: end;
+    grid-area: actions;
+  }
+
+  .cardReview .score,
+  .cardReview .rank {
+    justify-content: flex-start;
+  }
+}
+
 .score {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 8px;
-  margin: 12px 0 8px;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 var(--space-2);
   font-family: var(--mono);
-  font-size: 58px;
+  font-size: clamp(44px, 13vw, 58px);
   font-weight: 700;
   letter-spacing: -0.03em;
-  line-height: 1;
+  line-height: var(--lh-flat);
 }
 
 .score small {
   color: var(--text-faint);
   font-family: var(--font);
-  font-size: 14px;
+  font-size: var(--fs-control);
   font-weight: 500;
   letter-spacing: 0;
 }
 
 .subtitle {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
   color: var(--text-dim);
-  font-size: 14px;
+  font-size: var(--fs-control);
 }
 
 .record {
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
   color: var(--accent);
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 600;
 }
 
@@ -55,7 +110,7 @@
    партия была проиграна */
 .review {
   position: relative;
-  margin-bottom: 18px;
+  margin-bottom: var(--space-5);
 }
 
 .map {
@@ -69,28 +124,25 @@
 .wholeGame {
   position: absolute;
   z-index: 1;
-  right: 10px;
-  bottom: 10px;
-  padding: 6px 12px;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(8px);
   color: var(--text-dim);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--fs-micro);
   cursor: pointer;
-}
-
-.wholeGame:hover {
-  color: var(--text);
 }
 
 .rounds {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-bottom: 26px;
+  gap: var(--space-0);
+  margin-bottom: var(--space-6);
   text-align: left;
 }
 
@@ -98,8 +150,8 @@
   display: grid;
   width: 100%;
   align-items: center;
-  gap: 4px 12px;
-  padding: 12px 8px;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-3) var(--space-2);
   border: 0;
   border-bottom: 1px solid var(--line-soft);
   border-radius: var(--radius-sm);
@@ -112,10 +164,6 @@
     "bar    bar   bar      bar";
   grid-template-columns: auto 1fr auto auto;
   text-align: left;
-}
-
-.round:hover {
-  background: var(--surface-2);
 }
 
 .roundSelected {
@@ -132,7 +180,7 @@
   background: var(--surface-3);
   color: var(--text-dim);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   grid-area: number;
 }
@@ -145,7 +193,7 @@
 .place {
   overflow: hidden;
   grid-area: place;
-  font-size: 14px;
+  font-size: var(--fs-control);
   font-weight: 550;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -155,7 +203,7 @@
   grid-area: distance;
   color: var(--text-faint);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--fs-micro);
 }
 
 .points {
@@ -163,7 +211,7 @@
   min-width: 62px;
   color: var(--accent);
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: var(--fs-control);
   font-weight: 700;
   text-align: right;
 }
@@ -172,7 +220,7 @@
   grid-area: bar;
   overflow: hidden;
   height: 4px;
-  margin-top: 6px;
+  margin-top: var(--space-2);
   border-radius: var(--radius-pill);
   background: var(--surface-3);
 }
@@ -186,23 +234,34 @@
 .actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 /* Место в зачёте: связывает партию с таблицей лидеров, ради которой в неё и
    играют второй раз */
 .rank {
-  margin: 0 0 18px;
+  margin: 0 0 var(--space-5);
   color: var(--text-dim);
-  font-size: 14px;
+  font-size: var(--fs-control);
 }
 
 .rank strong {
   color: var(--accent);
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: var(--fs-title);
 }
 
 .rank span {
   color: var(--text-faint);
+}
+
+/* Наведение существует только там, где есть курсор */
+@media (hover: hover) and (pointer: fine) {
+  .wholeGame:hover {
+    color: var(--text);
+  }
+
+  .round:hover {
+    background: var(--surface-2);
+  }
 }

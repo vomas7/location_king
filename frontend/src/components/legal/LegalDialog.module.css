@@ -1,13 +1,13 @@
 .overlay {
   position: fixed;
-  z-index: 90;
+  z-index: var(--z-dialog);
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: var(--space-5);
   background: var(--scrim);
   backdrop-filter: blur(6px);
-  animation: fade 0.2s var(--ease);
+  animation: fade var(--motion-base) var(--ease);
 }
 
 @keyframes fade {
@@ -33,8 +33,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 18px;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--line-soft);
   background: var(--bg-deep);
 }
@@ -42,25 +42,21 @@
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .tab {
-  padding: 7px 12px;
+  padding: var(--space-2) var(--space-3);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-faint);
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 550;
   cursor: pointer;
   transition:
-    background 0.16s var(--ease),
-    color 0.16s var(--ease);
-}
-
-.tab:hover {
-  color: var(--text-dim);
+    background var(--motion-base) var(--ease),
+    color var(--motion-base) var(--ease);
 }
 
 .tabActive {
@@ -73,58 +69,58 @@
    всего остального */
 .body {
   overflow-y: auto;
-  padding: 26px 30px 34px;
+  padding: var(--space-6) var(--space-8) 34px;
 }
 
 .title {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: var(--fs-screen);
 }
 
 .updated {
-  margin-top: 6px;
+  margin-top: var(--space-2);
   color: var(--text-faint);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--fs-micro);
 }
 
 .section {
-  margin-top: 26px;
+  margin-top: var(--space-6);
 }
 
 .heading {
-  margin-bottom: 8px;
-  font-size: 16px;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-body);
   font-weight: 700;
 }
 
 .text {
   max-width: 62ch;
   color: var(--text-dim);
-  font-size: 14.5px;
-  line-height: 1.7;
+  font-size: var(--fs-body);
+  line-height: var(--lh-read);
   text-wrap: pretty;
 }
 
 .text + .text {
-  margin-top: 10px;
+  margin-top: var(--space-3);
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
   max-width: 62ch;
 }
 
 /* Тире вместо точки: маркер списка тоже часть набора */
 .item {
   position: relative;
-  padding-left: 18px;
+  padding-left: var(--space-5);
   color: var(--text-dim);
-  font-size: 14.5px;
-  line-height: 1.65;
+  font-size: var(--fs-body);
+  line-height: var(--lh-read);
 }
 
 .item::before {
@@ -136,7 +132,7 @@
 
 .text + .list,
 .list + .text {
-  margin-top: 12px;
+  margin-top: var(--space-3);
 }
 
 @media (max-width: 600px) {
@@ -144,7 +140,7 @@
      съедали треть окна. Вкладки прокручиваются вбок, шапка остаётся в строку */
   .header {
     flex-wrap: nowrap;
-    padding: 12px 14px;
+    padding: var(--space-3) var(--space-4);
   }
 
   .tabs {
@@ -162,10 +158,17 @@
   }
 
   .body {
-    padding: 20px 18px 28px;
+    padding: var(--space-5) var(--space-5) var(--space-8);
   }
 
   .title {
-    font-size: 22px;
+    font-size: var(--fs-screen);
+  }
+}
+
+/* Наведение существует только там, где есть курсор */
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover {
+    color: var(--text-dim);
   }
 }

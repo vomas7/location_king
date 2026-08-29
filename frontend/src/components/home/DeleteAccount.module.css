@@ -1,33 +1,29 @@
 .trigger {
-  padding: 0;
+  padding: var(--space-3) 0;
   border: 0;
   background: none;
   color: var(--text-faint);
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
-  transition: color 0.16s var(--ease);
-}
-
-.trigger:hover {
-  color: var(--danger);
+  transition: color var(--motion-base) var(--ease);
 }
 
 .overlay {
   position: fixed;
-  z-index: 95;
+  z-index: var(--z-loader);
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: var(--space-5);
   background: var(--scrim);
   backdrop-filter: blur(6px);
 }
 
 .sheet {
   width: min(420px, 100%);
-  padding: 26px;
+  padding: var(--space-6);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -35,27 +31,34 @@
 }
 
 .title {
-  font-size: 20px;
+  font-size: var(--fs-title);
   font-weight: 700;
 }
 
 .text {
-  margin-top: 8px;
+  margin-top: var(--space-2);
   color: var(--text-dim);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: var(--fs-control);
+  line-height: var(--lh-base);
   text-wrap: pretty;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 20px;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
 }
 
 .actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: var(--space-3);
+}
+
+/* Наведение существует только там, где есть курсор */
+@media (hover: hover) and (pointer: fine) {
+  .trigger:hover {
+    color: var(--danger);
+  }
 }

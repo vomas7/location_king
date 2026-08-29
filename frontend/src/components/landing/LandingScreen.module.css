@@ -34,16 +34,16 @@
 }
 
 .eyebrow {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
   color: var(--accent);
-  font-size: 12px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .title {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
   font-family: var(--font-display);
   font-size: clamp(38px, 5.4vw, 62px);
   font-weight: 800;
@@ -53,10 +53,10 @@
 
 .lead {
   max-width: 48ch;
-  margin-bottom: 30px;
+  margin-bottom: var(--space-8);
   color: var(--text-dim);
-  font-size: 16.5px;
-  line-height: 1.6;
+  font-size: var(--fs-body);
+  line-height: var(--lh-base);
   text-wrap: pretty;
 }
 
@@ -64,28 +64,20 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 22px;
+  gap: var(--space-3) var(--space-6);
 }
 
 .cta {
-  padding: 14px 28px;
+  padding: var(--space-4) var(--space-8);
   border-radius: var(--radius-sm);
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
   color: var(--accent-ink);
-  font-size: 15px;
+  font-size: var(--fs-body);
   font-weight: 650;
   text-decoration: none;
   transition:
-    background 0.16s var(--ease),
-    transform 0.08s var(--ease);
-}
-
-.cta:hover {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent) 82%, white) 0%,
-    var(--accent) 100%
-  );
+    background var(--motion-base) var(--ease),
+    transform var(--motion-press) var(--ease);
 }
 
 .cta:active {
@@ -94,19 +86,15 @@
 
 .secondary {
   color: var(--text-dim);
-  font-size: 14px;
+  font-size: var(--fs-control);
   text-decoration: underline;
   text-underline-offset: 4px;
 }
 
-.secondary:hover {
-  color: var(--text);
-}
-
 .honest {
-  margin-top: 22px;
+  margin-top: var(--space-6);
   color: var(--text-faint);
-  font-size: 13px;
+  font-size: var(--fs-small);
 }
 
 .card {
@@ -125,7 +113,7 @@
 }
 
 .bandTitle {
-  margin-bottom: 28px;
+  margin-bottom: var(--space-8);
   font-family: var(--font-display);
   font-size: clamp(24px, 3vw, 32px);
   font-weight: 700;
@@ -136,14 +124,14 @@
 
 .steps {
   display: grid;
-  gap: 2px;
+  gap: var(--space-0);
 }
 
 .step {
   display: grid;
   align-items: start;
-  gap: 20px;
-  padding: 22px 0;
+  gap: var(--space-5);
+  padding: var(--space-6) 0;
   border-bottom: 1px solid var(--line-soft);
   grid-template-columns: 56px minmax(0, 1fr);
 }
@@ -155,22 +143,22 @@
 .stepNumber {
   color: var(--accent);
   font-family: var(--mono);
-  font-size: 22px;
+  font-size: var(--fs-screen);
   font-weight: 700;
-  line-height: 1.1;
+  line-height: var(--lh-tight);
 }
 
 .stepTitle {
-  margin-bottom: 6px;
-  font-size: 17px;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-title);
   font-weight: 700;
 }
 
 .stepText {
   max-width: 62ch;
   color: var(--text-dim);
-  font-size: 14.5px;
-  line-height: 1.65;
+  font-size: var(--fs-body);
+  line-height: var(--lh-read);
   text-wrap: pretty;
 }
 
@@ -178,27 +166,27 @@
 
 .modes {
   display: grid;
-  gap: 18px;
+  gap: var(--space-5);
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
 .mode {
-  padding: 22px;
+  padding: var(--space-6);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--surface) 70%, transparent);
 }
 
 .modeTitle {
-  margin-bottom: 8px;
-  font-size: 16px;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-body);
   font-weight: 700;
 }
 
 .modeText {
   color: var(--text-dim);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: var(--fs-control);
+  line-height: var(--lh-base);
   text-wrap: pretty;
 }
 
@@ -214,23 +202,23 @@
 .fairText {
   max-width: 62ch;
   color: var(--text-dim);
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: var(--fs-body);
+  line-height: var(--lh-read);
   text-wrap: pretty;
 }
 
 .numbers {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-0);
 }
 
 .number {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 0;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
   border-bottom: 1px solid var(--line-soft);
 }
 
@@ -240,13 +228,13 @@
 
 .number dt {
   color: var(--text-faint);
-  font-size: 13px;
+  font-size: var(--fs-small);
 }
 
 .number dd {
   color: var(--accent);
   font-family: var(--mono);
-  font-size: 20px;
+  font-size: var(--fs-title);
   font-weight: 700;
 }
 
@@ -254,21 +242,21 @@
 
 .faq {
   display: grid;
-  gap: 26px 44px;
+  gap: var(--space-6) 44px;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 
 .questionTitle {
-  margin-bottom: 8px;
-  font-size: 15.5px;
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-body);
   font-weight: 700;
 }
 
 .answer {
   margin: 0;
   color: var(--text-dim);
-  font-size: 14px;
-  line-height: 1.65;
+  font-size: var(--fs-control);
+  line-height: var(--lh-read);
   text-wrap: pretty;
 }
 
@@ -278,7 +266,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: var(--space-6);
   padding: clamp(56px, 9vh, 96px) 24px clamp(64px, 10vh, 104px);
   border-top: 1px solid var(--line-soft);
   text-align: center;
@@ -294,12 +282,27 @@
 
 @media (max-width: 900px) {
   .hero {
-    gap: 36px;
+    gap: var(--space-10);
     grid-template-columns: minmax(0, 1fr);
   }
 
   .fair {
     grid-template-columns: minmax(0, 1fr);
-    gap: 28px;
+    gap: var(--space-8);
+  }
+}
+
+/* Наведение существует только там, где есть курсор */
+@media (hover: hover) and (pointer: fine) {
+  .cta:hover {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 82%, white) 0%,
+      var(--accent) 100%
+    );
+  }
+
+  .secondary:hover {
+    color: var(--text);
   }
 }

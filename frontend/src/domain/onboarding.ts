@@ -38,8 +38,17 @@ export type CoachStep = "look" | "map" | "answer";
  * Какой шаг показывать. Выводится из того, что игрок уже сделал, а не из
  * счётчика нажатий: подсказка, которая висит после выполненного действия,
  * раздражает сильнее, чем её отсутствие.
+ *
+ * Раскрытая игроком карта закрывает второй шаг целиком: он про то, как её
+ * открыть, и висеть поверх уже открытой карты ему незачем. На телефоне это
+ * ещё и вопрос места — там раскрытая карта занимает пол-экрана, и длинная
+ * карточка над ней накрывала бы собственные кнопки.
  */
-export function coachStep(acknowledged: boolean, hasGuess: boolean): CoachStep {
+export function coachStep(acknowledged: boolean, mapOpen: boolean, hasGuess: boolean): CoachStep {
+  // Поставленная точка сильнее всего: объяснять «осмотрись» тому, кто уже
+  // ответил, — это подсказка, отставшая от игрока
   if (hasGuess) return "answer";
-  return acknowledged ? "map" : "look";
+  if (!acknowledged) return "look";
+
+  return mapOpen ? "answer" : "map";
 }

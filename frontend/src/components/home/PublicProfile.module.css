@@ -2,13 +2,13 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px 10px;
-  margin-bottom: 18px;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-5);
 }
 
 .label {
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -22,31 +22,29 @@
 
 .trigger {
   margin-left: auto;
-  padding: 0;
+  /* Надпись мелкая, а нажимают её пальцем: высоту добавляют отступы */
+  min-height: var(--tap);
+  padding: var(--space-3) var(--space-1);
   border: 0;
   background: none;
   color: var(--text-faint);
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
-  transition: color 0.16s var(--ease);
-}
-
-.trigger:hover {
-  color: var(--accent);
+  transition: color var(--motion-base) var(--ease);
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
 }
 
 .actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .actions > * {
@@ -59,7 +57,7 @@
 .picker {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   border: 0;
@@ -68,14 +66,14 @@
 .pickerLabel {
   padding: 0;
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 550;
 }
 
 .choices {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .choice {
@@ -85,13 +83,20 @@
   background: none;
   cursor: pointer;
   line-height: 0;
-  transition: border-color 0.15s var(--ease);
-}
-
-.choice:hover {
-  border-color: var(--line);
+  transition: border-color var(--motion-base) var(--ease);
 }
 
 .choiceActive {
   border-color: var(--accent);
+}
+
+/* Наведение существует только там, где есть курсор */
+@media (hover: hover) and (pointer: fine) {
+  .trigger:hover {
+    color: var(--accent);
+  }
+
+  .choice:hover {
+    border-color: var(--line);
+  }
 }

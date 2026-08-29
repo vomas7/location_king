@@ -44,16 +44,16 @@ export function SatelliteView({ round, resetSignal, onReset }: SatelliteViewProp
 
       {/* Приближение идёт к курсору, поэтому уехать от перекрестия легко.
           Клавиша R есть только на компьютере, а играют и с телефона */}
-      <button type="button" className={styles.recenter} onClick={onReset}>
+      <button type="button" className={`${styles.glass} ${styles.recenter}`} onClick={onReset}>
         К цели
       </button>
 
-      <div className={styles.badge}>
+      <div className={`${styles.glass} ${styles.badge}`}>
         <span className={styles.scale}>участок ~{formatExtent(round.view_extent_km)}</span>
         <span className={styles.credit}>{round.attribution}</span>
       </div>
 
-      <div className={styles.hints} aria-hidden="true">
+      <div className={`${styles.glass} ${styles.hints}`} aria-hidden="true">
         <span>
           <kbd>M</kbd> карта · <kbd>Enter</kbd> ответить
         </span>

@@ -175,9 +175,9 @@ export function MatchRoom({
         </CardSubtitle>
 
         <p className={styles.summary}>
-          Условия берутся из одиночной партии: {summary}{" "}
+          Условия берутся из одиночной партии: {summary}
           <button type="button" className={styles.edit} onClick={onEditSetup}>
-            изменить
+            Изменить условия
           </button>
         </p>
 

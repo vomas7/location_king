@@ -7,7 +7,6 @@ import styles from "~/components/game/GameScreen.module.css";
 import { Button } from "~/components/ui/Button";
 import { formatNumber } from "~/domain/format";
 import { createGuessMap, type GuessMap } from "~/map/guess";
-import { useHoverPointer } from "~/state/usePointer";
 
 /** Что просят сделать и что уже сделано. */
 function promptFor(answer: Answer | null, byCountry: boolean, countriesReady: boolean): string {
@@ -26,6 +25,8 @@ interface GuessPanelProps {
   guess: Answer | null;
   busy: boolean;
   pinned: boolean;
+  /** Раскрыта ли карта: пальцем её раскрывают нажатием, мышью — наведением. */
+  open: boolean;
   onPin: (pinned: boolean) => void;
   onPick: (guess: Answer) => void;
   /** Взять подсказку: чем именно платит игрок, знает сервер. */
@@ -38,6 +39,7 @@ export function GuessPanel({
   guess,
   busy,
   pinned,
+  open,
   onPin,
   onPick,
   onHint,
@@ -50,12 +52,8 @@ export function GuessPanel({
 
   const [ready, setReady] = useState(false);
   const [countriesReady, setCountriesReady] = useState(false);
-  const hoverPointer = useHoverPointer();
 
   const byCountry = round.answer_mode === "country";
-
-  // Мышью карта раскрывается подводом курсора, пальцем — нажатием
-  const open = pinned || hoverPointer;
 
   // Карта мира одна на всю партию: пересоздавать её на каждый раунд незачем.
   // Режим при этом за партию не меняется — раунд не превращается из обычного
@@ -106,7 +104,7 @@ export function GuessPanel({
             onPin(!pinned);
           }}
         >
-          {pinned ? "▾" : "▴"}
+          <span>{pinned ? "▾" : "▴"}</span>
         </button>
       )}
 

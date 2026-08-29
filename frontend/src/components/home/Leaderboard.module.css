@@ -1,5 +1,5 @@
 .metrics {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 .table {
@@ -9,16 +9,16 @@
 }
 
 .separator {
-  margin: 6px 0;
+  margin: var(--space-2) 0;
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
   text-align: center;
 }
 
 .empty {
-  padding: 22px 0;
+  padding: var(--space-6) 0;
   color: var(--text-faint);
-  font-size: 13px;
+  font-size: var(--fs-small);
   text-align: center;
 }
 
@@ -27,28 +27,28 @@
 .scope {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .scopeLabel {
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .scopeSelect {
   flex: 1;
-  padding: 7px 10px;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--bg-deep);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fs-small);
   cursor: pointer;
-  transition: border-color 0.16s var(--ease);
+  transition: border-color var(--motion-base) var(--ease);
 }
 
 .scopeSelect:focus-visible {
