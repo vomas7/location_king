@@ -10,6 +10,7 @@ import { errorMessage } from "~/api/client";
 import { auth } from "~/api/endpoints";
 import type { Theme } from "~/api/types";
 import { DeleteAccount } from "~/components/home/DeleteAccount";
+import { Feedback } from "~/components/home/Feedback";
 import styles from "~/components/home/ProfilePanel.module.css";
 import { PublicProfile } from "~/components/home/PublicProfile";
 import { Credits, LegalLinks } from "~/components/layout/AboutLinks";
@@ -80,7 +81,11 @@ export function ProfilePanel({ onOpenLegal, onError }: ProfilePanelProps) {
         />
       </div>
 
-      <DeleteAccount />
+      {/* Два тихих действия подряд: рассказать об игре и уйти из неё */}
+      <div className={styles.actions}>
+        <Feedback />
+        <DeleteAccount />
+      </div>
 
       <div className={styles.about}>
         <LegalLinks onOpen={onOpenLegal} />

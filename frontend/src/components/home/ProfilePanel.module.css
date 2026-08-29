@@ -31,6 +31,13 @@
   margin: 20px 0;
 }
 
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 11px;
+}
+
 /* Документы и правообладатели — сноски раздела, а не его содержание:
    отделены чертой и набраны тише всего на экране */
 .about {

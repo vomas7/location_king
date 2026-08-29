@@ -17,6 +17,8 @@ import type {
   RoundView,
   SessionHistory,
   SessionState,
+  FeedbackKind,
+  FeedbackView,
   StartSessionOptions,
   Theme,
   UserProfile,
@@ -55,6 +57,12 @@ export const auth = {
   /** Удалить учётную запись со всеми данными. Пароль подтверждает владельца. */
   deleteAccount: (password: string) =>
     request<void>("/api/auth/me/delete", { method: "POST", body: { password } }),
+};
+
+export const feedback = {
+  /** Отправить впечатление или сообщение о проблеме. */
+  send: (kind: FeedbackKind, message: string) =>
+    request<FeedbackView>("/api/feedback", { method: "POST", body: { kind, message } }),
 };
 
 export const game = {

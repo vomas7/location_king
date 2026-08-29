@@ -14,6 +14,7 @@ from app.routers import (
     auth,
     daily,
     duels,
+    feedback,
     friends,
     leaderboard,
     matches,
@@ -71,6 +72,7 @@ app.include_router(daily.router)
 app.include_router(matches.router)
 app.include_router(duels.router)
 app.include_router(friends.router)
+app.include_router(feedback.router)
 app.include_router(rounds.router)
 app.include_router(zones.router)
 app.include_router(leaderboard.router)

@@ -1,8 +1,12 @@
 .trigger {
+  align-self: flex-start;
   padding: 0;
   border: 0;
   background: none;
-  color: var(--text-faint);
+  /* На ступень заметнее, чем ссылка удаления рядом: написать об игре зовут,
+     а удалять аккаунт — нет */
+  color: var(--text-dim);
+  font-family: inherit;
   font-size: 12.5px;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -11,7 +15,7 @@
 }
 
 .trigger:hover {
-  color: var(--danger);
+  color: var(--text);
 }
 
 .overlay {
@@ -26,7 +30,7 @@
 }
 
 .sheet {
-  width: min(420px, 100%);
+  width: min(440px, 100%);
   padding: 26px;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -50,7 +54,7 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   margin-top: 20px;
 }
 
@@ -58,4 +62,10 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  margin-top: 20px;
+}
+
+/* У формы свои отступы: там кнопки идут сразу за полем */
+.form .actions {
+  margin-top: 0;
 }

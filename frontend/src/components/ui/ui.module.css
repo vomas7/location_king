@@ -136,6 +136,15 @@
     box-shadow 0.16s var(--ease);
 }
 
+/* Растёт только вниз: вширь ему некуда — он и так во всю карточку, а
+   перетаскивание вбок ломало бы вёрстку диалога */
+.textarea {
+  min-height: 112px;
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+
 .input::placeholder {
   color: var(--text-faint);
 }

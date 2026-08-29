@@ -7,6 +7,17 @@
  */
 
 /** Аватарка: форма узора и цвет. Картинку по ним рисует клиент. */
+/** О чём написал игрок. Те же значения понимает сервер. */
+export type FeedbackKind = "impression" | "problem";
+
+/** Записанный отзыв: возвращается автору, чтобы было видно, что дошло. */
+export interface FeedbackView {
+  id: number;
+  kind: FeedbackKind;
+  message: string;
+  created_at: string;
+}
+
 /** Оформление интерфейса. Те же значения понимает сервер. */
 export type Theme = "dark" | "light" | "system";
 

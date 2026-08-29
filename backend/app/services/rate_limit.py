@@ -42,6 +42,7 @@ class Limit(StrEnum):
     DELETE_ACCOUNT = "delete-account"
     DUEL_POLL = "duel-poll"
     DUEL_QUEUE = "duel-queue"
+    FEEDBACK = "feedback"
     FRIEND_INVITE = "friend-invite"
     FRIEND_MANAGE = "friend-manage"
     HINT = "hint"
@@ -85,6 +86,9 @@ RULES: dict[Limit, RateLimit] = {
     Limit.DUEL_QUEUE: RateLimit(limit=120, window_seconds=60 * 60),
     Limit.DUEL_POLL: RateLimit(limit=2000, window_seconds=60 * 60),
     Limit.START_SESSION: RateLimit(limit=60, window_seconds=60 * 60),
+    # Отзыв пишет в базу и читается человеком. Десяти в час хватает любому,
+    # кому есть что сказать, и не хватает тому, кто решил залить туда мусор
+    Limit.FEEDBACK: RateLimit(limit=10, window_seconds=60 * 60),
     # Тема — переключатель, которым щёлкают, пока выбирают. Лимит здесь от
     # долбёжки по базе, а не от игрока: своим выбором он никому не мешает
     Limit.THEME: RateLimit(limit=120, window_seconds=60 * 60),
