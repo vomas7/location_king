@@ -8,8 +8,7 @@
  */
 
 import styles from "~/components/home/ModeBoard.module.css";
-
-export type ModeKey = "solo" | "daily" | "duel" | "room";
+import type { ModeKey } from "~/domain/menu";
 
 export interface Mode {
   key: ModeKey;

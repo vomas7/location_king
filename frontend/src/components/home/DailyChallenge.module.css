@@ -76,3 +76,14 @@
   font-size: 13px;
   text-align: center;
 }
+
+/* Челлендж дня потерян: попытка была одна, и её закрыла другая партия */
+.lost {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+}

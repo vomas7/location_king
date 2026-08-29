@@ -7,8 +7,6 @@
  * называет условия целиком — свёрнутое не значит спрятанное.
  */
 
-import { useState } from "react";
-
 import styles from "~/components/home/SoloPanel.module.css";
 import { Alert } from "~/components/ui/Alert";
 import { Button } from "~/components/ui/Button";
@@ -29,6 +27,9 @@ import {
 
 interface SoloPanelProps {
   setup: GameSetup;
+  /** Развёрнуты ли настройки. Состояние снаружи: в них приходят из комнаты. */
+  open: boolean;
+  onToggle: () => void;
   onChange: (change: Partial<GameSetup>) => void;
   /** Сколько зон подходит под выбранные уровень и место. null — неизвестно. */
   zoneCount: number | null;
@@ -40,14 +41,14 @@ interface SoloPanelProps {
 
 export function SoloPanel({
   setup,
+  open,
+  onToggle,
   onChange,
   zoneCount,
   error,
   newcomer,
   onStart,
 }: SoloPanelProps) {
-  const [open, setOpen] = useState(false);
-
   const empty = zoneCount === 0;
   const byCountry = setup.answerMode === "country";
 
@@ -67,9 +68,7 @@ export function SoloPanel({
           className={styles.toggle}
           aria-expanded={open}
           aria-controls="solo-setup"
-          onClick={() => {
-            setOpen(!open);
-          }}
+          onClick={onToggle}
         >
           {open ? "Свернуть" : "Настроить"}
         </button>

@@ -7,6 +7,24 @@
   text-wrap: pretty;
 }
 
+/* Условия комнаты правятся там же, где условия одиночной, — ссылка ведёт
+   туда, чтобы строка не была тупиком */
+.edit {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.edit:hover {
+  color: var(--text);
+}
+
 .header {
   display: flex;
   align-items: baseline;

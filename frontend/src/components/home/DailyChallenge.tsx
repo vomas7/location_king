@@ -8,19 +8,22 @@
 import { useState } from "react";
 
 import { errorMessage } from "~/api/client";
-import { challenge as challengeApi } from "~/api/endpoints";
+import { challenge as challengeApi, game as gameApi } from "~/api/endpoints";
 import type { DailyChallenge as DailyChallengeData, SessionState } from "~/api/types";
 import styles from "~/components/home/DailyChallenge.module.css";
 import { PlayerRow } from "~/components/ui/PlayerRow";
 import { Button } from "~/components/ui/Button";
 import { CardTitle } from "~/components/ui/Card";
 import { Skeleton } from "~/components/ui/Skeleton";
+import { dailyStage } from "~/domain/daily";
 import { formatNumber, plural } from "~/domain/format";
 import { useAuth } from "~/state/authContext";
 
 interface DailyChallengeProps {
   /** Пусто, пока состояние челленджа не приехало. */
   data: DailyChallengeData | null;
+  /** Спросить, можно ли бросить начатую партию ради этой. */
+  mayStart: () => boolean;
   onStarted: (session: SessionState) => void;
   onError: (message: string) => void;
 }
@@ -29,7 +32,7 @@ function formatDay(iso: string): string {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
 }
 
-export function DailyChallenge({ data, onStarted, onError }: DailyChallengeProps) {
+export function DailyChallenge({ data, mayStart, onStarted, onError }: DailyChallengeProps) {
   const { user } = useAuth();
 
   const [busy, setBusy] = useState(false);
@@ -49,13 +52,20 @@ export function DailyChallenge({ data, onStarted, onError }: DailyChallengeProps
     );
   }
 
-  const played = data.my_session !== null;
-  const finished = data.my_session?.status === "finished";
+  const mine = data.my_session;
+  const stage = dailyStage(mine);
+  const finished = stage === "finished";
 
+  /**
+   * Начатую партию продолжаем запросом самой партии, а не повторным стартом:
+   * попытка в сутки одна, и на второй старт сервер честно отвечает отказом.
+   */
   const handleStart = async () => {
+    if (stage === "fresh" && !mayStart()) return;
+
     setBusy(true);
     try {
-      onStarted(await challengeApi.start());
+      onStarted(mine === null ? await challengeApi.start() : await gameApi.session(mine.id));
     } catch (error) {
       onError(errorMessage(error, "Не удалось начать челлендж"));
     } finally {
@@ -86,10 +96,10 @@ export function DailyChallenge({ data, onStarted, onError }: DailyChallengeProps
         </p>
       )}
 
-      {finished && data.my_session !== null && (
+      {finished && mine !== null && (
         <div className={styles.played}>
           <span className={styles.playedLabel}>Твой результат сегодня</span>
-          <span className={styles.playedScore}>{formatNumber(data.my_session.total_score)}</span>
+          <span className={styles.playedScore}>{formatNumber(mine.total_score)}</span>
         </div>
       )}
 
@@ -113,7 +123,7 @@ export function DailyChallenge({ data, onStarted, onError }: DailyChallengeProps
         </div>
       )}
 
-      {!played && (
+      {stage === "fresh" && (
         <Button
           variant="primary"
           block
@@ -126,9 +136,9 @@ export function DailyChallenge({ data, onStarted, onError }: DailyChallengeProps
         </Button>
       )}
 
-      {played && !finished && (
+      {stage === "active" && (
         <Button
-          variant="ghost"
+          variant="primary"
           block
           disabled={busy}
           onClick={() => {
@@ -137,6 +147,12 @@ export function DailyChallenge({ data, onStarted, onError }: DailyChallengeProps
         >
           Продолжить челлендж
         </Button>
+      )}
+
+      {stage === "lost" && (
+        <p className={styles.lost}>
+          Партия этого дня брошена — её закрыла другая начатая игра. Челлендж вернётся завтра.
+        </p>
       )}
     </section>
   );

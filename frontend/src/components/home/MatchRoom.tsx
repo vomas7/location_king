@@ -27,6 +27,10 @@ interface MatchRoomProps {
   summary: string;
   /** Меняется после каждой партии, чтобы таблица комнаты перечиталась. */
   refreshKey: number;
+  /** Спросить, можно ли бросить начатую партию ради комнаты. */
+  mayStart: () => boolean;
+  /** Уйти в настройки одиночной партии: комната собирается по ним. */
+  onEditSetup: () => void;
   onJoined: (session: SessionState) => void;
   onError: (message: string) => void;
 }
@@ -41,7 +45,15 @@ const LINK_LABELS: Record<ShareState, string> = {
   failed: "Не получилось скопировать",
 };
 
-export function MatchRoom({ options, summary, refreshKey, onJoined, onError }: MatchRoomProps) {
+export function MatchRoom({
+  options,
+  summary,
+  refreshKey,
+  mayStart,
+  onEditSetup,
+  onJoined,
+  onError,
+}: MatchRoomProps) {
   const [room, setRoom] = useState<MatchView | null>(null);
   const [mine, setMine] = useState<MatchSummary[]>([]);
   const [code, setCode] = useState("");
@@ -124,6 +136,10 @@ export function MatchRoom({ options, summary, refreshKey, onJoined, onError }: M
   };
 
   const play = async (current: MatchView) => {
+    // Своя партия в комнате продолжается, а не начинается заново: бросать
+    // ради неё нечего
+    if (current.my_session === null && !mayStart()) return;
+
     setBusy(true);
     try {
       // Второй вход в комнату сервер не примет: начатую партию продолжаем
@@ -158,7 +174,12 @@ export function MatchRoom({ options, summary, refreshKey, onJoined, onError }: M
           Те же раунды для всех, кто вошёл. Играете каждый в своём темпе и сравниваете результаты.
         </CardSubtitle>
 
-        <p className={styles.summary}>Условия берутся из одиночной партии: {summary}</p>
+        <p className={styles.summary}>
+          Условия берутся из одиночной партии: {summary}{" "}
+          <button type="button" className={styles.edit} onClick={onEditSetup}>
+            изменить
+          </button>
+        </p>
 
         <Button
           variant="primary"

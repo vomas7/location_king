@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 
 import { SESSION_STORAGE_KEY } from "~/api/tokens";
 import { NOTICE_STORAGE_KEY } from "~/components/legal/StorageNotice";
+import { MENU_STORAGE_KEY } from "~/domain/menu";
 import { THEME_STORAGE_KEY } from "~/domain/theme";
 import { LEGAL_DOCUMENTS, legalDocument } from "~/legal/documents";
 
@@ -45,6 +46,7 @@ describe("документ про хранилище", () => {
     expect(text).toContain(SESSION_STORAGE_KEY);
     expect(text).toContain(NOTICE_STORAGE_KEY);
     expect(text).toContain(THEME_STORAGE_KEY);
+    expect(text).toContain(MENU_STORAGE_KEY);
   });
 
   it("обещание «куки не ставим» правдиво", () => {

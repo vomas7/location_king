@@ -11,14 +11,10 @@
  * обрываться от того, что игрок ушёл смотреть таблицу.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { game, zones } from "~/api/endpoints";
-import type {
-  DailyChallenge as DailyChallengeData,
-  SessionState,
-  StartSessionOptions,
-} from "~/api/types";
+import type { SessionState, StartSessionOptions } from "~/api/types";
 import { DailyChallenge } from "~/components/home/DailyChallenge";
 import { DuelSearch } from "~/components/home/DuelSearch";
 import { Friends } from "~/components/home/Friends";
@@ -26,33 +22,25 @@ import { GameHistory } from "~/components/home/GameHistory";
 import styles from "~/components/home/HomeScreen.module.css";
 import { Leaderboard } from "~/components/home/Leaderboard";
 import { MatchRoom } from "~/components/home/MatchRoom";
-import type { Mode, ModeKey } from "~/components/home/ModeBoard";
+import type { Mode } from "~/components/home/ModeBoard";
 import { ModeBoard } from "~/components/home/ModeBoard";
 import { ProfilePanel } from "~/components/home/ProfilePanel";
 import { SoloPanel } from "~/components/home/SoloPanel";
 import { Button } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
+import { dailyAwaits, dailyStatus } from "~/domain/daily";
 import { searchingText } from "~/domain/duel";
-import { formatNumber, plural } from "~/domain/format";
+import { plural } from "~/domain/format";
+import { SECTIONS } from "~/domain/menu";
 import { FIRST_GAME_SETUP, isNewPlayer } from "~/domain/onboarding";
 import { placeFilter } from "~/domain/place";
 import { roomFromSearch } from "~/domain/room";
-import type { GameSetup } from "~/domain/setup";
 import { DEFAULT_SETUP, describeSetup, LEVELS, toOptions } from "~/domain/setup";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useAuth } from "~/state/authContext";
 import { useDailyChallenge } from "~/state/useDailyChallenge";
 import { useDuelSearch } from "~/state/useDuelSearch";
-
-/** Разделы, которые смотрят, а не играют. */
-type SectionKey = "profile" | "friends" | "board" | "history";
-
-const SECTIONS: { key: SectionKey; label: string }[] = [
-  { key: "profile", label: "Профиль" },
-  { key: "friends", label: "Друзья" },
-  { key: "board", label: "Таблица" },
-  { key: "history", label: "История" },
-];
+import { useMenuState } from "~/state/useMenuState";
 
 interface HomeScreenProps {
   error: string | null;
@@ -78,15 +66,12 @@ export function HomeScreen({
   // отличается от «сложно», и первый же непонятный кадр он закрывает
   const newcomer = isNewPlayer(user);
 
-  const [setup, setSetup] = useState<GameSetup>(newcomer ? FIRST_GAME_SETUP : DEFAULT_SETUP);
+  const { menu, change } = useMenuState(newcomer ? FIRST_GAME_SETUP : DEFAULT_SETUP);
+  const { setup, mode, section } = menu;
 
-  // Пришли по ссылке-приглашению — открываем комнату, а не одиночную партию.
-  // Считается один раз при создании состояния: сама комната уберёт параметр
-  // из адреса, и второй раз его уже не увидеть
-  const [mode, setMode] = useState<ModeKey>(() =>
-    roomFromSearch(window.location.search) === null ? "solo" : "room",
-  );
-  const [section, setSection] = useState<SectionKey>("profile");
+  // Настройки развёрнуты — состояние одного посещения: открывать их при
+  // каждом заходе в меню незачем, а вот прийти в них из комнаты нужно
+  const [setupOpen, setSetupOpen] = useState(false);
 
   const [zoneCount, setZoneCount] = useState<number | null>(null);
   const [unfinished, setUnfinished] = useState<SessionState | null>(null);
@@ -99,6 +84,13 @@ export function HomeScreen({
   useEffect(() => {
     if (duelError !== null) onError(duelError);
   }, [duelError, onError]);
+
+  // Пришли по ссылке-приглашению — открываем комнату, что бы ни было выбрано
+  // в прошлый раз. Сама комната уберёт параметр из адреса, поэтому условие
+  // сработает один раз
+  useEffect(() => {
+    if (roomFromSearch(window.location.search) !== null) change({ mode: "room" });
+  }, [change]);
 
   // Сколько зон под выбранными фильтрами: без этого игрок не понимает, почему
   // «Начать» отвечает, что зон нет
@@ -144,6 +136,25 @@ export function HomeScreen({
     };
   }, [refreshKey]);
 
+  /**
+   * Спросить, если новая партия закроет незаконченную.
+   *
+   * Партия у игрока одна: сервер молча бросает предыдущую, а очки за
+   * недоигранную не идут никуда. До этого вопроса партия на четвёртом раунде
+   * пропадала от одного нажатия — и в челлендже дня пропадала навсегда,
+   * попытка там одна на сутки.
+   */
+  const mayReplaceGame = useCallback(() => {
+    if (unfinished === null) return true;
+
+    const { rounds_done, rounds_total } = unfinished.session;
+
+    return window.confirm(
+      `Незаконченная партия (раунд ${String(rounds_done + 1)} из ${String(rounds_total)}) ` +
+        "будет брошена, и очки за неё не засчитаются. Начать новую?",
+    );
+  }, [unfinished]);
+
   if (user === null) return null;
 
   const modes: Mode[] = [
@@ -159,7 +170,7 @@ export function HomeScreen({
       key: "daily",
       name: "Челлендж дня",
       status: dailyStatus(daily),
-      live: daily !== null && daily.my_session?.status !== "finished",
+      live: dailyAwaits(daily),
     },
     {
       key: "duel",
@@ -197,35 +208,55 @@ export function HomeScreen({
           </div>
         )}
 
-        <ModeBoard modes={modes} active={mode} onPick={setMode} />
+        <ModeBoard
+          modes={modes}
+          active={mode}
+          onPick={(picked) => {
+            change({ mode: picked });
+          }}
+        />
 
         <Card id="mode-panel" role="tabpanel" aria-labelledby={`mode-${mode}`}>
           {mode === "solo" && (
             <SoloPanel
               setup={setup}
-              onChange={(change) => {
-                setSetup({ ...setup, ...change });
+              open={setupOpen}
+              onToggle={() => {
+                setSetupOpen(!setupOpen);
+              }}
+              onChange={(patch) => {
+                change({ setup: { ...setup, ...patch } });
               }}
               zoneCount={zoneCount}
               error={error}
               newcomer={newcomer}
               onStart={() => {
-                onStart(toOptions(setup));
+                if (mayReplaceGame()) onStart(toOptions(setup));
               }}
             />
           )}
 
           {mode === "daily" && (
-            <DailyChallenge data={daily} onStarted={onResume} onError={onError} />
+            <DailyChallenge
+              data={daily}
+              mayStart={mayReplaceGame}
+              onStarted={onResume}
+              onError={onError}
+            />
           )}
 
-          {mode === "duel" && <DuelSearch search={duel} />}
+          {mode === "duel" && <DuelSearch search={duel} mayStart={mayReplaceGame} />}
 
           {mode === "room" && (
             <MatchRoom
               options={toOptions(setup)}
               summary={describeSetup(setup)}
               refreshKey={refreshKey}
+              mayStart={mayReplaceGame}
+              onEditSetup={() => {
+                setSetupOpen(true);
+                change({ mode: "solo" });
+              }}
               onJoined={onResume}
               onError={onError}
             />
@@ -247,7 +278,7 @@ export function HomeScreen({
                 .filter(Boolean)
                 .join(" ")}
               onClick={() => {
-                setSection(item.key);
+                change({ section: item.key });
               }}
             >
               {item.label}
@@ -264,19 +295,4 @@ export function HomeScreen({
       </div>
     </div>
   );
-}
-
-/** Что написать на плитке челленджа: ради чего в него заходят сегодня. */
-function dailyStatus(daily: DailyChallengeData | null): string {
-  if (daily === null) return "Одна попытка в сутки";
-
-  if (daily.my_session?.status === "finished") {
-    return `Сыгран · ${formatNumber(daily.my_session.total_score)}`;
-  }
-  if (daily.my_session !== null) return "Партия не доиграна";
-  if (daily.current_streak > 0) {
-    return `Серия ${String(daily.current_streak)} ${plural(daily.current_streak, "день", "дня", "дней")} — не прерывай`;
-  }
-
-  return "Сегодня ещё не сыгран";
 }

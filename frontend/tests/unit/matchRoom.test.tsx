@@ -60,12 +60,14 @@ function room(overrides: Partial<MatchView> = {}): MatchView {
 }
 
 /** Отрисовать карточку и дождаться, пока подтянется список своих комнат. */
-async function renderRoom(onJoined = vi.fn(), onError = vi.fn()) {
+async function renderRoom(onJoined = vi.fn(), onError = vi.fn(), mayStart = vi.fn(() => true)) {
   render(
     <MatchRoom
       options={OPTIONS}
       summary="5 раундов · Средне · 15 км · Весь мир · без таймера"
       refreshKey={0}
+      mayStart={mayStart}
+      onEditSetup={vi.fn()}
       onJoined={onJoined}
       onError={onError}
     />,
@@ -75,7 +77,7 @@ async function renderRoom(onJoined = vi.fn(), onError = vi.fn()) {
     expect(mine).toHaveBeenCalled();
   });
 
-  return { onJoined, onError };
+  return { onJoined, onError, mayStart };
 }
 
 /** Партия, которую эндпоинт возвращает после входа в комнату. */
@@ -230,6 +232,52 @@ describe("MatchRoom", () => {
     });
     expect(join).not.toHaveBeenCalled();
     expect(session).toHaveBeenCalledWith("s-1");
+  });
+
+  it("не входит в комнату, пока незаконченная партия не отпущена", async () => {
+    create.mockResolvedValue(room());
+
+    const { onJoined } = await renderRoom(
+      vi.fn(),
+      vi.fn(),
+      vi.fn(() => false),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Создать комнату" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Играть" }));
+
+    expect(join).not.toHaveBeenCalled();
+    expect(onJoined).not.toHaveBeenCalled();
+  });
+
+  it("свою партию в комнате продолжает, ни о чём не спрашивая", async () => {
+    create.mockResolvedValue(
+      room({
+        my_session: {
+          id: "s-1",
+          status: "active",
+          challenge_day: null,
+          rounds_total: 5,
+          rounds_done: 2,
+          total_score: 1200,
+          started_at: "2026-08-27T10:00:00Z",
+          finished_at: null,
+        },
+      }),
+    );
+    session.mockResolvedValue(sessionState("s-1"));
+
+    const { mayStart } = await renderRoom(
+      vi.fn(),
+      vi.fn(),
+      vi.fn(() => false),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Создать комнату" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Продолжить партию" }));
+
+    await waitFor(() => {
+      expect(session).toHaveBeenCalledWith("s-1");
+    });
+    expect(mayStart).not.toHaveBeenCalled();
   });
 
   it("хост закрывает набор", async () => {

@@ -161,6 +161,45 @@ test("незаконченную партию предлагают продол�
   await expect(page.getByRole("progressbar")).toBeVisible();
 });
 
+test("новая партия не бросает незаконченную молча", async ({ page }) => {
+  await register(page);
+
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText("У тебя есть незаконченная партия")).toBeVisible();
+
+  // Окно подтверждения Playwright закрывает отказом — партия остаётся на месте
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.getByText("У тебя есть незаконченная партия")).toBeVisible();
+
+  // А с согласием начинается новая
+  page.once("dialog", (dialog) => {
+    void dialog.accept();
+  });
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+});
+
+test("условия партии переживают саму партию", async ({ page }) => {
+  await register(page);
+
+  await openSetup(page);
+  await page.getByRole("radio", { name: "3", exact: true }).first().click();
+  await page.getByRole("radio", { name: "100 км" }).click();
+
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+
+  await playRounds(page, 3);
+  await page.getByRole("button", { name: "В меню" }).click();
+
+  // Меню собирается заново, но выставленные условия должны остаться.
+  // Уровень тут «Легко»: первую партию новичку выставляют за него
+  await expect(page.getByText("3 раунда · Легко · 100 км")).toBeVisible();
+});
+
 test("вход отвергает неверный пароль", async ({ page }) => {
   const player = await register(page);
 
@@ -191,6 +230,24 @@ test("челлендж дня играется один раз в сутки", a
   await open(page, "Челлендж дня");
   await expect(page.getByText("Твой результат сегодня")).toBeVisible();
   await expect(page.getByRole("button", { name: "Играть челлендж" })).toHaveCount(0);
+});
+
+test("незаконченный челлендж продолжается, а не начинается заново", async ({ page }) => {
+  await register(page);
+
+  await open(page, "Челлендж дня");
+  await page.getByRole("button", { name: "Играть челлендж" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+
+  await page.reload();
+  await open(page, "Челлендж дня");
+
+  // Попытка в сутки одна, поэтому «Продолжить» обязано именно продолжать:
+  // повторный старт сервер отвергает
+  await page.getByRole("button", { name: "Продолжить челлендж" }).click();
+
+  await expect(page.locator("canvas").first()).toBeVisible();
+  await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "5");
 });
 
 test("результатом можно поделиться", async ({ context, page }) => {

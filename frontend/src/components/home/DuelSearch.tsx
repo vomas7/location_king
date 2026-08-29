@@ -22,6 +22,8 @@ import type { DuelPhase, DuelSearchController } from "~/state/useDuelSearch";
 
 interface DuelSearchProps {
   search: DuelSearchController;
+  /** Спросить, можно ли бросить начатую партию ради дуэли. */
+  mayStart: () => boolean;
 }
 
 /**
@@ -35,7 +37,7 @@ const QUEUE_TEXTS: Record<DuelPhase, string> = {
   joining: "Соперник найден",
 };
 
-export function DuelSearch({ search }: DuelSearchProps) {
+export function DuelSearch({ search, mayStart }: DuelSearchProps) {
   const { user } = useAuth();
   const [format, setFormat] = useState<DuelFormat | null>(null);
 
@@ -77,7 +79,16 @@ export function DuelSearch({ search }: DuelSearchProps) {
       <p className={styles.rules}>{rules}</p>
 
       {search.phase === "idle" ? (
-        <Button variant="primary" size="large" block onClick={search.start}>
+        <Button
+          variant="primary"
+          size="large"
+          block
+          onClick={() => {
+            // Соперник находится сам, и партия начнётся без спроса: значит,
+            // и незаконченную партию закроет тоже без спроса
+            if (mayStart()) search.start();
+          }}
+        >
           Найти соперника
         </Button>
       ) : (
