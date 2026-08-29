@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import AsyncSessionLocal
+from app.database import AsyncSessionLocal, engine
 from app.models.country import Country
 from scripts.country_names import COUNTRY_NAMES
 
@@ -88,14 +88,35 @@ async def load(session: AsyncSession, source: dict) -> int:
     return len(source["features"])
 
 
-async def load_database(path: Path | None) -> int:
+async def load_database(source: dict) -> int:
     async with AsyncSessionLocal() as session:
-        return await load(session, read_source(path))
+        return await load(session, source)
 
 
 async def count() -> int:
     async with AsyncSessionLocal() as session:
         return (await session.execute(select(func.count(Country.code)))).scalar_one()
+
+
+async def run(path: Path | None, only_new: bool) -> int | None:
+    """
+    Вся работа скрипта в одном цикле событий. Пусто — границы уже были.
+
+    Два `asyncio.run` подряд — это два цикла на один пул соединений: во
+    второй цикл пул отдаёт соединение, открытое в первом, `pool_pre_ping`
+    проверяет его — и asyncpg падает с «attached to a different loop».
+    Поэтому и проверка, и загрузка живут в одном цикле, а движок закрывается
+    вместе с ним.
+    """
+    try:
+        if only_new and await count() > 0:
+            return None
+
+        # Читаем до сессии: качать два мегабайта, держа занятым соединение с
+        # базой, незачем, а упасть на сети лучше вообще не подключившись
+        return await load_database(read_source(path))
+    finally:
+        await engine.dispose()
 
 
 def main() -> None:
@@ -110,11 +131,12 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)-8s %(message)s")
 
-    if args.only_new and asyncio.run(count()) > 0:
+    loaded = asyncio.run(run(args.file, args.only_new))
+
+    if loaded is None:
         logger.info("Границы уже загружены, пропускаю")
         return
 
-    loaded = asyncio.run(load_database(args.file))
     logger.info("Границы загружены: %s стран", loaded)
 
 

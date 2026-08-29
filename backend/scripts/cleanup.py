@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sqlalchemy import select
 
-from app.database import AsyncSessionLocal
+from app.database import AsyncSessionLocal, engine
 from app.models.enums import SessionStatus
 from app.models.game_session import GameSession
 from app.services import duels
@@ -72,6 +72,20 @@ async def settle_abandoned_duels() -> int:
     return settled
 
 
+async def run(older_than: int) -> tuple[int, int]:
+    """
+    Вся уборка в одном цикле событий.
+
+    Два `asyncio.run` подряд — это два цикла на один пул соединений: во
+    второй цикл пул отдаёт соединение, открытое в первом, `pool_pre_ping`
+    проверяет его — и asyncpg падает с «attached to a different loop».
+    """
+    try:
+        return await abandon_stale_sessions(older_than), await settle_abandoned_duels()
+    finally:
+        await engine.dispose()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Уборка брошенных партий Location King")
     parser.add_argument(
@@ -85,10 +99,9 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)-8s %(message)s")
 
-    closed = asyncio.run(abandon_stale_sessions(args.older_than))
-    logger.info("Брошенных партий закрыто: %s", closed)
+    closed, settled = asyncio.run(run(args.older_than))
 
-    settled = asyncio.run(settle_abandoned_duels())
+    logger.info("Брошенных партий закрыто: %s", closed)
     logger.info("Дуэлей досчитано: %s", settled)
 
 
