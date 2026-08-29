@@ -5,6 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.enums import Theme
+from app.utils.avatar import image_url
 from app.utils.elo import START_RATING
 
 
@@ -20,10 +21,15 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     display_name: Mapped[str | None] = mapped_column(String(100))
 
-    # Аватарка — два числа, а не файл: узор по ним рисует клиент. Подробности
-    # и причина такого решения в app/utils/avatar.py
+    # Аватарка по умолчанию — два числа, а не файл: узор по ним рисует клиент.
+    # Подробности в app/utils/avatar.py
     avatar_shape: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
     avatar_color: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
+
+    # Сколько раз игрок загружал свою картинку. Ноль означает, что картинки
+    # нет и рисуется узор; ненулевое число попадает в адрес и меняет его при
+    # каждой замене — иначе браузер показывал бы старую из кэша
+    avatar_version: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     # По этому коду игрока добавляют в друзья. Не по имени: имена не
     # уникальны, а искать людей по чужому имени — способ найти не того
@@ -71,6 +77,10 @@ class User(Base):
         return f"<User id={self.id} username={self.username!r}>"
 
     @property
-    def avatar(self) -> dict[str, int]:
+    def avatar(self) -> dict[str, object]:
         """Аватарка одним значением — в таком виде её ждут схемы ответов."""
-        return {"shape": self.avatar_shape, "color": self.avatar_color}
+        return {
+            "shape": self.avatar_shape,
+            "color": self.avatar_color,
+            "image_url": image_url(self.id, self.avatar_version),
+        }

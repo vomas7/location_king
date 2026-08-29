@@ -36,6 +36,7 @@ export function errorMessage(error: unknown, fallback = "Сервер недос
 
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  /** Объект уедет как JSON, FormData — как есть: так отправляется файл. */
   body?: unknown;
   /** Не пытаться обновить токен при 401 — для самих запросов авторизации. */
   skipRefresh?: boolean;
@@ -121,13 +122,17 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   const hasBody = body !== undefined;
 
+  // У FormData свой Content-Type с границей блоков, и проставляет его
+  // браузер. Свой заголовок здесь сломал бы разбор на сервере
+  const isForm = body instanceof FormData;
+
   const response = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
       ...authHeaders(),
-      ...(hasBody ? { "Content-Type": "application/json" } : {}),
+      ...(hasBody && !isForm ? { "Content-Type": "application/json" } : {}),
     },
-    ...(hasBody ? { body: JSON.stringify(body) } : {}),
+    ...(hasBody ? { body: isForm ? body : JSON.stringify(body) } : {}),
   });
 
   if (response.status === 401 && !skipRefresh && (await refreshTokens())) {

@@ -44,7 +44,7 @@ async def test_registration_hands_out_an_avatar(db: AsyncSession):
 async def test_profile_carries_the_avatar(client: AsyncClient, auth_headers: dict):
     body = (await client.get("/api/auth/me", headers=auth_headers)).json()
 
-    assert set(body["avatar"]) == {"shape", "color"}
+    assert set(body["avatar"]) == {"shape", "color", "image_url"}
     assert avatar.is_known(body["avatar"]["shape"], body["avatar"]["color"])
 
 
@@ -56,7 +56,7 @@ async def test_avatar_can_be_changed(client: AsyncClient, auth_headers: dict):
     )
 
     assert response.status_code == 200
-    assert response.json()["avatar"] == {"shape": 3, "color": 4}
+    assert response.json()["avatar"] == {"shape": 3, "color": 4, "image_url": None}
 
 
 async def test_name_and_avatar_change_together(client: AsyncClient, auth_headers: dict):
@@ -68,7 +68,7 @@ async def test_name_and_avatar_change_together(client: AsyncClient, auth_headers
 
     body = response.json()
     assert body["display_name"] == "Штурман"
-    assert body["avatar"] == {"shape": 1, "color": 2}
+    assert body["avatar"] == {"shape": 1, "color": 2, "image_url": None}
 
 
 async def test_avatar_that_does_not_exist_is_refused(client: AsyncClient, auth_headers: dict):
@@ -133,4 +133,5 @@ async def test_room_standings_show_avatars(
     assert room["standings"][0]["avatar"] == {
         "shape": registered_user.avatar_shape,
         "color": registered_user.avatar_color,
+        "image_url": None,
     }

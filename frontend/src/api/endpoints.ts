@@ -51,6 +51,23 @@ export const auth = {
     avatar_color?: number;
   }) => request<UserProfile>("/api/auth/me", { method: "PATCH", body: changes }),
 
+  /**
+   * Загрузить свою аватарку.
+   *
+   * Файл уходит как есть: обрезает его в квадрат и перекодирует сервер —
+   * иначе от картинки в базу попадали бы и EXIF со съёмкой, и всё прочее,
+   * что умеет прятаться в файле.
+   */
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+
+    return request<UserProfile>("/api/auth/me/avatar", { method: "PUT", body: form });
+  },
+
+  /** Убрать загруженную аватарку и вернуться к узору. */
+  dropAvatar: () => request<UserProfile>("/api/auth/me/avatar", { method: "DELETE" }),
+
   /** Запомнить оформление. Отдельно от имени и аватарки: у той свой лимит. */
   setTheme: (theme: Theme) =>
     request<UserProfile>("/api/auth/me/theme", { method: "PUT", body: { theme } }),

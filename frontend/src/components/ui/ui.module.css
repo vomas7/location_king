@@ -365,12 +365,14 @@
   text-wrap: pretty;
 }
 
-/* Аватарка: квадрат со скруглением, ничего не перехватывает мышью */
+/* Аватарка: квадрат со скруглением, ничего не перехватывает мышью. Загруженная
+   картинка приходит квадратной, но object-fit страхует от чужой вёрстки */
 .avatar {
   display: block;
   flex: 0 0 auto;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-sm);
+  object-fit: cover;
   pointer-events: none;
 }
 

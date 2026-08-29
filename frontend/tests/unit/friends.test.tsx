@@ -29,7 +29,7 @@ function friend(overrides: Partial<Friend> = {}): Friend {
   return {
     id: 1,
     display_name: "Приятель",
-    avatar: { shape: 0, color: 0 },
+    avatar: { shape: 0, color: 0, image_url: null },
     rating: 1000,
     accepted: true,
     incoming: false,

@@ -12,6 +12,7 @@ from app.exceptions import AppError
 from app.observability import ObservabilityMiddleware, configure_logging, metrics
 from app.routers import (
     auth,
+    avatars,
     countries,
     daily,
     duels,
@@ -68,6 +69,7 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
 
 
 app.include_router(auth.router)
+app.include_router(avatars.router)
 app.include_router(sessions.router)
 app.include_router(daily.router)
 app.include_router(matches.router)

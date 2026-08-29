@@ -5,11 +5,13 @@
  * меняется там же, где игрок смотрит свою статистику, — а не прячется в
  * разделе настроек, которого в игре нет.
  *
- * Аватарка выбирается, а не загружается: сервер хранит два числа, узор по ним
- * рисуется на месте. Ни файлов, ни модерации, ни запросов на чужие домены.
+ * Аватарка бывает двух видов. Узор рисуется на месте по двум числам — он есть
+ * у каждого сразу и ничего не весит. Свою картинку игрок загружает сам, и
+ * тогда показывают её; узор остаётся под ней и возвращается, если картинку
+ * убрать. Поэтому это не два переключателя, а одно место с двумя состояниями.
  */
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 
 import { errorMessage } from "~/api/client";
 import { auth } from "~/api/endpoints";
@@ -27,6 +29,9 @@ const MAX_LENGTH = 24;
 const SHAPES = [0, 1, 2, 3, 4, 5];
 const COLORS = [0, 1, 2, 3, 4, 5];
 
+/** Столько же пропускает сервер. Проверяем здесь, чтобы не гнать зря мегабайты. */
+const MAX_BYTES = 4 * 1024 * 1024;
+
 export function PublicProfile() {
   const { user, accept } = useAuth();
 
@@ -39,7 +44,43 @@ export function PublicProfile() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const fileInput = useRef<HTMLInputElement>(null);
+
   if (user === null) return null;
+
+  const picture = user.avatar.image_url !== null;
+
+  const upload = async (file: File) => {
+    setError(null);
+
+    if (file.size > MAX_BYTES) {
+      setError("Картинка тяжелее четырёх мегабайт");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      // Применяется сразу, не по «Сохранить»: файл в состоянии формы держать
+      // незачем, а у загрузки на сервере свой лимит
+      accept(await auth.uploadAvatar(file));
+    } catch (caught) {
+      setError(errorMessage(caught, "Не удалось загрузить картинку"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const dropPicture = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      accept(await auth.dropAvatar());
+    } catch (caught) {
+      setError(errorMessage(caught, "Не удалось убрать картинку"));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const open = () => {
     setName(current);
@@ -116,45 +157,99 @@ export function PublicProfile() {
       <fieldset className={styles.picker}>
         <legend className={styles.pickerLabel}>Аватарка</legend>
 
-        <div className={styles.choices} role="radiogroup" aria-label="Узор аватарки">
-          {SHAPES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={option === shape}
-              aria-label={`Узор ${String(option + 1)}`}
-              className={[styles.choice, option === shape ? styles.choiceActive : ""]
-                .filter(Boolean)
-                .join(" ")}
-              onClick={() => {
-                setShape(option);
-              }}
-            >
-              <Avatar avatar={{ shape: option, color }} size={34} />
-            </button>
-          ))}
-        </div>
+        {/* Поле выбора файла системное и некрасивое, поэтому спрятано за
+            обычной кнопкой — она же объясняет, что будет с картинкой */}
+        <input
+          ref={fileInput}
+          type="file"
+          className={styles.file}
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={(event) => {
+            const chosen = event.target.files?.[0];
+            // Значение сбрасывается, иначе тот же файл второй раз подряд не
+            // выберется: браузер не считает это изменением
+            event.target.value = "";
+            if (chosen !== undefined) void upload(chosen);
+          }}
+        />
 
-        <div className={styles.choices} role="radiogroup" aria-label="Цвет аватарки">
-          {COLORS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={option === color}
-              aria-label={`Цвет ${String(option + 1)}`}
-              className={[styles.choice, option === color ? styles.choiceActive : ""]
-                .filter(Boolean)
-                .join(" ")}
-              onClick={() => {
-                setColor(option);
-              }}
-            >
-              <Avatar avatar={{ shape, color: option }} size={34} />
-            </button>
-          ))}
-        </div>
+        {picture ? (
+          <div className={styles.uploaded}>
+            <Avatar avatar={user.avatar} size={64} name={current} />
+            <div className={styles.uploadedText}>
+              <p className={styles.uploadedTitle}>Своя картинка</p>
+              <p className={styles.uploadedHint}>Её видно другим игрокам в таблицах и в комнате</p>
+              <div className={styles.uploadedActions}>
+                <Button
+                  type="button"
+                  size="small"
+                  disabled={busy}
+                  onClick={() => fileInput.current?.click()}
+                >
+                  Заменить
+                </Button>
+                <Button
+                  type="button"
+                  size="small"
+                  disabled={busy}
+                  onClick={() => {
+                    void dropPicture();
+                  }}
+                >
+                  Убрать
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <Button type="button" block disabled={busy} onClick={() => fileInput.current?.click()}>
+            Загрузить свою картинку
+          </Button>
+        )}
+
+        {!picture && (
+          <div className={styles.choices} role="radiogroup" aria-label="Узор аватарки">
+            {SHAPES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={option === shape}
+                aria-label={`Узор ${String(option + 1)}`}
+                className={[styles.choice, option === shape ? styles.choiceActive : ""]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => {
+                  setShape(option);
+                }}
+              >
+                <Avatar avatar={{ shape: option, color, image_url: null }} size={34} />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!picture && (
+          <div className={styles.choices} role="radiogroup" aria-label="Цвет аватарки">
+            {COLORS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={option === color}
+                aria-label={`Цвет ${String(option + 1)}`}
+                className={[styles.choice, option === color ? styles.choiceActive : ""]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => {
+                  setColor(option);
+                }}
+              >
+                <Avatar avatar={{ shape, color: option, image_url: null }} size={34} />
+              </button>
+            ))}
+          </div>
+        )}
       </fieldset>
 
       <Alert message={error} />

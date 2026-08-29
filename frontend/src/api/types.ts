@@ -33,8 +33,11 @@ export interface FeedbackView {
 export type Theme = "dark" | "light" | "system";
 
 export interface AvatarView {
+  /** Форма узора и его цвет. Узор есть у каждого, рисует его клиент. */
   shape: number;
   color: number;
+  /** Адрес загруженной картинки. Пусто — значит, игрок ничего не загружал. */
+  image_url: string | null;
 }
 
 export interface UserProfile {

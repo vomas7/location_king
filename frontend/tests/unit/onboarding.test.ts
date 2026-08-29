@@ -20,7 +20,7 @@ function player(gamesPlayed: number): UserProfile {
     rating: 1000,
     duels_played: 0,
     theme: "dark",
-    avatar: { shape: 0, color: 0 },
+    avatar: { shape: 0, color: 0, image_url: null },
     created_at: "2026-08-28T10:00:00Z",
   };
 }

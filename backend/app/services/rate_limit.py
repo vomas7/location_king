@@ -39,6 +39,7 @@ class RateLimit:
 class Limit(StrEnum):
     """Что именно ограничиваем. Значение попадает в ключ Redis."""
 
+    AVATAR = "avatar"
     DELETE_ACCOUNT = "delete-account"
     DUEL_POLL = "duel-poll"
     DUEL_QUEUE = "duel-queue"
@@ -92,6 +93,10 @@ RULES: dict[Limit, RateLimit] = {
     # Тема — переключатель, которым щёлкают, пока выбирают. Лимит здесь от
     # долбёжки по базе, а не от игрока: своим выбором он никому не мешает
     Limit.THEME: RateLimit(limit=120, window_seconds=60 * 60),
+    # Аватарка кладёт в базу картинку и заставляет сервер её перекодировать —
+    # это самый дорогой запрос из тех, что игрок делает по своей воле.
+    # Двадцати в час хватает, чтобы выбрать из нескольких фотографий
+    Limit.AVATAR: RateLimit(limit=20, window_seconds=60 * 60),
     Limit.TILES: RateLimit(limit=3000, window_seconds=60 * 60),
 }
 

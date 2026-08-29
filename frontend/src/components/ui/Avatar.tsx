@@ -1,14 +1,20 @@
 /**
  * Аватарка игрока.
  *
- * Рисуется здесь, а не приезжает картинкой: сервер присылает два числа —
- * форму узора и цвет. Поэтому нет ни хранилища, ни модерации, а страница
- * по-прежнему не ходит на сторонние домены.
+ * По умолчанию рисуется здесь: сервер присылает два числа — форму узора и
+ * цвет. Такая аватарка есть у каждого с первой минуты, её не нужно выбирать,
+ * и картинку для неё никуда не грузят.
  *
  * Узоры сделаны в духе снимка сверху: кварталы, излучина, берег, перекрёсток,
  * изолинии, радар. Абстрактные кубики были бы из другой игры.
+ *
+ * Кто загрузил своё лицо, показывается им. Узор при этом остаётся запасным:
+ * если картинка не загрузилась, на её месте будет он, а не пустой квадрат.
  */
 
+import { useEffect, useState } from "react";
+
+import { image } from "~/api/images";
 import type { AvatarView } from "~/api/types";
 import styles from "~/components/ui/ui.module.css";
 
@@ -71,6 +77,42 @@ export function Avatar({ avatar, size = 32, name }: AvatarProps) {
   const shape = avatar.shape >= 0 && avatar.shape < SHAPES ? avatar.shape : 0;
   const color = `var(--avatar-${String(avatar.color >= 0 && avatar.color < COLORS ? avatar.color : 0)})`;
 
+  // Картинка приезжает авторизованным запросом: тег img не умеет отправлять
+  // токен. Пока она едет — и если не доехала — на её месте узор, а не дыра
+  const [source, setSource] = useState<string | null>(null);
+  const url = avatar.image_url;
+
+  useEffect(() => {
+    if (url === null) {
+      setSource(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    void image(url).then((loaded) => {
+      if (!cancelled) setSource(loaded);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  const label = name === undefined ? "Аватарка игрока" : `Аватарка игрока ${name}`;
+
+  if (source !== null) {
+    return (
+      <img
+        className={styles.avatar}
+        src={source}
+        width={size}
+        height={size}
+        alt={label}
+        decoding="async"
+      />
+    );
+  }
+
   return (
     <svg
       className={styles.avatar}
@@ -78,7 +120,7 @@ export function Avatar({ avatar, size = 32, name }: AvatarProps) {
       height={size}
       viewBox="0 0 20 20"
       role="img"
-      aria-label={name === undefined ? "Аватарка игрока" : `Аватарка игрока ${name}`}
+      aria-label={label}
     >
       <rect width="20" height="20" rx="6" fill="var(--surface-3)" />
       {pattern(shape, color)}

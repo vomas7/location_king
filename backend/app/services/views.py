@@ -220,8 +220,8 @@ def friend_view(connection: "friends.Connection") -> FriendView:
 
 
 def avatar_view(user: User) -> AvatarView:
-    """Аватарка игрока для таблиц."""
-    return AvatarView(shape=user.avatar_shape, color=user.avatar_color)
+    """Аватарка игрока для таблиц. Собирается там же, где и для профиля."""
+    return AvatarView(**user.avatar)
 
 
 def leaderboard_entry(row: LeaderboardRow) -> LeaderboardEntry:
