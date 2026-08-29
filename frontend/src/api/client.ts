@@ -47,6 +47,13 @@ interface ValidationDetail {
 }
 
 async function readError(response: Response): Promise<string> {
+  // Отказ по частоте может прийти не только от приложения, но и от nginx —
+  // тот отвечает своей страницей, и разбирать в ней нечего. Игроку в обоих
+  // случаях нужно одно и то же: подождать
+  if (response.status === 429) {
+    return "Слишком часто. Подожди немного и попробуй снова";
+  }
+
   const fallback = `Ошибка ${String(response.status)}`;
 
   try {

@@ -91,6 +91,23 @@ describe("request", () => {
     expect(init.body).toBeUndefined();
   });
 
+  it("объясняет отказ по частоте словами, а не кодом", async () => {
+    // 429 приходит и от приложения, и от nginx — тот отвечает своей
+    // страницей, и разбирать в ней нечего
+    const { client } = await loadModules();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("<html>429</html>", { status: 429 })),
+    );
+
+    await expect(
+      client.request("/api/auth/login", { method: "POST", body: {} }),
+    ).rejects.toMatchObject({
+      status: 429,
+      detail: "Слишком часто. Подожди немного и попробуй снова",
+    });
+  });
+
   it("превращает detail в ApiError", async () => {
     const { client } = await loadModules();
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "Так нельзя" }, 409)));

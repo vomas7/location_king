@@ -44,6 +44,7 @@ readonly CLOUDFLARE_IPS_V6=https://www.cloudflare.com/ips-v6
 readonly CLOUDFLARE_ORIGIN_PULL_CA=https://developers.cloudflare.com/ssl/static/authenticated_origin_pull_ca.pem
 readonly REAL_IP_SNIPPET=nginx/snippets/cloudflare-real-ip.conf
 readonly ORIGIN_PULL_SNIPPET=nginx/snippets/cloudflare-origin-pull.conf
+readonly CLOUDFLARE_ONLY_SNIPPET=nginx/snippets/cloudflare-only.conf
 
 die() {
     echo "Ошибка: $*" >&2
@@ -159,10 +160,13 @@ write_cloudflare_real_ip() {
     v6="$(curl --fail --silent --show-error --max-time 20 "$CLOUDFLARE_IPS_V6" || true)"
 
     if [ -z "$v4" ]; then
-        [ -s "$REAL_IP_SNIPPET" ] ||
-            die "не удалось получить список сетей Cloudflare с ${CLOUDFLARE_IPS_V4}"
-        echo "Список сетей Cloudflare недоступен, оставляю прежний."
-        return
+        # Оба фрагмента собираются из одного списка, и без любого из них
+        # nginx не поднимется: include ссылается на оба
+        if [ -s "$REAL_IP_SNIPPET" ] && [ -s "$CLOUDFLARE_ONLY_SNIPPET" ]; then
+            echo "Список сетей Cloudflare недоступен, оставляю прежний."
+            return
+        fi
+        die "не удалось получить список сетей Cloudflare с ${CLOUDFLARE_IPS_V4}"
     fi
 
     {
@@ -173,6 +177,20 @@ write_cloudflare_real_ip() {
         printf 'set_real_ip_from %s;\n' $v4 $v6
         echo "real_ip_header CF-Connecting-IP;"
     } > "$REAL_IP_SNIPPET"
+
+    # Тот же список, но как разрешение подключаться. Без него origin отвечает
+    # любому, кто узнал его адрес, — а узнают его сканеры, перебирающие сети
+    # хостингов. Тогда весь щит Cloudflare обходится одной строкой в curl.
+    {
+        echo "# Собран deploy.sh $(date -u '+%Y-%m-%d %H:%M UTC') из ${CLOUDFLARE_IPS_V4}"
+        echo "# Правки в этом файле затрутся при следующем развёртывании."
+        echo "# Сюда доходят только соединения от Cloudflare: всё остальное —"
+        echo "# обращение к origin в обход, и отвечать на него нечем."
+        # Разбиение по строкам здесь и нужно: в ответе список сетей
+        # shellcheck disable=SC2086
+        printf 'allow %s;\n' $v4 $v6
+        echo "deny all;"
+    } > "$CLOUDFLARE_ONLY_SNIPPET"
 
     echo "Сетей Cloudflare в списке: $(grep -c set_real_ip_from "$REAL_IP_SNIPPET")"
 }
