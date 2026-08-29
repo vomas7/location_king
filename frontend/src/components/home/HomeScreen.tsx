@@ -11,7 +11,7 @@
  * обрываться от того, что игрок ушёл смотреть таблицу.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { game, zones } from "~/api/endpoints";
 import type { SessionState, StartSessionOptions } from "~/api/types";
@@ -41,6 +41,25 @@ import { useAuth } from "~/state/authContext";
 import { useDailyChallenge } from "~/state/useDailyChallenge";
 import { useDuelSearch } from "~/state/useDuelSearch";
 import { useMenuState } from "~/state/useMenuState";
+
+/**
+ * Подтянуть панель раздела к экрану, если её не видно.
+ *
+ * На телефоне колонки идут одна под другой, и панель раздела оказывается за
+ * нижним краем: игрок нажимает «Друзья» и не понимает, что что-то произошло.
+ * На широком экране панель и так на виду, и дёргать страницу незачем.
+ */
+function reveal(panel: HTMLElement | null): void {
+  if (panel === null) return;
+
+  // Прокручиваем, когда панель начинается ниже середины экрана: формально она
+  // при этом видна, но видно от неё одну шапку
+  const { top } = panel.getBoundingClientRect();
+  if (top < window.innerHeight / 2) return;
+
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  panel.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
+}
 
 interface HomeScreenProps {
   error: string | null;
@@ -72,6 +91,10 @@ export function HomeScreen({
   // Настройки развёрнуты — состояние одного посещения: открывать их при
   // каждом заходе в меню незачем, а вот прийти в них из комнаты нужно
   const [setupOpen, setSetupOpen] = useState(false);
+
+  // Панель раздела на телефоне лежит ниже экрана: без прокрутки к ней нажатие
+  // по вкладке выглядит так, будто ничего не произошло
+  const sectionPanel = useRef<HTMLDivElement>(null);
 
   const [zoneCount, setZoneCount] = useState<number | null>(null);
   const [unfinished, setUnfinished] = useState<SessionState | null>(null);
@@ -279,6 +302,7 @@ export function HomeScreen({
                 .join(" ")}
               onClick={() => {
                 change({ section: item.key });
+                reveal(sectionPanel.current);
               }}
             >
               {item.label}
@@ -286,7 +310,12 @@ export function HomeScreen({
           ))}
         </div>
 
-        <Card id="section-panel" role="tabpanel" aria-labelledby={`section-${section}`}>
+        <Card
+          ref={sectionPanel}
+          id="section-panel"
+          role="tabpanel"
+          aria-labelledby={`section-${section}`}
+        >
           {section === "profile" && <ProfilePanel onOpenLegal={onOpenLegal} onError={onError} />}
           {section === "friends" && <Friends onError={onError} />}
           {section === "board" && <Leaderboard refreshKey={refreshKey} />}

@@ -10,7 +10,7 @@
  * значит однажды пропустить вторую.
  */
 
-import { useRef, useState, type FormEvent } from "react";
+import { useCallback, useRef, useState, type FormEvent } from "react";
 
 import { errorMessage } from "~/api/client";
 import { feedback as feedbackApi } from "~/api/endpoints";
@@ -20,7 +20,7 @@ import { Alert } from "~/components/ui/Alert";
 import { Button } from "~/components/ui/Button";
 import { Segmented } from "~/components/ui/Segmented";
 import { TextArea } from "~/components/ui/TextArea";
-import { useFocusTrap } from "~/components/ui/useFocusTrap";
+import { useModal } from "~/components/ui/useModal";
 
 const KINDS: { value: FeedbackKind; label: string }[] = [
   { value: "impression", label: "Впечатление" },
@@ -48,14 +48,14 @@ export function Feedback() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  useFocusTrap(dialog);
-
-  const close = () => {
+  const close = useCallback(() => {
     setOpen(false);
     setMessage("");
     setSent(false);
     setError(null);
-  };
+  }, []);
+
+  useModal(dialog, open, close);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();

@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
 
 import styles from "~/components/ui/ui.module.css";
 
@@ -6,13 +6,16 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
 }
 
-export function Card({ className, children, ...rest }: CardProps) {
+export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
+  { className, children, ...rest },
+  ref,
+) {
   return (
-    <div className={[styles.card, className].filter(Boolean).join(" ")} {...rest}>
+    <div ref={ref} className={[styles.card, className].filter(Boolean).join(" ")} {...rest}>
       {children}
     </div>
   );
-}
+});
 
 export function CardTitle({ children }: { children: ReactNode }) {
   return <h2 className={styles.cardTitle}>{children}</h2>;

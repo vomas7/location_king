@@ -6,7 +6,7 @@
  * необратимо, и случайных нажатий здесь быть не должно.
  */
 
-import { useRef, useState, type FormEvent } from "react";
+import { useCallback, useRef, useState, type FormEvent } from "react";
 
 import { errorMessage } from "~/api/client";
 import { auth } from "~/api/endpoints";
@@ -14,7 +14,7 @@ import styles from "~/components/home/DeleteAccount.module.css";
 import { Alert } from "~/components/ui/Alert";
 import { Button } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Field";
-import { useFocusTrap } from "~/components/ui/useFocusTrap";
+import { useModal } from "~/components/ui/useModal";
 import { useAuth } from "~/state/authContext";
 
 export function DeleteAccount() {
@@ -26,13 +26,13 @@ export function DeleteAccount() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  useFocusTrap(dialog);
-
-  const close = () => {
+  const close = useCallback(() => {
     setOpen(false);
     setPassword("");
     setError(null);
-  };
+  }, []);
+
+  useModal(dialog, open, close);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();

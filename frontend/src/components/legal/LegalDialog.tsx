@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 
 import styles from "~/components/legal/LegalDialog.module.css";
 import { Button } from "~/components/ui/Button";
-import { useFocusTrap } from "~/components/ui/useFocusTrap";
+import { useModal } from "~/components/ui/useModal";
 import { LEGAL_DOCUMENTS, legalDocument, type LegalDocumentId } from "~/legal/documents";
 
 interface LegalDialogProps {
@@ -26,7 +26,7 @@ export function LegalDialog({ open, onClose }: LegalDialogProps) {
   const activeTab = useRef<HTMLButtonElement>(null);
   const [current, setCurrent] = useState<LegalDocumentId>("terms");
 
-  useFocusTrap(dialog);
+  useModal(dialog, open !== null, onClose);
 
   useEffect(() => {
     if (open === null) return;
@@ -42,19 +42,6 @@ export function LegalDialog({ open, onClose }: LegalDialogProps) {
     body.current?.scrollTo({ top: 0 });
     activeTab.current?.scrollIntoView({ inline: "center", block: "nearest" });
   }, [current]);
-
-  useEffect(() => {
-    if (open === null) return undefined;
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open, onClose]);
 
   if (open === null) return null;
 

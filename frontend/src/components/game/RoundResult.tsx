@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import type { RoundResult as RoundResultData } from "~/api/types";
 import styles from "~/components/game/RoundResult.module.css";
 import { Button } from "~/components/ui/Button";
-import { useFocusTrap } from "~/components/ui/useFocusTrap";
+import { useModal } from "~/components/ui/useModal";
 import { formatDistance, formatNumber, formatPercent } from "~/domain/format";
 import { scoreRatio, scoreTier, zoneStanding } from "~/domain/score";
 import { COLOR_GUESS, COLOR_TARGET } from "~/map/styles";
@@ -31,7 +31,7 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
   const nextButton = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
 
-  useFocusTrap(dialog);
+  useModal(dialog, true);
 
   useEffect(() => {
     const element = container.current;

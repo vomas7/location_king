@@ -29,6 +29,19 @@ test("игрок пишет о проблеме прямо из меню", async
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
+test("окно закрывается с клавиатуры", async ({ page }) => {
+  await register(page);
+
+  await open(page, "Профиль");
+  await page.getByRole("button", { name: "Отзыв об игре" }).click();
+  await expect(page.getByRole("dialog", { name: "Отзыв об игре" })).toBeVisible();
+
+  // Escape — первое, что пробует каждый, кому окно больше не нужно
+  await page.keyboard.press("Escape");
+
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
 test("пустой отзыв не отправляется", async ({ page }) => {
   await register(page);
 
