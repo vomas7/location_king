@@ -33,9 +33,11 @@ logger = logging.getLogger(__name__)
 MIN_ROUNDS = 1
 MAX_ROUNDS = 20
 
-# Сколько зон перебрать в режиме стран, прежде чем признать, что подходящих
-# мест под заданные условия нет
-COUNTRY_ATTEMPTS = 12
+# Сколько зон перебрать, прежде чем признать, что подходящих мест под
+# заданные условия нет. Перебирать приходится по двум поводам: зона может
+# оказаться целиком в воде и не годиться ни для какого режима, а в режиме
+# стран каталог с границами может разойтись в названии страны
+ZONE_ATTEMPTS = 12
 
 
 async def create(
@@ -152,7 +154,9 @@ async def _build_round(
     масштаба, и целью раунда становится центр этого тайла — именно его игрок
     и видит в центре снимка.
     """
-    for _ in range(COUNTRY_ATTEMPTS):
+    borders_loaded = await countries_service.are_loaded(db)
+
+    for _ in range(ZONE_ATTEMPTS):
         zone = (
             await zones_service.get_zone(db, zone_id)
             if zone_id is not None
@@ -160,7 +164,23 @@ async def _build_round(
                 db, category, continent, country_group, difficulty=difficulty
             )
         )
-        lon, lat = await zones_service.random_point_in_zone(db, zone)
+
+        # Точка раунда обязана быть на суше: приморская зона наполовину
+        # состоит из моря, и без этого игрок регулярно получал кадр ровной
+        # синевы, по которому угадать нельзя ничего
+        point = (
+            await zones_service.random_point_with_land(db, zone, view_extent_km)
+            if borders_loaded
+            else await zones_service.random_point_in_zone(db, zone)
+        )
+
+        if point is None:
+            logger.info("Зона %s целиком в воде: суши в ней не нашлось", zone.name)
+            if zone_id is not None:
+                raise NotFoundError(f"Зона {zone.name} целиком в воде")
+            continue
+
+        lon, lat = point
 
         zoom = zoom_for_extent(lat, view_extent_km, max_zoom=settings.satellite_max_zoom - 1)
         tile_x, tile_y = lonlat_to_tile(lon, lat, zoom)
@@ -198,7 +218,7 @@ async def _build_round(
             view_extent_km=Decimal(str(round(tile_width_km(tile_x, tile_y, zoom), 3))),
         )
 
-    raise NotFoundError("Не нашлось места, подходящего для режима стран")
+    raise NotFoundError("Не нашлось подходящего места под заданные условия")
 
 
 def _same_country(border_name: str, catalog_name: str | None) -> bool:

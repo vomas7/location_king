@@ -40,6 +40,17 @@ def _point(longitude: float, latitude: float):
     return func.ST_SetSRID(func.ST_MakePoint(longitude, latitude), 4326)
 
 
+async def are_loaded(db: AsyncSession) -> bool:
+    """
+    Загружены ли границы вообще.
+
+    По ним отсеиваются точки раунда, попавшие в море. Если границ нет, отсеять
+    нечем, и раунд собирается как раньше — иначе пустая таблица означала бы,
+    что игра не выдаёт ни одного раунда вовсе.
+    """
+    return (await db.execute(select(Country.code).limit(1))).scalar_one_or_none() is not None
+
+
 async def at_point(db: AsyncSession, longitude: float, latitude: float) -> Country | None:
     """
     Страна, в которой лежит точка. Ничего — если это открытая вода.
