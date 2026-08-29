@@ -76,6 +76,9 @@ jobs:
       run: |
         alembic upgrade head
         python scripts/seed.py
+        # Без границ режим «угадай страну» не собирает раунд вовсе, и
+        # сценарий про него падает не потому, что игра сломана
+        python scripts/load_countries.py
 
     - name: Start tile stub and backend
       working-directory: ./backend
