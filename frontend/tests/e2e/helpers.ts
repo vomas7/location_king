@@ -8,6 +8,36 @@ export interface Player {
   name: string;
 }
 
+/**
+ * Свой адрес каждому игроку.
+ *
+ * Регистрации ограничены по адресу клиента — тридцать в час, и это главное
+ * свойство игры, а не помеха. Но прогон сценариев — это тридцать разных
+ * людей за три минуты, и с одного адреса он упирается в лимит и начинает
+ * падать в CI вместо того, чтобы находить ошибки. В жизни за этими
+ * тридцатью людьми стоят тридцать адресов, поэтому и здесь каждому
+ * браузерному контексту достаётся свой.
+ *
+ * В бою заголовок проставляет nginx и клиентский подделать не даёт; в
+ * тестах бэкенд открыт напрямую, и подделать его может только сам тест. Сам
+ * лимит проверяется там, где это и надо делать, — в
+ * `backend/tests/test_rate_limit.py`.
+ *
+ * Счётчика хватает, потому что воркер один: он задан в playwright.config.ts.
+ * Диапазон 203.0.113.0/24 отведён под документацию и примеры.
+ */
+let players = 0;
+
+function nextAddress(): string {
+  players += 1;
+  return `203.0.113.${String((players % 254) + 1)}`;
+}
+
+/** Выдать вкладке свой адрес. Нужно всему, что пробует зарегистрироваться. */
+export async function ownAddress(page: Page): Promise<void> {
+  await page.context().setExtraHTTPHeaders({ "X-Forwarded-For": nextAddress() });
+}
+
 /** Уникальный игрок на каждый прогон: база между запусками не чистится. */
 export function newPlayer(): Player {
   const suffix = Math.random().toString(36).slice(2, 8);
@@ -20,6 +50,8 @@ export function newPlayer(): Player {
 
 export async function register(page: Page): Promise<Player> {
   const player = newPlayer();
+
+  await ownAddress(page);
 
   await page.goto("/");
   await page.getByRole("tab", { name: "Регистрация" }).click();

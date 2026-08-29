@@ -2,7 +2,7 @@
 
 import { expect, test } from "@playwright/test";
 
-import { register } from "./helpers";
+import { ownAddress, register } from "./helpers";
 
 test("документы открываются из подвала и на экране входа", async ({ page }) => {
   await page.goto("/");
@@ -30,6 +30,10 @@ test("документы открываются из подвала и на эк
 });
 
 test("без согласия с условиями аккаунт не создать", async ({ page }) => {
+  // Отвергнутая регистрация тоже считается лимитом: она такой же повод
+  // прийти со своего адреса, как и удачная
+  await ownAddress(page);
+
   await page.goto("/");
   await page.getByRole("tab", { name: "Регистрация" }).click();
   await page.getByPlaceholder("you@example.com").fill("no-consent@example.com");

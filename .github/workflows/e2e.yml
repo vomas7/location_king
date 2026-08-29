@@ -104,19 +104,6 @@ jobs:
           sleep 1
         done
 
-    # Каждый сценарий регистрирует игрока, а регистрации ограничены по адресу.
-    # Прогон идёт с одного адреса, поэтому счётчики обнуляем: иначе с ростом
-    # числа сценариев прогон однажды упрётся в лимит и станет падать в CI, а не
-    # находить ошибки.
-    - name: Reset rate-limit counters
-      run: |
-        python -c "
-        import redis
-        client = redis.Redis.from_url('redis://127.0.0.1:6379/0')
-        for key in client.scan_iter('ratelimit:*'):
-            client.delete(key)
-        "
-
     - name: Run scenarios
       working-directory: ./frontend
       run: npm run test:e2e
