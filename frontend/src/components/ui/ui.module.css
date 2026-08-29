@@ -3,19 +3,20 @@
 /* ── Кнопки ───────────────────────────────────────────────────────── */
 
 .button {
-  padding: 11px 18px;
+  min-height: var(--tap);
+  padding: var(--space-3) var(--space-5);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: var(--surface-3);
-  font-size: 14px;
-  font-weight: 550;
+  font-size: var(--fs-control);
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
   transition:
-    background 0.16s var(--ease),
-    border-color 0.16s var(--ease),
-    transform 0.08s var(--ease),
-    opacity 0.16s var(--ease);
+    background var(--motion-base) var(--ease),
+    border-color var(--motion-base) var(--ease),
+    transform var(--motion-press) var(--ease),
+    opacity var(--motion-base) var(--ease);
 }
 
 .button:hover:not(:disabled) {
@@ -38,7 +39,7 @@
 .primary {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
   color: var(--accent-ink);
-  font-weight: 650;
+  font-weight: 700;
 }
 
 .primary:hover:not(:disabled) {
@@ -66,19 +67,20 @@
 }
 
 .small {
-  padding: 6px 12px;
-  font-size: 13px;
+  min-height: 34px;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-small);
 }
 
 .large {
-  padding: 14px 20px;
-  font-size: 15px;
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--fs-body);
 }
 
 /* ── Карточка ─────────────────────────────────────────────────────── */
 
 .card {
-  padding: 26px;
+  padding: var(--space-6);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
@@ -86,22 +88,24 @@
 }
 
 .cardTitle {
-  font-size: 19px;
+  font-size: var(--fs-title);
   font-weight: 700;
   letter-spacing: -0.015em;
+  line-height: var(--lh-tight);
 }
 
 .cardSubtitle {
-  margin-top: 4px;
-  margin-bottom: 22px;
+  margin-top: var(--space-1);
+  margin-bottom: var(--space-5);
   color: var(--text-faint);
-  font-size: 14px;
+  font-size: var(--fs-small);
+  line-height: var(--lh-base);
   text-wrap: pretty;
 }
 
 .eyebrow {
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -111,12 +115,12 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: var(--space-2);
 }
 
 .fieldLabel {
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 500;
 }
 
@@ -126,14 +130,15 @@
 }
 
 .input {
-  padding: 11px 14px;
+  min-height: var(--tap);
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--bg-deep);
   color: var(--text);
   transition:
-    border-color 0.16s var(--ease),
-    box-shadow 0.16s var(--ease);
+    border-color var(--motion-base) var(--ease),
+    box-shadow var(--motion-base) var(--ease);
 }
 
 /* Растёт только вниз: вширь ему некуда — он и так во всю карточку, а
@@ -141,7 +146,7 @@
 .textarea {
   min-height: 112px;
   font: inherit;
-  line-height: 1.5;
+  line-height: var(--lh-base);
   resize: vertical;
 }
 
@@ -158,12 +163,12 @@
 /* ── Сообщение об ошибке ──────────────────────────────────────────── */
 
 .alert {
-  padding: 10px 13px;
+  padding: var(--space-3);
   border: 1px solid color-mix(in srgb, var(--danger) 34%, transparent);
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--danger) 12%, transparent);
   color: color-mix(in srgb, var(--danger) 72%, var(--text));
-  font-size: 13px;
+  font-size: var(--fs-small);
 }
 
 /* ── Сегментированный переключатель ───────────────────────────────── */
@@ -175,42 +180,43 @@
 }
 
 .groupLabel {
-  margin-bottom: 9px;
+  margin-bottom: var(--space-2);
   padding: 0;
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 500;
 }
 
 .groupHint {
-  margin-top: 8px;
+  margin-top: var(--space-2);
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: var(--fs-micro);
 }
 
 .segmented {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px;
+  gap: var(--space-1);
+  padding: var(--space-1);
   border-radius: var(--radius);
   background: var(--bg-deep);
 }
 
 .segmentedItem {
   flex: 1 1 auto;
-  min-width: 44px;
-  padding: 8px 10px;
+  min-width: var(--tap);
+  min-height: 38px;
+  padding: var(--space-2) var(--space-3);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-faint);
-  font-size: 13px;
-  font-weight: 550;
+  font-size: var(--fs-small);
+  font-weight: 600;
   cursor: pointer;
   transition:
-    background 0.16s var(--ease),
-    color 0.16s var(--ease);
+    background var(--motion-base) var(--ease),
+    color var(--motion-base) var(--ease);
 }
 
 .segmentedItem:hover {
@@ -227,12 +233,12 @@
 
 .loader {
   position: fixed;
-  z-index: 80;
+  z-index: var(--z-loader);
   inset: 0;
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 20px;
+  gap: var(--space-5);
   background: var(--scrim);
   backdrop-filter: blur(4px);
 }
@@ -266,24 +272,24 @@
 
 .loaderText {
   color: var(--text-dim);
-  font-size: 14px;
+  font-size: var(--fs-control);
 }
 
 /* ── Всплывающее сообщение ────────────────────────────────────────── */
 
 .toast {
   position: fixed;
-  z-index: 90;
-  bottom: 24px;
+  z-index: var(--z-toast);
+  bottom: var(--space-6);
   left: 50%;
-  padding: 12px 18px;
+  padding: var(--space-3) var(--space-5);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
   box-shadow: var(--shadow);
-  font-size: 14px;
+  font-size: var(--fs-control);
   transform: translateX(-50%);
-  animation: rise 0.18s var(--ease);
+  animation: rise var(--motion-base) var(--ease);
 }
 
 @keyframes rise {
@@ -298,8 +304,8 @@
 .skeleton {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 6px 0;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
 }
 
 .skeletonRow {
@@ -339,7 +345,7 @@
 .checkbox {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--space-3);
   cursor: pointer;
 }
 
@@ -355,8 +361,8 @@
   appearance: none;
   cursor: pointer;
   transition:
-    background 0.16s var(--ease),
-    border-color 0.16s var(--ease);
+    background var(--motion-base) var(--ease),
+    border-color var(--motion-base) var(--ease);
 }
 
 .checkboxInput:hover {
@@ -373,8 +379,8 @@
 
 .checkboxText {
   color: var(--text-dim);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--fs-small);
+  line-height: var(--lh-base);
   text-wrap: pretty;
 }
 
@@ -393,8 +399,8 @@
 .playerRow {
   display: grid;
   align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
   grid-template-columns: 28px auto 1fr auto;
 }
@@ -407,7 +413,7 @@
 .playerRank {
   color: var(--text-faint);
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -419,7 +425,7 @@
 
 .playerName {
   overflow: hidden;
-  font-size: 14px;
+  font-size: var(--fs-control);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -427,7 +433,7 @@
 .playerValue {
   color: var(--text);
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: var(--fs-control);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }

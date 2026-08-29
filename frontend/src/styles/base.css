@@ -42,8 +42,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
-  font-size: 15px;
-  line-height: 1.55;
+  font-size: var(--fs-body);
+  line-height: var(--lh-base);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizelegibility;
 }
@@ -56,7 +56,7 @@ h2,
 h3 {
   font-weight: 700;
   letter-spacing: -0.02em;
-  line-height: 1.15;
+  line-height: var(--lh-tight);
   text-wrap: balance;
 }
 
@@ -103,17 +103,17 @@ a {
 /* Первая цель табуляции: попасть с клавиатуры сразу в игру, минуя шапку */
 .skip-link {
   position: fixed;
-  z-index: 100;
-  top: 8px;
-  left: 8px;
-  padding: 10px 16px;
+  z-index: var(--z-skip);
+  top: var(--space-2);
+  left: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-sm);
   background: var(--accent);
   color: var(--accent-ink);
   font-weight: 600;
   text-decoration: none;
   transform: translateY(-200%);
-  transition: transform 0.16s var(--ease);
+  transition: transform var(--motion-base) var(--ease);
 }
 
 .skip-link:focus-visible {
@@ -132,8 +132,8 @@ a {
 }
 
 .ol-control button {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   color: var(--text);
@@ -156,14 +156,14 @@ a {
   padding: 3px 8px;
   border-radius: var(--radius-sm) 0 0;
   background: color-mix(in srgb, var(--bg-deep) 78%, transparent);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: var(--fs-micro);
+  line-height: var(--lh-base);
   backdrop-filter: blur(6px);
 }
 
 .ol-attribution ul {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   color: var(--text-faint);
