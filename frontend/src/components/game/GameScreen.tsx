@@ -8,17 +8,17 @@ import styles from "~/components/game/GameScreen.module.css";
 import { GuessPanel } from "~/components/game/GuessPanel";
 import { RoundTimer } from "~/components/game/RoundTimer";
 import { SatelliteView } from "~/components/game/SatelliteView";
-import type { LonLat } from "~/map/guess";
+import type { Answer } from "~/api/types";
 import { useCountdown } from "~/state/useCountdown";
 
 interface GameScreenProps {
   round: RoundView;
-  guess: LonLat | null;
+  guess: Answer | null;
   busy: boolean;
   timeLimitSeconds: number | null;
   /** Показывать ли подсказки: это первый раунд первой партии игрока. */
   coaching: boolean;
-  onPick: (guess: LonLat) => void;
+  onPick: (guess: Answer) => void;
   /** Взять подсказку по этому раунду. */
   onHint: () => void;
   onSubmit: () => void;
@@ -88,11 +88,12 @@ export function GameScreen({
 
   return (
     <div className={styles.screen}>
-      <SatelliteView round={round} resetSignal={resetSignal} />
+      <SatelliteView round={round} resetSignal={resetSignal} onReset={resetView} />
 
       {coaching && !coachDismissed && (
         <FirstRoundCoach
           hasGuess={guess !== null}
+          byCountry={round.answer_mode === "country"}
           onDismiss={() => {
             setCoachDismissed(true);
           }}

@@ -1,8 +1,9 @@
 /** Эндпоинты API. Тонкая типизированная обёртка над клиентом. */
 
-import { request } from "~/api/client";
+import { request, requestText } from "~/api/client";
 import { setTokens } from "~/api/tokens";
 import type {
+  Answer,
   AuthResponse,
   DailyChallenge,
   DuelFormat,
@@ -59,6 +60,16 @@ export const auth = {
     request<void>("/api/auth/me/delete", { method: "POST", body: { password } }),
 };
 
+export const countries = {
+  /**
+   * Контуры стран для карты догадки.
+   *
+   * Текстом, а не разобранной структурой: разбирает его OpenLayers, и
+   * промежуточный JSON.parse тут только лишняя работа над полумегабайтом.
+   */
+  borders: () => requestText("/api/countries/borders"),
+};
+
 export const feedback = {
   /** Отправить впечатление или сообщение о проблеме. */
   send: (kind: FeedbackKind, message: string) =>
@@ -83,10 +94,13 @@ export const game = {
   hint: (roundId: number) =>
     request<RoundView>(`/api/rounds/${String(roundId)}/hint`, { method: "POST" }),
 
-  guess: (roundId: number, longitude: number, latitude: number) =>
+  guess: (roundId: number, answer: Answer) =>
     request<GuessResponse>(`/api/rounds/${String(roundId)}/guess`, {
       method: "POST",
-      body: { longitude, latitude },
+      body:
+        answer.kind === "point"
+          ? { longitude: answer.longitude, latitude: answer.latitude }
+          : { country: answer.code },
     }),
 
   history: (limit = 10) => request<SessionHistory>(`/api/sessions?limit=${String(limit)}`),

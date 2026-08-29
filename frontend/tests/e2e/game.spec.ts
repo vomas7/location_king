@@ -6,7 +6,7 @@
 
 import { expect, test } from "@playwright/test";
 
-import { answerRound, open, openSetup, playRounds, register } from "./helpers";
+import { answerCountryRound, answerRound, open, openSetup, playRounds, register } from "./helpers";
 
 test("партия от регистрации до итогов", async ({ page }) => {
   await register(page);
@@ -269,16 +269,58 @@ test("в режиме стран очки объясняет страна, а н
 
   await page.getByRole("button", { name: "Начать игру" }).click();
   await expect(page.locator("canvas").first()).toBeVisible();
-  await expect(page.getByText("Ткни в страну, из которой снимок")).toBeVisible();
+  await expect(page.getByText("Выбери страну, из которой снимок")).toBeVisible();
 
-  await answerRound(page);
+  await answerCountryRound(page);
 
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Страна", { exact: true })).toBeVisible();
   await expect(dialog.getByText("Твой ответ")).toBeVisible();
+  // Точки в этом режиме нет вовсе, и обещать её в легенде нечестно
+  await expect(dialog.getByText("твоя точка")).toHaveCount(0);
   // Ни промаха, ни разбора «здесь обычно промахиваются»: очки дали не за
   // километры, и объяснять их километрами нечестно
   await expect(dialog.getByText(/промах/i)).toHaveCount(0);
+});
+
+test("в режиме стран место в условиях не выбирают", async ({ page }) => {
+  await register(page);
+  await openSetup(page);
+
+  await expect(page.getByRole("radio", { name: "Океания" })).toBeVisible();
+
+  await page.getByRole("radio", { name: "Страной" }).click();
+
+  // «Россия» в условиях партии была бы готовым ответом на все её раунды
+  await expect(page.getByRole("radio", { name: "Океания" })).toHaveCount(0);
+  await expect(page.getByText(/играем по всему миру/)).toBeVisible();
+});
+
+test("снимок приближается туда, куда смотрит игрок", async ({ page }) => {
+  await register(page);
+
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+
+  const satellite = page.locator(".ol-viewport").first();
+  const box = await satellite.boundingBox();
+  expect(box).not.toBeNull();
+
+  // Крутим колесо в стороне от центра: раньше вид на каждом шаге зума
+  // возвращался к перекрестию, и рассмотреть окраины было нельзя
+  const corner = { x: box!.x + box!.width * 0.25, y: box!.y + box!.height * 0.3 };
+  await page.mouse.move(corner.x, corner.y);
+  await page.mouse.wheel(0, -600);
+  await page.waitForTimeout(700);
+
+  // Перекрестие уехало от центра экрана — значит, приближали не к нему
+  const reticle = page.locator(".ol-viewport").first();
+  await expect(reticle).toBeVisible();
+  await expect(page.getByRole("button", { name: "К цели" })).toBeVisible();
+
+  await page.getByRole("button", { name: "К цели" }).click();
+  await page.waitForTimeout(500);
+  await expect(page.locator("canvas").first()).toBeVisible();
 });
 
 test("аватарка видна в шапке и меняется в профиле", async ({ page }) => {

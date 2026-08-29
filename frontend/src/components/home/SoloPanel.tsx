@@ -49,6 +49,7 @@ export function SoloPanel({
   const [open, setOpen] = useState(false);
 
   const empty = zoneCount === 0;
+  const byCountry = setup.answerMode === "country";
 
   return (
     <section>
@@ -81,7 +82,9 @@ export function SoloPanel({
             options={ANSWER_MODES}
             value={setup.answerMode}
             onChange={(answerMode) => {
-              onChange({ answerMode });
+              // Выбор места вместе с ответом страной — это уже не игра:
+              // «Россия» в условиях партии и есть правильный ответ
+              onChange({ answerMode, ...(answerMode === "country" ? { place: null } : {}) });
             }}
             hint={answerModeHint(setup.answerMode)}
           />
@@ -111,15 +114,23 @@ export function SoloPanel({
             }}
             hint="Чем меньше участок, тем труднее узнать место"
           />
-          <Segmented
-            label="Где играем"
-            options={PLACES}
-            value={setup.place}
-            onChange={(place) => {
-              onChange({ place });
-            }}
-            {...(zoneCount === null ? {} : { hint: `Подходящих зон: ${String(zoneCount)}` })}
-          />
+          {/* В режиме стран выбирать место нельзя: «Россия» в условиях
+              партии — это и есть ответ на все её раунды */}
+          {byCountry ? (
+            <p className={styles.note}>
+              В режиме стран играем по всему миру: выбранное место подсказывало бы ответ.
+            </p>
+          ) : (
+            <Segmented
+              label="Где играем"
+              options={PLACES}
+              value={setup.place}
+              onChange={(place) => {
+                onChange({ place });
+              }}
+              {...(zoneCount === null ? {} : { hint: `Подходящих зон: ${String(zoneCount)}` })}
+            />
+          )}
           <Segmented
             label="Время на раунд"
             options={TIME_LIMITS}

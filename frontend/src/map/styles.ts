@@ -31,6 +31,19 @@ export const COLOR_GUESS = token("--marker-guess", "#56c7f0");
 
 const OUTLINE = token("--bg", "#070d0c");
 
+/**
+ * Тот же цвет, но прозрачный.
+ *
+ * Токены заданы в hex, а заливка страны должна просвечивать карту под собой.
+ * color-mix здесь не годится: OpenLayers принимает только готовые строки.
+ */
+function withAlpha(color: string, alpha: number): string {
+  const hex = color.replace("#", "");
+  const value = Number.parseInt(hex.length === 3 ? hex.replace(/./g, "$&$&") : hex, 16);
+
+  return `rgba(${String((value >> 16) & 255)}, ${String((value >> 8) & 255)}, ${String(value & 255)}, ${String(alpha)})`;
+}
+
 function marker(color: string): Style {
   return new Style({
     image: new Circle({
@@ -74,6 +87,34 @@ export function styleNumberedTarget(index: number): Style {
   numbered.set(index, style);
   return style;
 }
+
+/**
+ * Страны на карте догадки.
+ *
+ * В режиме стран игрок выбирает не точку, а страну, поэтому границы должны
+ * быть видны, но не спорить с картой: обычная страна — тонкий контур без
+ * заливки, под курсором она подсвечивается, выбранная заливается тем же
+ * холодным цветом, каким в обычном раунде отмечена догадка. Кодировка одна:
+ * холодное — это ответ игрока.
+ */
+export const STYLE_COUNTRY = new Style({
+  // Не цветом линий интерфейса: они рассчитаны на поверхности карточек, а
+  // здесь под ними карта, и на ней такой контур не виден вовсе
+  stroke: new Stroke({ color: withAlpha(token("--text-faint", "#849d96"), 0.55), width: 1 }),
+  // Заливка прозрачная, но она нужна: без неё попадание считается только по
+  // самой линии границы, и ткнуть в середину страны становится нельзя
+  fill: new Fill({ color: "rgba(0, 0, 0, 0)" }),
+});
+
+export const STYLE_COUNTRY_HOVER = new Style({
+  stroke: new Stroke({ color: COLOR_GUESS, width: 1.5 }),
+  fill: new Fill({ color: withAlpha(COLOR_GUESS, 0.18) }),
+});
+
+export const STYLE_COUNTRY_PICKED = new Style({
+  stroke: new Stroke({ color: COLOR_GUESS, width: 2 }),
+  fill: new Fill({ color: withAlpha(COLOR_GUESS, 0.42) }),
+});
 
 /** Линия промаха между догадкой и целью. */
 export const STYLE_LINE = new Style({

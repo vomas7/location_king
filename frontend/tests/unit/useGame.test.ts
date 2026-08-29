@@ -152,10 +152,10 @@ describe("useGame", () => {
     });
 
     act(() => {
-      hook.current.pick({ longitude: 30, latitude: 50 });
+      hook.current.pick({ kind: "point", longitude: 30, latitude: 50 });
     });
 
-    expect(hook.current.state.guess).toEqual({ longitude: 30, latitude: 50 });
+    expect(hook.current.state.guess).toEqual({ kind: "point", longitude: 30, latitude: 50 });
   });
 
   it("после догадки показывает результат и держит следующий раунд наготове", async () => {
@@ -174,7 +174,7 @@ describe("useGame", () => {
       await hook.current.start(OPTIONS);
     });
     act(() => {
-      hook.current.pick({ longitude: 30, latitude: 50 });
+      hook.current.pick({ kind: "point", longitude: 30, latitude: 50 });
     });
     await act(async () => {
       await hook.current.submit();
@@ -208,7 +208,7 @@ describe("useGame", () => {
       await hook.current.start(OPTIONS);
     });
     act(() => {
-      hook.current.pick({ longitude: 1, latitude: 1 });
+      hook.current.pick({ kind: "point", longitude: 1, latitude: 1 });
     });
     await act(async () => {
       await hook.current.submit();

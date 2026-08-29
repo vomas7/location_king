@@ -10,13 +10,13 @@ import { useCallback, useReducer } from "react";
 import { errorMessage } from "~/api/client";
 import { game } from "~/api/endpoints";
 import type {
+  Answer,
   RoundResult,
   RoundView,
   SessionState,
   SessionView,
   StartSessionOptions,
 } from "~/api/types";
-import type { LonLat } from "~/map/guess";
 
 /** Что показывает экран игры. */
 export type GamePhase =
@@ -32,7 +32,7 @@ export interface GameState {
   options: StartSessionOptions | null;
   session: SessionView | null;
   round: RoundView | null;
-  guess: LonLat | null;
+  guess: Answer | null;
   results: RoundResult[];
   lastResult: RoundResult | null;
   pendingRound: RoundView | null;
@@ -50,7 +50,7 @@ type Action =
       results: RoundResult[];
       options: StartSessionOptions | null;
     }
-  | { type: "picked"; guess: LonLat }
+  | { type: "picked"; guess: Answer }
   | { type: "hinted"; round: RoundView }
   | { type: "guessed"; session: SessionView; result: RoundResult; next: RoundView | null }
   | { type: "advanced" }
@@ -141,7 +141,7 @@ export interface GameController {
   state: GameState;
   start: (options: StartSessionOptions) => Promise<void>;
   resume: (session: SessionState) => void;
-  pick: (guess: LonLat) => void;
+  pick: (guess: Answer) => void;
   /** Взять подсказку по текущему раунду. */
   hint: () => Promise<void>;
   submit: () => Promise<void>;
@@ -192,7 +192,7 @@ export function useGame(onSessionEnd: () => void): GameController {
     });
   }, []);
 
-  const pick = useCallback((guess: LonLat) => {
+  const pick = useCallback((guess: Answer) => {
     dispatch({ type: "picked", guess });
   }, []);
 
@@ -218,11 +218,7 @@ export function useGame(onSessionEnd: () => void): GameController {
     dispatch({ type: "loading", text: "Считаем расстояние…" });
 
     try {
-      const response = await game.guess(
-        state.round.id,
-        state.guess.longitude,
-        state.guess.latitude,
-      );
+      const response = await game.guess(state.round.id, state.guess);
 
       dispatch({
         type: "guessed",

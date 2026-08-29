@@ -94,6 +94,43 @@ export async function answerRound(page: Page): Promise<void> {
   await expect(page.getByRole("dialog")).toBeVisible();
 }
 
+/**
+ * Выбрать страну на карте и ответить.
+ *
+ * Куда именно ткнуть, заранее не известно: карта мира на весь океан, а по
+ * океану выбирать нечего. Поэтому пробуем несколько точек по суше, пока
+ * страна не выберется, — так же, как это делает игрок.
+ */
+export async function answerCountryRound(page: Page): Promise<void> {
+  const guessMap = page.locator(".ol-viewport").nth(1);
+
+  await guessMap.hover();
+  await page.waitForTimeout(500);
+
+  const box = await guessMap.boundingBox();
+  expect(box).not.toBeNull();
+
+  const answer = page.getByRole("button", { name: "Ответить" });
+
+  // Африка, Евразия, Южная Америка: хоть куда-то попадём
+  const spots: [number, number][] = [
+    [0.55, 0.6],
+    [0.62, 0.4],
+    [0.32, 0.7],
+  ];
+
+  for (const [x, y] of spots) {
+    await page.mouse.click(box!.x + box!.width * x, box!.y + box!.height * y);
+    await page.waitForTimeout(300);
+
+    if (await answer.isEnabled()) break;
+  }
+
+  await expect(answer).toBeEnabled();
+  await answer.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+}
+
 /** Доиграть партию из указанного числа раундов до экрана итогов. */
 export async function playRounds(page: Page, rounds: number): Promise<void> {
   for (let round = 1; round <= rounds; round += 1) {

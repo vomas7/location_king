@@ -12,6 +12,7 @@ from app.exceptions import AppError
 from app.observability import ObservabilityMiddleware, configure_logging, metrics
 from app.routers import (
     auth,
+    countries,
     daily,
     duels,
     feedback,
@@ -75,6 +76,7 @@ app.include_router(friends.router)
 app.include_router(feedback.router)
 app.include_router(rounds.router)
 app.include_router(zones.router)
+app.include_router(countries.router)
 app.include_router(leaderboard.router)
 
 

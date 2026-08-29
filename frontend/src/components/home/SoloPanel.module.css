@@ -53,3 +53,11 @@
 .alertSlot {
   margin-bottom: 14px;
 }
+
+/* Объяснение вместо переключателя, который в этом режиме не нужен */
+.note {
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}

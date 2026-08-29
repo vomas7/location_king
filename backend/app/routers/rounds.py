@@ -42,8 +42,8 @@ async def submit_guess(
         db,
         user,
         round_obj,
-        longitude=payload.longitude,
-        latitude=payload.latitude,
+        point=payload.point,
+        country=payload.country,
     )
 
     session = await game_service.get_session_for_user(db, user, round_obj.session_id)

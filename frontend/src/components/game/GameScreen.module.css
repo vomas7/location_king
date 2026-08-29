@@ -60,6 +60,32 @@
 
 /* Подсказки о клавишах бессмысленны на телефоне, поэтому по умолчанию их нет,
    а появляются они только там, где есть курсор */
+/* Возврат к цели. Справа, потому что слева стоит подсказка новичка и в
+   первом раунде накрывала бы эту кнопку собой */
+.recenter {
+  position: absolute;
+  z-index: 10;
+  top: 14px;
+  right: 14px;
+  padding: 7px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-deep) 78%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    color 0.16s var(--ease),
+    border-color 0.16s var(--ease);
+}
+
+.recenter:hover {
+  border-color: var(--line);
+  color: var(--text);
+}
+
 .hints {
   display: none;
   position: absolute;
@@ -127,6 +153,8 @@
 @media (hover: hover) and (pointer: fine) {
   .hints {
     display: flex;
+    /* Под кнопкой возврата к цели: она в том же углу и всегда на месте */
+    top: 58px;
   }
 
   .map {

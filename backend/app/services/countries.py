@@ -1,9 +1,15 @@
 """
-Страна по точке на карте.
+Страны: определение по точке и контуры для карты догадки.
 
-Границы лежат в базе, и отвечает на этот вопрос PostGIS: у него для этого
-есть и функция, и индекс. Считать на клиенте нельзя вдвойне — границы весят
-мегабайты и вдобавок подсказывают ответ.
+Полные границы лежат в базе и никуда оттуда не уходят: они весят два
+мегабайта, а PostGIS отвечает по ним и точнее, и быстрее, чем это сделал бы
+клиент.
+
+Но в режиме стран игрок выбирает страну мышью, и для этого контуры на карте
+всё-таки нужны. Никакого ответа они не выдают: на карте лежат границы всех
+стран сразу, а какая из них правильная, по ним не узнать. Поэтому наружу
+уходит отдельный сильно упрощённый набор — он нужен только чтобы попасть
+пальцем, а сверяет ответ всё равно сервер по коду страны.
 
 Точка может не попасть ни в одну страну: береговая линия в границах упрощена,
 и центр приморского города оказывается «в море» на сотни метров. Поэтому
@@ -11,12 +17,15 @@
 океан считается океаном.
 """
 
+import json
 import logging
 
 from geoalchemy2 import Geography
-from sqlalchemy import cast, func, select
+from redis.exceptions import RedisError
+from sqlalchemy import cast, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.cache import redis_client
 from app.models.country import Country
 
 logger = logging.getLogger(__name__)
@@ -88,3 +97,127 @@ async def distance_km(db: AsyncSession, code: str, longitude: float, latitude: f
 async def by_code(db: AsyncSession, code: str) -> Country | None:
     """Страна по коду ISO."""
     return (await db.execute(select(Country).where(Country.code == code))).scalar_one_or_none()
+
+
+#: Ключ кэша контуров. Версия в имени: поменяли упрощение — старое значение
+#: не подхватится, и не нужно помнить про ручную очистку
+OUTLINES_CACHE_KEY = "countries:outlines:v1"
+
+#: Мелкие острова с карты убираем, кроме самого крупного куска страны: в него
+#: игрок и целится, а сотня скал по океану весит больше, чем вся Европа.
+#: Порог в тысячу квадратных километров — это остров примерно 30 на 30 км
+MIN_ISLAND_KM2 = 1000
+
+#: Насколько грубо упрощать контур. Люксембург при допуске большой страны
+#: превращается в треугольник, а Россию тонко рисовать незачем: попасть по
+#: ней пальцем нетрудно
+SIMPLIFY_STEPS = ((50_000, 0.03), (500_000, 0.08))
+COARSEST_SIMPLIFY = 0.2
+
+_OUTLINES_SQL = text(
+    """
+    WITH parts AS (
+        SELECT code, name, (ST_Dump(border)).geom AS piece FROM countries
+    ), ranked AS (
+        SELECT code, name, piece,
+               ST_Area(piece::geography) / 1e6 AS km2,
+               row_number() OVER (PARTITION BY code ORDER BY ST_Area(piece) DESC) AS rank
+        FROM parts
+    ), kept AS (
+        SELECT code, name, piece
+        FROM ranked
+        WHERE rank = 1 OR km2 >= CAST(:min_island AS double precision)
+    ), sized AS (
+        SELECT code, name, piece,
+               sum(ST_Area(piece::geography) / 1e6) OVER (PARTITION BY code) AS total
+        FROM kept
+    )
+    SELECT code, name,
+           ST_AsGeoJSON(
+               ST_Collect(
+                   ST_SimplifyPreserveTopology(
+                       piece,
+                       CASE
+                           WHEN total < CAST(:small AS double precision)
+                               THEN CAST(:fine AS double precision)
+                           WHEN total < CAST(:medium AS double precision)
+                               THEN CAST(:middle AS double precision)
+                           ELSE CAST(:coarse AS double precision)
+                       END
+                   )
+               ),
+               3
+           ) AS outline
+    FROM sized
+    GROUP BY code, name
+    ORDER BY code
+    """
+)
+
+
+async def outlines(db: AsyncSession) -> str:
+    """
+    Контуры всех стран одной готовой строкой GeoJSON.
+
+    Строкой, а не структурой: она уходит клиенту как есть и лежит в кэше уже
+    собранной. Собирать её на каждый запрос — это перебрать три тысячи
+    полигонов ради ответа, который меняется раз в релиз.
+    """
+    cached = await _cached_outlines()
+    if cached is not None:
+        return cached
+
+    (small, fine), (medium, middle) = SIMPLIFY_STEPS
+
+    rows = (
+        await db.execute(
+            _OUTLINES_SQL,
+            {
+                "min_island": MIN_ISLAND_KM2,
+                "small": small,
+                "fine": fine,
+                "medium": medium,
+                "middle": middle,
+                "coarse": COARSEST_SIMPLIFY,
+            },
+        )
+    ).all()
+
+    collection = json.dumps(
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"code": code, "name": name},
+                    "geometry": json.loads(outline),
+                }
+                for code, name, outline in rows
+            ],
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+    await _cache_outlines(collection)
+    logger.info("Контуры стран собраны заново: %s стран", len(rows))
+
+    return collection
+
+
+async def _cached_outlines() -> str | None:
+    """Недоступный Redis не должен ронять режим стран."""
+    try:
+        cached = await redis_client().get(OUTLINES_CACHE_KEY)
+    except RedisError as e:
+        logger.warning("Кэш контуров недоступен на чтении: %s", e)
+        return None
+
+    return None if cached is None else cached.decode("utf-8")
+
+
+async def _cache_outlines(collection: str) -> None:
+    try:
+        await redis_client().set(OUTLINES_CACHE_KEY, collection)
+    except RedisError as e:
+        logger.warning("Кэш контуров недоступен на записи: %s", e)

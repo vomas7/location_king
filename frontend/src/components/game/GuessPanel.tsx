@@ -2,32 +2,32 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { RoundView } from "~/api/types";
+import type { Answer, RoundView } from "~/api/types";
 import styles from "~/components/game/GameScreen.module.css";
 import { Button } from "~/components/ui/Button";
 import { formatNumber } from "~/domain/format";
-import { createGuessMap, type GuessMap, type LonLat } from "~/map/guess";
+import { createGuessMap, type GuessMap } from "~/map/guess";
 import { useHoverPointer } from "~/state/usePointer";
 
-/**
- * Что просят сделать. В режиме стран точка ставится та же, но важно в неё не
- * целиться, а попасть в нужную страну: об этом и говорит подпись.
- */
-function promptFor(answerMode: string, picked: boolean): string {
-  if (answerMode === "country") {
-    return picked ? "Точка поставлена — засчитается страна" : "Ткни в страну, из которой снимок";
+/** Что просят сделать и что уже сделано. */
+function promptFor(answer: Answer | null, byCountry: boolean, countriesReady: boolean): string {
+  if (!byCountry) {
+    return answer === null ? "Отметь место на карте мира" : "Точка поставлена";
   }
 
-  return picked ? "Точка поставлена" : "Отметь место на карте мира";
+  if (!countriesReady) return "Загружаем страны…";
+  if (answer !== null && answer.kind === "country") return answer.name;
+
+  return "Выбери страну, из которой снимок";
 }
 
 interface GuessPanelProps {
   round: RoundView;
-  guess: LonLat | null;
+  guess: Answer | null;
   busy: boolean;
   pinned: boolean;
   onPin: (pinned: boolean) => void;
-  onPick: (guess: LonLat) => void;
+  onPick: (guess: Answer) => void;
   /** Взять подсказку: чем именно платит игрок, знает сервер. */
   onHint: () => void;
   onSubmit: () => void;
@@ -49,18 +49,27 @@ export function GuessPanel({
   onPickRef.current = onPick;
 
   const [ready, setReady] = useState(false);
+  const [countriesReady, setCountriesReady] = useState(false);
   const hoverPointer = useHoverPointer();
+
+  const byCountry = round.answer_mode === "country";
 
   // Мышью карта раскрывается подводом курсора, пальцем — нажатием
   const open = pinned || hoverPointer;
 
-  // Карта мира одна на всю партию: пересоздавать её на каждый раунд незачем
+  // Карта мира одна на всю партию: пересоздавать её на каждый раунд незачем.
+  // Режим при этом за партию не меняется — раунд не превращается из обычного
+  // в раунд про страны, — но в зависимостях он стоит честно
   useEffect(() => {
     const element = container.current;
     if (element === null) return;
 
-    const map = createGuessMap(element, (point) => {
-      onPickRef.current(point);
+    const map = createGuessMap(element, {
+      byCountry,
+      onPick: (answer) => {
+        onPickRef.current(answer);
+      },
+      onCountriesReady: setCountriesReady,
     });
     instance.current = map;
     setReady(true);
@@ -77,7 +86,7 @@ export function GuessPanel({
       instance.current = null;
       setReady(false);
     };
-  }, []);
+  }, [byCountry]);
 
   useEffect(() => {
     if (ready) instance.current?.clear();
@@ -123,7 +132,7 @@ export function GuessPanel({
 
         {open ? (
           <>
-            <p className={styles.hint}>{promptFor(round.answer_mode, guess !== null)}</p>
+            <p className={styles.hint}>{promptFor(guess, byCountry, countriesReady)}</p>
             <Button variant="primary" block disabled={guess === null || busy} onClick={onSubmit}>
               Ответить
             </Button>
@@ -136,7 +145,13 @@ export function GuessPanel({
               onPin(true);
             }}
           >
-            {guess === null ? "Открыть карту" : "Изменить точку"}
+            {guess === null
+              ? byCountry
+                ? "Выбрать страну"
+                : "Открыть карту"
+              : byCountry && guess.kind === "country"
+                ? guess.name
+                : "Изменить точку"}
           </Button>
         )}
       </div>

@@ -16,7 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.exceptions import ConflictError, ForbiddenError, NotFoundError
+from app.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.models.enums import AnswerMode, RoundStatus, SessionStatus
 from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
@@ -28,7 +28,7 @@ from app.services import countries as countries_service
 from app.services import daily, duels, matches
 from app.services import series as series_service
 from app.services.round_timer import is_late, time_left_fraction
-from app.services.scoring import GuessResult, country_score, evaluate_guess, time_factor
+from app.services.scoring import country_score, evaluate_guess, time_factor
 
 logger = logging.getLogger(__name__)
 
@@ -140,11 +140,15 @@ async def submit_guess(
     db: AsyncSession,
     user: User,
     round_obj: Round,
-    longitude: float,
-    latitude: float,
+    point: tuple[float, float] | None = None,
+    country: str | None = None,
 ) -> tuple[Round, Round | None]:
     """
     Принять догадку: посчитать расстояние и очки, выдать следующий раунд.
+
+    Чем отвечают, решает раунд: в обычном ставят точку, в раунде про страны
+    называют страну. Присланное не тем способом — ошибка клиента, а не повод
+    догадаться, что игрок имел в виду.
 
     Возвращает завершённый раунд и следующий, если сессия не закончилась.
     """
@@ -161,20 +165,11 @@ async def submit_guess(
 
     target_lon, target_lat = await target_coordinates(db, round_obj)
 
-    result = evaluate_guess(
-        guess_lon=longitude,
-        guess_lat=latitude,
-        target_lon=target_lon,
-        target_lat=target_lat,
-        view_extent_km=float(round_obj.view_extent_km),
-        max_score=round_obj.max_score,
-        time_left_fraction=time_left_fraction(session, round_obj),
-    )
+    if round_obj.country_code is None:
+        _accept_point(round_obj, session, point, target_lon, target_lat)
+    else:
+        await _accept_country(db, round_obj, session, country, target_lon, target_lat)
 
-    round_obj.guess_point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
-    round_obj.distance_km = Decimal(str(result.distance_km))
-    round_obj.accuracy_percentage = Decimal(str(result.accuracy))
-    round_obj.score = await _score_of(db, round_obj, session, result, longitude, latitude)
     round_obj.status = RoundStatus.GUESSED
     round_obj.guessed_at = datetime.now(UTC)
     round_obj.answer_seconds = _elapsed(round_obj)
@@ -191,44 +186,79 @@ async def submit_guess(
     logger.info(
         "Раунд %s: %s км, %s очков (пользователь %s)",
         round_obj.id,
-        result.distance_km,
+        round_obj.distance_km,
         round_obj.score,
         user.id,
     )
     return round_obj, next_round
 
 
-async def _score_of(
+def _accept_point(
+    round_obj: Round,
+    session: GameSession,
+    point: tuple[float, float] | None,
+    target_lon: float,
+    target_lat: float,
+) -> None:
+    """Обычный раунд: очки за то, насколько близко поставлена точка."""
+    if point is None:
+        raise ValidationError("В этом раунде отвечают точкой на карте")
+
+    longitude, latitude = point
+    result = evaluate_guess(
+        guess_lon=longitude,
+        guess_lat=latitude,
+        target_lon=target_lon,
+        target_lat=target_lat,
+        view_extent_km=float(round_obj.view_extent_km),
+        max_score=round_obj.max_score,
+        time_left_fraction=time_left_fraction(session, round_obj),
+    )
+
+    round_obj.guess_point = WKTElement(f"POINT({longitude} {latitude})", srid=4326)
+    round_obj.distance_km = Decimal(str(result.distance_km))
+    round_obj.accuracy_percentage = Decimal(str(result.accuracy))
+    round_obj.score = result.score
+
+
+async def _accept_country(
     db: AsyncSession,
     round_obj: Round,
     session: GameSession,
-    result: GuessResult,
-    longitude: float,
-    latitude: float,
-) -> int:
+    code: str | None,
+    target_lon: float,
+    target_lat: float,
+) -> None:
     """
-    Очки за раунд.
+    Раунд про страны: очки за саму страну, а не за расстояние до цели.
 
-    В обычном раунде считает расстояние до цели. В режиме стран вопрос другой —
-    в какую страну попал игрок, — поэтому и очки другие: угадал страну, значит,
-    задача решена, как бы далеко от центра он ни ткнул.
+    Угадал — весь максимум, как бы далеко от центра ни находился. Промахнулся
+    — очки считаются от того, насколько далеко названная страна от места на
+    снимке: соседнюю страну и другое полушарие оценивать одинаково нечестно.
+
+    Точки здесь нет вовсе, поэтому нет и точности: вопрос был не про метры.
     """
-    if round_obj.country_code is None:
-        return result.score
+    if code is None:
+        raise ValidationError("В этом раунде отвечают страной")
 
-    guessed = await countries_service.at_point(db, longitude, latitude)
-    right = guessed is not None and guessed.code == round_obj.country_code
-    round_obj.guess_country_code = None if guessed is None else guessed.code
+    guessed = await countries_service.by_code(db, code.upper())
+    if guessed is None:
+        raise ValidationError("Такой страны нет")
 
+    right = guessed.code == round_obj.country_code
     miss = (
         0.0
         if right
-        else await countries_service.distance_km(db, round_obj.country_code, longitude, latitude)
+        else await countries_service.distance_km(db, guessed.code, target_lon, target_lat)
     )
-    points = country_score(right, miss, round_obj.max_score)
 
+    round_obj.guess_country_code = guessed.code
+    round_obj.distance_km = Decimal(str(round(miss, 3)))
+    round_obj.accuracy_percentage = None
+
+    points = country_score(right, miss, round_obj.max_score)
     # Скорость решает и здесь: иначе режим стран стал бы способом обойти таймер
-    return int(points * time_factor(time_left_fraction(session, round_obj))) // 10 * 10
+    round_obj.score = int(points * time_factor(time_left_fraction(session, round_obj))) // 10 * 10
 
 
 async def timeout_round(

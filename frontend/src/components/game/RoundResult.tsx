@@ -147,10 +147,13 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
                 <span className={styles.dot} style={{ background: COLOR_TARGET }} />
                 цель
               </span>
-              <span className={styles.legendItem}>
-                <span className={styles.dot} style={{ background: COLOR_GUESS }} />
-                твоя точка
-              </span>
+              {/* В раунде про страны точки нет вовсе: игрок называл страну */}
+              {result.guess !== null && (
+                <span className={styles.legendItem}>
+                  <span className={styles.dot} style={{ background: COLOR_GUESS }} />
+                  твоя точка
+                </span>
+              )}
             </div>
           </div>
 

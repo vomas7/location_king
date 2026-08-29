@@ -11,9 +11,11 @@ interface SatelliteViewProps {
   round: RoundView;
   /** Счётчик, по изменению которого вид возвращается к исходному масштабу. */
   resetSignal: number;
+  /** Вернуть вид к цели: то же, что клавиша R, но пальцем. */
+  onReset: () => void;
 }
 
-export function SatelliteView({ round, resetSignal }: SatelliteViewProps) {
+export function SatelliteView({ round, resetSignal, onReset }: SatelliteViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const instance = useRef<SatelliteMap | null>(null);
   const [tilesMissing, setTilesMissing] = useState(false);
@@ -39,6 +41,12 @@ export function SatelliteView({ round, resetSignal }: SatelliteViewProps) {
   return (
     <>
       <div className={styles.satellite} ref={container} />
+
+      {/* Приближение идёт к курсору, поэтому уехать от перекрестия легко.
+          Клавиша R есть только на компьютере, а играют и с телефона */}
+      <button type="button" className={styles.recenter} onClick={onReset}>
+        К цели
+      </button>
 
       <div className={styles.badge}>
         <span className={styles.scale}>участок ~{formatExtent(round.view_extent_km)}</span>

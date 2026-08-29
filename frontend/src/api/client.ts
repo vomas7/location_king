@@ -144,6 +144,23 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   return (await response.json()) as T;
 }
 
+/**
+ * Запрос, ответ которого нужен строкой.
+ *
+ * Контуры стран весят полмегабайта и уходят прямо в разборщик OpenLayers.
+ * Прогонять их через JSON.parse и обратно в строку — двойная работа над
+ * тем, что и так приедет разобранным.
+ */
+export async function requestText(path: string): Promise<string> {
+  const response = await authorizedFetch(`${API_BASE}${path}`);
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await readError(response));
+  }
+
+  return response.text();
+}
+
 /** Абсолютный адрес тайла раунда по локальным координатам. */
 export function tileUrl(template: string, z: number, x: number, y: number): string {
   return `${API_BASE}${template}`

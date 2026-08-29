@@ -8,7 +8,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.enums import AnswerMode, Continent, CountryGroup, Difficulty
 from app.services.round_timer import ALLOWED_TIME_LIMITS
@@ -34,8 +34,7 @@ class RoundsRequest(BaseModel):
     continent: Continent | None = None
     country_group: CountryGroup | None = None
     difficulty: Difficulty = Difficulty.NORMAL
-    #: Чем отвечать: точкой или страной. Ставит игрок в обоих случаях
-    #: точку — в режиме стран сервер сам смотрит, куда она попала
+    #: Чем отвечать: точкой на карте или названием страны
     answer_mode: AnswerMode = AnswerMode.POINT
     time_limit_seconds: int | None = Field(
         default=None,
@@ -51,6 +50,18 @@ class RoundsRequest(BaseModel):
             raise ValueError(f"Допустимые значения: {allowed}")
         return value
 
+    @model_validator(mode="after")
+    def check_country_mode(self) -> "RoundsRequest":
+        """
+        Страна в условиях партии — это и есть ответ на её раунды.
+
+        Интерфейс такой выбор не предлагает, но запрос можно собрать и руками,
+        а очки из такой партии попадут в общую таблицу лидеров.
+        """
+        if self.answer_mode == AnswerMode.COUNTRY and self.country_group is not None:
+            raise ValueError("В режиме стран нельзя выбирать страну: это ответ на все раунды")
+        return self
+
 
 class StartSessionRequest(RoundsRequest):
     """Параметры новой партии."""
@@ -60,10 +71,31 @@ class StartSessionRequest(RoundsRequest):
 
 
 class GuessRequest(BaseModel):
-    """Догадка игрока."""
+    """
+    Догадка игрока: точка на карте или страна, смотря о чём был раунд.
 
-    longitude: float = Field(ge=-180, le=180)
-    latitude: float = Field(ge=-90, le=90)
+    Чем именно отвечают, решает раунд, а не запрос, поэтому сверку с режимом
+    делает сервис. Здесь проверяется только то, что ответ ровно один: запрос
+    и с точкой, и со страной означает ошибку в клиенте.
+    """
+
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    #: Код страны ISO 3166-1 alpha-3, если раунд про страны
+    country: str | None = Field(default=None, min_length=3, max_length=3)
+
+    @property
+    def point(self) -> tuple[float, float] | None:
+        """Точка догадки, если она есть."""
+        if self.longitude is None or self.latitude is None:
+            return None
+        return self.longitude, self.latitude
+
+    @model_validator(mode="after")
+    def check_single_answer(self) -> "GuessRequest":
+        if (self.point is None) == (self.country is None):
+            raise ValueError("Ответ — либо точка на карте, либо страна")
+        return self
 
 
 class ZoneView(BaseModel):

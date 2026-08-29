@@ -117,13 +117,12 @@ async def test_hitting_the_country_scores_full(
     zone: LocationZone,
     borders: None,
 ):
-    """Промах в километрах здесь не важен: вопрос был про страну."""
+    """Где именно внутри страны игрок ткнул, роли не играет: он назвал её."""
     state = await start_country_game(client, auth_headers, zone)
 
-    # Точка далеко от цели, но внутри той же страны
     answer = await client.post(
         f"/api/rounds/{state['current_round']['id']}/guess",
-        json={"longitude": 45.0, "latitude": 60.0},
+        json={"country": "RUS"},
         headers=auth_headers,
     )
 
@@ -131,7 +130,7 @@ async def test_hitting_the_country_scores_full(
     assert result["score"] == MAX_ROUND_SCORE
     assert result["country"] == "Россия"
     assert result["guess_country"] == "Россия"
-    assert float(result["distance_km"]) > 500
+    assert float(result["distance_km"]) == 0
 
 
 async def test_missing_the_country_costs_points(
@@ -144,7 +143,7 @@ async def test_missing_the_country_costs_points(
 
     answer = await client.post(
         f"/api/rounds/{state['current_round']['id']}/guess",
-        json={"longitude": -8.0, "latitude": 39.0},
+        json={"country": "PRT"},
         headers=auth_headers,
     )
 
@@ -152,15 +151,23 @@ async def test_missing_the_country_costs_points(
     assert result["score"] < MAX_ROUND_SCORE
     assert result["country"] == "Россия"
     assert result["guess_country"] == "Португалия"
+    # Промах считается от места на снимке до названной страны
+    assert float(result["distance_km"]) > 1000
 
 
-async def test_answer_in_the_ocean_names_no_country(
+async def test_point_is_not_an_answer_about_countries(
     client: AsyncClient,
     auth_headers: dict,
     zone: LocationZone,
     borders: None,
 ):
-    """Океан — это не страна, и притворяться, что игрок куда-то попал, нечестно."""
+    """
+    В раунде про страны отвечают страной.
+
+    Раньше игрок ставил точку, а сервер сам смотрел, куда она попала. Точка в
+    океане при этом не значила ничего, и раунд заканчивался нулём непонятно
+    за что. Теперь выбирают страну, и промахнуться мимо суши нельзя.
+    """
     state = await start_country_game(client, auth_headers, zone)
 
     answer = await client.post(
@@ -169,9 +176,68 @@ async def test_answer_in_the_ocean_names_no_country(
         headers=auth_headers,
     )
 
-    result = answer.json()["result"]
-    assert result["guess_country"] is None
-    assert result["score"] == 0
+    assert answer.status_code == 400, answer.text
+
+
+async def test_unknown_country_is_refused(
+    client: AsyncClient,
+    auth_headers: dict,
+    zone: LocationZone,
+    borders: None,
+):
+    state = await start_country_game(client, auth_headers, zone)
+
+    answer = await client.post(
+        f"/api/rounds/{state['current_round']['id']}/guess",
+        json={"country": "ZZZ"},
+        headers=auth_headers,
+    )
+
+    assert answer.status_code == 400, answer.text
+
+
+async def test_country_is_not_an_answer_in_a_usual_round(
+    client: AsyncClient,
+    auth_headers: dict,
+    zone: LocationZone,
+    borders: None,
+):
+    started = await client.post(
+        "/api/sessions",
+        json={"rounds_total": 1, "zone_id": zone.id},
+        headers=auth_headers,
+    )
+    answer = await client.post(
+        f"/api/rounds/{started.json()['current_round']['id']}/guess",
+        json={"country": "RUS"},
+        headers=auth_headers,
+    )
+
+    assert answer.status_code == 400, answer.text
+
+
+async def test_answer_needs_exactly_one_form(
+    client: AsyncClient,
+    auth_headers: dict,
+    zone: LocationZone,
+    borders: None,
+):
+    """И точка, и страна разом — ошибка клиента, а не повод угадывать."""
+    state = await start_country_game(client, auth_headers, zone)
+
+    both = await client.post(
+        f"/api/rounds/{state['current_round']['id']}/guess",
+        json={"longitude": 37.6, "latitude": 55.7, "country": "RUS"},
+        headers=auth_headers,
+    )
+    assert both.status_code == 422
+
+    neither = await client.post(
+        f"/api/rounds/{state['current_round']['id']}/guess",
+        json={},
+        headers=auth_headers,
+    )
+    assert neither.status_code == 422
 
 
 async def test_usual_round_says_nothing_about_countries(
@@ -247,3 +313,71 @@ async def test_series_without_borders_cannot_be_built(
             zone_id=zone.id,
             answer_mode=AnswerMode.COUNTRY,
         )
+
+
+# ─── Контуры для карты догадки ───────────────────────────────────────────
+
+
+async def test_borders_come_as_geojson_with_codes(
+    client: AsyncClient,
+    auth_headers: dict,
+    borders: None,
+):
+    """По этим контурам игрок и тыкает: без кода страны ответ не отправить."""
+    response = await client.get("/api/countries/borders", headers=auth_headers)
+
+    assert response.status_code == 200
+    collection = response.json()
+
+    assert collection["type"] == "FeatureCollection"
+    codes = {feature["properties"]["code"] for feature in collection["features"]}
+    assert codes == {"RUS", "PRT"}
+
+    names = {feature["properties"]["name"] for feature in collection["features"]}
+    assert names == {"Россия", "Португалия"}
+
+    for feature in collection["features"]:
+        assert feature["geometry"]["type"] in {"Polygon", "MultiPolygon"}
+
+
+async def test_borders_need_authorization(client: AsyncClient):
+    assert (await client.get("/api/countries/borders")).status_code == 401
+
+
+async def test_borders_are_cacheable(client: AsyncClient, auth_headers: dict, borders: None):
+    """Полмегабайта на каждый раунд качать незачем."""
+    response = await client.get("/api/countries/borders", headers=auth_headers)
+
+    assert "max-age" in response.headers["Cache-Control"]
+    assert response.headers["ETag"]
+
+
+# ─── Условия партии ──────────────────────────────────────────────────────
+
+
+async def test_country_group_is_refused_in_country_mode(
+    client: AsyncClient,
+    auth_headers: dict,
+):
+    """«Россия» в условиях партии — это готовый ответ на все её раунды."""
+    response = await client.post(
+        "/api/sessions",
+        json={"rounds_total": 1, "answer_mode": "country", "country_group": "russia"},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 422
+
+
+async def test_country_group_is_fine_in_a_usual_game(
+    client: AsyncClient,
+    auth_headers: dict,
+    zone: LocationZone,
+):
+    response = await client.post(
+        "/api/sessions",
+        json={"rounds_total": 1, "country_group": "russia"},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 201
