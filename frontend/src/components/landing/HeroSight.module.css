@@ -87,20 +87,19 @@
   background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
+/* Подпись живёт под содержанием, как отметка на приборе: закрывать собой
+   текст первого экрана она не должна. Поэтому ни рамки, ни подложки — они
+   имели бы смысл только у надписи поверх */
 .readout {
   position: absolute;
-  z-index: 2;
+  z-index: 0;
   top: 0;
   left: 0;
-  padding: 5px 9px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
-  color: var(--text-dim);
+  color: var(--text-faint);
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
   white-space: nowrap;
-  backdrop-filter: blur(4px);
   will-change: transform;
 }

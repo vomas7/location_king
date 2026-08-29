@@ -28,7 +28,7 @@ test("рассказывает про игру и ведёт к регистра
 test("прицел на первом экране называет настоящие координаты", async ({ page }) => {
   await page.goto("/");
 
-  const readout = page.getByText(/° [сю]\. ш\. · \d+\.\d\d° [вз]\. д\./);
+  const readout = page.getByText(/^-?\d+\.\d\d, -?\d+\.\d\d$/);
   await expect(readout).toBeVisible();
 
   const hero = page.getByRole("heading", { level: 1 }).locator("xpath=ancestor::section[1]");
@@ -39,15 +39,13 @@ test("прицел на первом экране называет настоя�
     await page.mouse.move(box!.x + box!.width * x, box!.y + box!.height * y);
   };
 
-  // Координаты не украшение: слева западное полушарие, справа восточное,
-  // выше экватора северная широта, ниже южная
+  // Координаты не украшение: справа от нулевого меридиана и выше экватора
+  // оба числа положительные, слева и ниже — оба со знаком минус
   await aim(0.8, 0.3);
-  await expect(readout).toContainText("в. д.");
-  await expect(readout).toContainText("с. ш.");
+  await expect(readout).toHaveText(/^\d+\.\d\d, \d+\.\d\d$/);
 
   await aim(0.2, 0.85);
-  await expect(readout).toContainText("з. д.");
-  await expect(readout).toContainText("ю. ш.");
+  await expect(readout).toHaveText(/^-\d+\.\d\d, -\d+\.\d\d$/);
 });
 
 test("страница описана для поисковика", async ({ page }) => {

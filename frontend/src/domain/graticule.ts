@@ -53,17 +53,20 @@ export function meridianOffset(longitude: number): number {
 }
 
 /**
- * Координаты так, как их читают вслух: полушарие буквой, а не знаком минус.
+ * Координаты одними числами: подпись лежит под текстом первого экрана и
+ * работает как отметка на приборе, а не как строчка, которую читают вслух.
+ * Полушарие показывает знак — так короче, и так же их пишут в любом поле
+ * ввода координат.
  */
 export function formatCoordinates(latitude: number, longitude: number): string {
-  const north = latitude >= 0 ? "с. ш." : "ю. ш.";
-  const east = longitude >= 0 ? "в. д." : "з. д.";
-
-  return `${degrees(latitude)} ${north} · ${degrees(longitude)} ${east}`;
+  return `${degrees(latitude)}, ${degrees(longitude)}`;
 }
 
 function degrees(value: number): string {
-  return `${Math.abs(value).toFixed(2)}°`;
+  // Минус ноль получается на самом экваторе и нулевом меридиане и читается
+  // как ошибка вычисления
+  const rounded = value.toFixed(2);
+  return rounded === "-0.00" ? "0.00" : rounded;
 }
 
 function clamp(value: number, low: number, high: number): number {
