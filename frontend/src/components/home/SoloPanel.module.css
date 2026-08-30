@@ -34,6 +34,12 @@
   cursor: pointer;
 }
 
+/* Способ ответа стоит прямо над кнопкой «Начать»: без отступа его подсказка
+   липнет к ней и читается как надпись на кнопке */
+.mode {
+  margin-bottom: var(--space-5);
+}
+
 .options {
   display: flex;
   flex-direction: column;

@@ -58,7 +58,7 @@ class RoundsRequest(BaseModel):
         Интерфейс такой выбор не предлагает, но запрос можно собрать и руками,
         а очки из такой партии попадут в общую таблицу лидеров.
         """
-        if self.answer_mode == AnswerMode.COUNTRY and self.country_group is not None:
+        if AnswerMode(self.answer_mode).by_country and self.country_group is not None:
             raise ValueError("В режиме стран нельзя выбирать страну: это ответ на все раунды")
         return self
 
@@ -150,6 +150,10 @@ class RoundView(BaseModel):
     created_at: datetime
     #: Чем отвечать на этот раунд
     answer_mode: AnswerMode
+    #: Варианты для режима выбора: название и код, среди них верный. Пусто в
+    #: остальных режимах. Что именно верно, здесь не сказано — иначе ответ
+    #: приезжал бы вместе с вопросом
+    choices: list["CountryChoice"] = []
     #: Сколько очков ещё можно взять за раунд. Подсказка это число уменьшает
     max_score: int
     #: Заполнено, если игрок взял подсказку
@@ -159,6 +163,13 @@ class RoundView(BaseModel):
     hint_cost: int
     #: До какого момента принимается ответ. Пусто — время не ограничено
     deadline_at: datetime | None
+
+
+class CountryChoice(BaseModel):
+    """Один вариант ответа в режиме выбора."""
+
+    code: str
+    name: str
 
 
 class RoundResult(BaseModel):

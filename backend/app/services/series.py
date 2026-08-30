@@ -119,6 +119,7 @@ async def open_round(db: AsyncSession, session: GameSession, position: int) -> R
         zone_id=template.zone_id,
         target_point=template.target_point,
         country_code=template.country_code,
+        choices=template.choices,
         tile_zoom=template.tile_zoom,
         tile_x=template.tile_x,
         tile_y=template.tile_y,
@@ -187,8 +188,10 @@ async def _build_round(
         target_lon, target_lat = tile_center(tile_x, tile_y, zoom)
 
         country_code = None
+        choices = None
+        mode = AnswerMode(answer_mode)
 
-        if AnswerMode(answer_mode) is AnswerMode.COUNTRY:
+        if mode.by_country:
             country = await countries_service.at_point(db, target_lon, target_lat)
 
             # Границы и каталог обязаны сходиться: иначе правильным ответом
@@ -207,11 +210,31 @@ async def _build_round(
 
             country_code = country.code
 
+            if mode is AnswerMode.CHOICE:
+                # Список собирается один раз, здесь: у всех, кто играет одну
+                # серию, варианты обязаны совпадать — иначе раунд челленджа
+                # или комнаты у одного окажется легче, чем у другого
+                options = await countries_service.choices_for(
+                    db, country_code, target_lon, target_lat
+                )
+
+                # Мир маленьким не бывает, но границы могут быть загружены
+                # частично: без вариантов режим выбора превращается в одну
+                # кнопку с готовым ответом
+                if len(options) < countries_service.CHOICES:
+                    logger.info("Зона %s мимо режима выбора: мало стран", zone.name)
+                    if zone_id is not None:
+                        raise NotFoundError(f"Зона {zone.name} не годится для режима выбора")
+                    continue
+
+                choices = ",".join(options)
+
         return SeriesRound(
             position=position,
             zone_id=zone.id,
             target_point=WKTElement(f"POINT({target_lon} {target_lat})", srid=4326),
             country_code=country_code,
+            choices=choices,
             tile_zoom=zoom,
             tile_x=tile_x,
             tile_y=tile_y,

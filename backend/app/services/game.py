@@ -241,7 +241,15 @@ async def _accept_country(
     if code is None:
         raise ValidationError("В этом раунде отвечают страной")
 
-    guessed = await countries_service.by_code(db, code.upper())
+    code = code.upper()
+
+    # В режиме выбора ответом может быть только один из показанных вариантов.
+    # Иначе список превращается в украшение: запрос можно собрать и руками, а
+    # правильную страну подобрать перебором всех, минуя шесть предложенных
+    if round_obj.choices and code not in round_obj.choices.split(","):
+        raise ValidationError("Такого варианта в этом раунде не предлагали")
+
+    guessed = await countries_service.by_code(db, code)
     if guessed is None:
         raise ValidationError("Такой страны нет")
 

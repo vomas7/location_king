@@ -76,6 +76,11 @@ class SeriesRound(Base):
     #: кто играет эту серию, правильный ответ обязан быть один
     country_code: Mapped[str | None] = mapped_column(String(3))
 
+    #: Варианты ответа для режима выбора: коды стран через запятую, среди них
+    #: правильный. Собираются один раз при сборке серии — у всех, кто играет
+    #: одну серию, список обязан быть одним и тем же, иначе раунды несравнимы
+    choices: Mapped[str | None] = mapped_column(String(80))
+
     tile_zoom: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     tile_x: Mapped[int] = mapped_column(Integer, nullable=False)
     tile_y: Mapped[int] = mapped_column(Integer, nullable=False)

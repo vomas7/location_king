@@ -80,6 +80,12 @@ async def for_round(db: AsyncSession, round_obj: Round) -> Hint | None:
     приходит сюда из разных мест, и полагаться на то, что связь уже загружена,
     значило бы получить обращение к базе в неожиданный момент.
     """
+    # В режиме выбора подсказок нет: там под снимком шесть названий, и
+    # «это в Африке» вычёркивает половину списка разом. Самый простой режим
+    # незачем упрощать ещё раз, да ещё и за очки
+    if round_obj.choices:
+        return None
+
     zone = await db.get(LocationZone, round_obj.zone_id)
     if zone is None:
         return None

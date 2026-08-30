@@ -50,7 +50,9 @@ export function SoloPanel({
   onStart,
 }: SoloPanelProps) {
   const empty = zoneCount === 0;
-  const byCountry = setup.answerMode === "country";
+  // И карта стран, и выбор из шести спрашивают страну: место в условиях
+  // партии в обоих случаях было бы готовым ответом
+  const byCountry = setup.answerMode !== "point";
 
   return (
     <section>
@@ -74,19 +76,25 @@ export function SoloPanel({
         </button>
       </div>
 
+      {/* Чем отвечать — главный выбор в игре, а не строка настроек. Пока он
+          лежал под кнопкой «Настроить», игрок мог год играть точками и не
+          узнать, что есть режимы попроще */}
+      <div className={styles.mode}>
+        <Segmented
+          label="Чем отвечать"
+          options={ANSWER_MODES}
+          value={setup.answerMode}
+          onChange={(answerMode) => {
+            // Выбор места вместе с ответом страной — это уже не игра:
+            // «Россия» в условиях партии и есть правильный ответ
+            onChange({ answerMode, ...(answerMode === "point" ? {} : { place: null }) });
+          }}
+          hint={answerModeHint(setup.answerMode)}
+        />
+      </div>
+
       {open && (
         <div id="solo-setup" className={styles.options}>
-          <Segmented
-            label="Чем отвечать"
-            options={ANSWER_MODES}
-            value={setup.answerMode}
-            onChange={(answerMode) => {
-              // Выбор места вместе с ответом страной — это уже не игра:
-              // «Россия» в условиях партии и есть правильный ответ
-              onChange({ answerMode, ...(answerMode === "country" ? { place: null } : {}) });
-            }}
-            hint={answerModeHint(setup.answerMode)}
-          />
           <Segmented
             label="Раундов"
             options={ROUNDS}

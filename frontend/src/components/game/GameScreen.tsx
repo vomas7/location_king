@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { RoundView } from "~/api/types";
+import { ChoicePanel } from "~/components/game/ChoicePanel";
 import { FirstRoundCoach } from "~/components/game/FirstRoundCoach";
 import styles from "~/components/game/GameScreen.module.css";
 import { GuessPanel } from "~/components/game/GuessPanel";
@@ -100,7 +101,7 @@ export function GameScreen({
         <FirstRoundCoach
           mapOpen={pinned}
           hasGuess={guess !== null}
-          byCountry={round.answer_mode === "country"}
+          byCountry={round.answer_mode !== "point"}
           onDismiss={() => {
             setCoachDismissed(true);
           }}
@@ -111,17 +112,22 @@ export function GameScreen({
         <RoundTimer secondsLeft={secondsLeft} totalSeconds={timeLimitSeconds} />
       )}
 
-      <GuessPanel
-        round={round}
-        guess={guess}
-        busy={busy}
-        pinned={pinned}
-        open={mapOpen}
-        onPin={setPinned}
-        onPick={onPick}
-        onHint={onHint}
-        onSubmit={onSubmit}
-      />
+      {/* В режиме выбора карты нет вовсе: под снимком шесть названий */}
+      {round.answer_mode === "choice" ? (
+        <ChoicePanel round={round} guess={guess} busy={busy} onPick={onPick} onSubmit={onSubmit} />
+      ) : (
+        <GuessPanel
+          round={round}
+          guess={guess}
+          busy={busy}
+          pinned={pinned}
+          open={mapOpen}
+          onPin={setPinned}
+          onPick={onPick}
+          onHint={onHint}
+          onSubmit={onSubmit}
+        />
+      )}
     </div>
   );
 }

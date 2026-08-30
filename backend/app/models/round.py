@@ -70,6 +70,10 @@ class Round(Base):
     country_code: Mapped[str | None] = mapped_column(String(3))
     guess_country_code: Mapped[str | None] = mapped_column(String(3))
 
+    #: Варианты ответа для режима выбора: коды стран через запятую. Копируются
+    #: из заготовки серии, чтобы список пережил перезагрузку страницы
+    choices: Mapped[str | None] = mapped_column(String(80))
+
     #: Брал ли игрок подсказку. Текст подсказки не хранится: он выводится из
     #: зоны и условий партии, а значит, не может с ними разойтись
     hint_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

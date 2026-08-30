@@ -133,6 +133,9 @@ async def test_active_round_response_carries_no_coordinates(
         "attribution",
         "created_at",
         "answer_mode",
+        # Варианты режима выбора. Пусты в обычном раунде, а в своём — не
+        # говорят, какой из них верный: иначе ответ приезжал бы с вопросом
+        "choices",
         "max_score",
         "hint",
         "hint_cost",

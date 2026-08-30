@@ -31,6 +31,7 @@ function round(index: number, overrides: Partial<RoundView> = {}): RoundView {
     id: index,
     index,
     status: "active",
+    choices: [],
     view_extent_km: "5.000",
     max_zoom: 4,
     tiles_url: `/api/rounds/${String(index)}/tiles/{z}/{x}/{y}.jpg`,

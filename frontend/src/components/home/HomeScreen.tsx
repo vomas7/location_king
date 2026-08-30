@@ -35,7 +35,7 @@ import { SECTIONS } from "~/domain/menu";
 import { FIRST_GAME_SETUP, isNewPlayer } from "~/domain/onboarding";
 import { placeFilter } from "~/domain/place";
 import { roomFromSearch } from "~/domain/room";
-import { DEFAULT_SETUP, describeSetup, LEVELS, toOptions } from "~/domain/setup";
+import { ANSWER_MODES, DEFAULT_SETUP, describeSetup, toOptions } from "~/domain/setup";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useAuth } from "~/state/authContext";
 import { useDailyChallenge } from "~/state/useDailyChallenge";
@@ -184,9 +184,9 @@ export function HomeScreen({
     {
       key: "solo",
       name: "Одиночная",
-      status: `${String(setup.rounds)} ${plural(setup.rounds, "раунд", "раунда", "раундов")} · ${
-        LEVELS.find((level) => level.value === setup.level)?.label ?? setup.level
-      }`,
+      status: `${
+        ANSWER_MODES.find((mode) => mode.value === setup.answerMode)?.label ?? "Точкой"
+      } · ${String(setup.rounds)} ${plural(setup.rounds, "раунд", "раунда", "раундов")}`,
       live: false,
     },
     {

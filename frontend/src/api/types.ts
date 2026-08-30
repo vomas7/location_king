@@ -96,6 +96,12 @@ export interface HintView {
 }
 
 /** Активный раунд: снимок доступен только через tiles_url. */
+/** Вариант ответа в режиме выбора. */
+export interface CountryChoice {
+  code: string;
+  name: string;
+}
+
 export interface RoundView {
   id: number;
   index: number;
@@ -107,6 +113,8 @@ export interface RoundView {
   created_at: string;
   /** Чем отвечать на этот раунд: point — точкой, country — страной. */
   answer_mode: string;
+  /** Варианты для режима выбора. Пусто в остальных: там отвечают по карте. */
+  choices: CountryChoice[];
   /** Сколько очков ещё можно взять за раунд. Подсказка это число уменьшает. */
   max_score: number;
   /** Заполнено, если игрок взял подсказку. */

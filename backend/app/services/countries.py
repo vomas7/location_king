@@ -19,6 +19,7 @@
 
 import json
 import logging
+import random
 
 from geoalchemy2 import Geography
 from redis.exceptions import RedisError
@@ -38,6 +39,72 @@ MAX_OFFSHORE_KM = 30
 
 def _point(longitude: float, latitude: float):
     return func.ST_SetSRID(func.ST_MakePoint(longitude, latitude), 4326)
+
+
+#: Сколько вариантов показывать в режиме выбора. Шесть помещаются в два
+#: столбца на экране телефона и оставляют осмысленный выбор: из четырёх
+#: угадывают наугад слишком часто, из восьми список приходится вычитывать
+CHOICES = 6
+
+#: Насколько далеко должны стоять неверные варианты, километров. Соседи по
+#: региону сделали бы самый простой режим самым трудным: отличить Ливию от
+#: Судана по снимку тяжелее, чем Египет от Норвегии. Тысяча километров
+#: разводит варианты по разным местам, и пустыня в кадре сразу отсекает
+#: половину списка
+CHOICE_FAR_KM = 1000
+
+#: Насколько крупной должна быть страна, чтобы попасть в неверные варианты,
+#: квадратных километров. «Бонэйр, Синт-Эстатиус и Саба» — честная строка в
+#: списке стран и бессмысленная в списке вариантов: её не выберет никто и
+#: никогда, а место в шестёрке она занимает. Пятьдесят тысяч оставляют около
+#: полутора сотен стран, которые хотя бы слышали
+CHOICE_MIN_KM2 = 50_000
+
+_CHOICES_SQL = text("""
+    SELECT code
+    FROM countries
+    WHERE code <> :correct
+      AND ST_Area(border::geography) > :min_area
+      AND ST_Distance(
+              border::geography,
+              ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography
+          ) > :far
+    ORDER BY random()
+    LIMIT :wanted
+""")
+
+
+async def choices_for(
+    db: AsyncSession, correct: str, longitude: float, latitude: float
+) -> list[str]:
+    """
+    Варианты ответа для режима выбора: правильный и пять далёких от него.
+
+    Порядок перемешан здесь же: если правильный всегда стоял бы первым, его
+    можно было бы выбирать не глядя на снимок.
+    """
+    others = list(
+        (
+            await db.execute(
+                _CHOICES_SQL,
+                {
+                    "correct": correct,
+                    "longitude": longitude,
+                    "latitude": latitude,
+                    "far": CHOICE_FAR_KM * 1000,
+                    "min_area": CHOICE_MIN_KM2 * 1_000_000,
+                    "wanted": CHOICES - 1,
+                },
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    options = [correct, *others]
+    random.shuffle(options)
+
+    return options
 
 
 async def are_loaded(db: AsyncSession) -> bool:

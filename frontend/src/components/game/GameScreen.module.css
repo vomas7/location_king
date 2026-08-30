@@ -311,3 +311,60 @@
     height: min(46vh, 420px);
   }
 }
+
+/* ── Шесть названий вместо карты ──────────────────────────────────────
+   Панель выбора не разворачивается: разворачивать нечего, список виден
+   целиком с самого начала */
+.choicePanel {
+  width: auto;
+}
+
+.choices {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.choice {
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+  text-wrap: balance;
+  cursor: pointer;
+  transition:
+    background var(--motion-base) var(--ease),
+    border-color var(--motion-base) var(--ease),
+    color var(--motion-base) var(--ease);
+}
+
+/* Тот же янтарный контур, что и у выбранного значения в переключателе:
+   выбор в игре выглядит одинаково, где бы его ни делали */
+.choiceActive {
+  border-color: transparent;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--text);
+}
+
+.choice:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .choice:hover:not(:disabled) {
+    border-color: var(--line);
+    color: var(--text);
+  }
+}
+
+/* Два столбца и на телефоне: в один столбец шесть кнопок занимают весь
+   экран, а смотреть игрок должен на снимок, а не на список */

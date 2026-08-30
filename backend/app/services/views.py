@@ -5,9 +5,11 @@
 правило «до догадки координат в ответе нет» должно быть записано один раз.
 """
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.models.country import Country
 from app.models.enums import (
     AnswerMode,
     FriendshipStatus,
@@ -25,6 +27,7 @@ from app.schemas.auth import AvatarView
 from app.schemas.daily import DailyResult
 from app.schemas.friend import FriendView
 from app.schemas.game import (
+    CountryChoice,
     GuessResponse,
     HintView,
     RoundResult,
@@ -61,6 +64,36 @@ def zone_view(zone: LocationZone) -> ZoneView:
     )
 
 
+def answer_mode_of(round_obj: Round) -> AnswerMode:
+    """
+    Чем отвечают на раунд. Выводится из самого раунда, а не из условий партии:
+    условия остались у серии, а раунд игрока о них уже не знает.
+    """
+    if round_obj.country_code is None:
+        return AnswerMode.POINT
+
+    return AnswerMode.CHOICE if round_obj.choices else AnswerMode.COUNTRY
+
+
+async def choice_names(db: AsyncSession, round_obj: Round) -> list[tuple[str, str]]:
+    """
+    Варианты ответа с названиями, в том же порядке, что записан у раунда.
+
+    Порядок перемешан при сборке серии и с тех пор не меняется: иначе список
+    прыгал бы при каждой перезагрузке страницы, а у соперника в комнате
+    оказался бы своим.
+    """
+    if not round_obj.choices:
+        return []
+
+    codes = round_obj.choices.split(",")
+    named = dict(
+        (await db.execute(select(Country.code, Country.name).where(Country.code.in_(codes)))).all()
+    )
+
+    return [(code, named[code]) for code in codes if code in named]
+
+
 async def round_view(db: AsyncSession, round_obj: Round) -> RoundView:
     """
     Активный раунд: адрес прокси тайлов вместо координат.
@@ -72,6 +105,7 @@ async def round_view(db: AsyncSession, round_obj: Round) -> RoundView:
     """
     available = await hints_service.for_round(db, round_obj)
     taken = round_obj.hint_used
+    choices = await choice_names(db, round_obj)
 
     return RoundView(
         id=round_obj.id,
@@ -82,9 +116,8 @@ async def round_view(db: AsyncSession, round_obj: Round) -> RoundView:
         tiles_url=f"/api/rounds/{round_obj.id}/tiles/{{z}}/{{x}}/{{y}}.jpg",
         attribution=settings.satellite_attribution,
         created_at=round_obj.created_at,
-        answer_mode=(
-            AnswerMode.COUNTRY if round_obj.country_code is not None else AnswerMode.POINT
-        ),
+        answer_mode=answer_mode_of(round_obj),
+        choices=[CountryChoice(code=code, name=name) for code, name in choices],
         max_score=round_obj.max_score,
         hint=(
             HintView(label=available.label, value=available.value)
