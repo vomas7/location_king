@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.dependencies import get_current_user, limit_by_user
+from app.dependencies import get_current_user, limit_by_user, request_language
 from app.models.game_session import GameSession
 from app.models.user import User
 from app.schemas.game import (
@@ -28,6 +28,7 @@ router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 async def start_session(
     payload: StartSessionRequest,
     user: User = Depends(get_current_user),
+    language: str = Depends(request_language),
     db: AsyncSession = Depends(get_db),
 ) -> SessionStateResponse:
     """Начать партию и получить первый раунд."""
@@ -47,7 +48,7 @@ async def start_session(
 
     return SessionStateResponse(
         session=views.session_view(session),
-        current_round=await views.round_view(db, first_round),
+        current_round=await views.round_view(db, first_round, language),
         results=[],
     )
 
@@ -72,6 +73,7 @@ async def list_sessions(
 @router.get("/current", response_model=SessionStateResponse | None)
 async def get_current_session(
     user: User = Depends(get_current_user),
+    language: str = Depends(request_language),
     db: AsyncSession = Depends(get_db),
 ) -> SessionStateResponse | None:
     """
@@ -84,28 +86,33 @@ async def get_current_session(
     if session is None:
         return None
 
-    return await _session_state(db, session)
+    return await _session_state(db, session, language)
 
 
 @router.get("/{session_id}", response_model=SessionStateResponse)
 async def get_session(
     session_id: str,
     user: User = Depends(get_current_user),
+    language: str = Depends(request_language),
     db: AsyncSession = Depends(get_db),
 ) -> SessionStateResponse:
     """Текущее состояние партии: активный раунд и история завершённых."""
     session = await game_service.get_session_for_user(db, user, session_id)
-    return await _session_state(db, session)
+    return await _session_state(db, session, language)
 
 
-async def _session_state(db: AsyncSession, session: GameSession) -> SessionStateResponse:
+async def _session_state(
+    db: AsyncSession, session: GameSession, language: str
+) -> SessionStateResponse:
     """Состояние партии: активный раунд и история завершённых."""
     current = await game_service.active_round(db, session)
 
     return SessionStateResponse(
         session=views.session_view(session),
-        current_round=(await views.round_view(db, current) if current is not None else None),
-        results=await views.session_results(db, session.rounds),
+        current_round=(
+            await views.round_view(db, current, language) if current is not None else None
+        ),
+        results=await views.session_results(db, session.rounds, language),
     )
 
 
@@ -113,6 +120,7 @@ async def _session_state(db: AsyncSession, session: GameSession) -> SessionState
 async def finish_session(
     session_id: str,
     user: User = Depends(get_current_user),
+    language: str = Depends(request_language),
     db: AsyncSession = Depends(get_db),
 ) -> SessionStateResponse:
     """Завершить партию досрочно."""
@@ -122,5 +130,5 @@ async def finish_session(
     return SessionStateResponse(
         session=views.session_view(session),
         current_round=None,
-        results=await views.session_results(db, session.rounds),
+        results=await views.session_results(db, session.rounds, language),
     )

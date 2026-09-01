@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.dependencies import get_current_user, limit_by_user
+from app.dependencies import get_current_user, limit_by_user, request_language
 from app.models.match import Match
 from app.models.user import User
 from app.schemas.game import RoundsRequest, SessionStateResponse
@@ -79,6 +79,7 @@ async def get_match(
 async def join_match(
     code: str,
     user: User = Depends(get_current_user),
+    language: str = Depends(request_language),
     db: AsyncSession = Depends(get_db),
 ) -> SessionStateResponse:
     """Войти в комнату и получить первый раунд её серии."""
@@ -87,7 +88,7 @@ async def join_match(
 
     return SessionStateResponse(
         session=views.session_view(session),
-        current_round=await views.round_view(db, first_round),
+        current_round=await views.round_view(db, first_round, language),
         results=[],
     )
 

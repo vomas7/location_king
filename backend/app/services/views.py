@@ -5,11 +5,9 @@
 правило «до догадки координат в ответе нет» должно быть записано один раз.
 """
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.models.country import Country
 from app.models.enums import (
     AnswerMode,
     FriendshipStatus,
@@ -38,12 +36,12 @@ from app.schemas.game import (
 )
 from app.schemas.leaderboard import LeaderboardEntry
 from app.schemas.match import MatchStanding, MatchSummary, MatchView
-from app.services import countries as countries_service
 from app.services import friends, tiles
 from app.services import game as game_service
 from app.services import hints as hints_service
 from app.services.leaderboard import LeaderboardRow
 from app.services.scoring import score_after_hint
+from app.utils import country_names
 
 
 def zone_view(zone: LocationZone) -> ZoneView:
@@ -75,26 +73,27 @@ def answer_mode_of(round_obj: Round) -> AnswerMode:
     return AnswerMode.CHOICE if round_obj.choices else AnswerMode.COUNTRY
 
 
-async def choice_names(db: AsyncSession, round_obj: Round) -> list[tuple[str, str]]:
+def choice_names(round_obj: Round, language: str) -> list[tuple[str, str]]:
     """
     Варианты ответа с названиями, в том же порядке, что записан у раунда.
 
     Порядок перемешан при сборке серии и с тех пор не меняется: иначе список
     прыгал бы при каждой перезагрузке страницы, а у соперника в комнате
     оказался бы своим.
+
+    Названия берутся из таблицы, а не из базы: в базе лежит одно имя, русское,
+    а игроку страна называется на его языке.
     """
     if not round_obj.choices:
         return []
 
-    codes = round_obj.choices.split(",")
-    named = dict(
-        (await db.execute(select(Country.code, Country.name).where(Country.code.in_(codes)))).all()
-    )
-
-    return [(code, named[code]) for code in codes if code in named]
+    return [
+        (code, country_names.name_of(code, language) or code)
+        for code in round_obj.choices.split(",")
+    ]
 
 
-async def round_view(db: AsyncSession, round_obj: Round) -> RoundView:
+async def round_view(db: AsyncSession, round_obj: Round, language: str) -> RoundView:
     """
     Активный раунд: адрес прокси тайлов вместо координат.
 
@@ -105,7 +104,7 @@ async def round_view(db: AsyncSession, round_obj: Round) -> RoundView:
     """
     available = await hints_service.for_round(db, round_obj)
     taken = round_obj.hint_used
-    choices = await choice_names(db, round_obj)
+    choices = choice_names(round_obj, language)
 
     return RoundView(
         id=round_obj.id,
@@ -138,6 +137,7 @@ async def guess_response(
     finished: Round,
     session: GameSession,
     next_round: Round | None,
+    language: str,
 ) -> GuessResponse:
     """
     Ответ на закрытый раунд: результат, партия и следующий раунд.
@@ -146,23 +146,14 @@ async def guess_response(
     по-разному, а показать после этого нужно одно и то же.
     """
     return GuessResponse(
-        result=await round_result(db, finished),
+        result=await round_result(db, finished, language),
         session=session_view(session),
-        next_round=(await round_view(db, next_round) if next_round is not None else None),
+        next_round=(await round_view(db, next_round, language) if next_round is not None else None),
         is_session_finished=not session.is_active,
     )
 
 
-async def _country_name(db: AsyncSession, code: str | None) -> str | None:
-    """Название страны по коду. Пусто — раунд был не про страны."""
-    if code is None:
-        return None
-
-    country = await countries_service.by_code(db, code)
-    return None if country is None else country.name
-
-
-async def round_result(db: AsyncSession, round_obj: Round) -> RoundResult:
+async def round_result(db: AsyncSession, round_obj: Round, language: str) -> RoundResult:
     """Завершённый раунд вместе с координатами цели."""
     target = await game_service.target_coordinates(db, round_obj)
     guess = await game_service.guess_coordinates(db, round_obj)
@@ -178,8 +169,8 @@ async def round_result(db: AsyncSession, round_obj: Round) -> RoundResult:
         score=round_obj.score,
         max_score=round_obj.max_score,
         accuracy=round_obj.accuracy_percentage,
-        country=await _country_name(db, round_obj.country_code),
-        guess_country=await _country_name(db, round_obj.guess_country_code),
+        country=country_names.name_of(round_obj.country_code, language),
+        guess_country=country_names.name_of(round_obj.guess_country_code, language),
         answer_seconds=round_obj.answer_seconds,
         zone=zone_view(round_obj.zone),
         guessed_at=round_obj.guessed_at,
@@ -202,7 +193,9 @@ def session_view(session: GameSession) -> SessionView:
     )
 
 
-async def session_results(db: AsyncSession, rounds: list[Round]) -> list[RoundResult]:
+async def session_results(
+    db: AsyncSession, rounds: list[Round], language: str
+) -> list[RoundResult]:
     """История завершённых раундов сессии по порядку."""
     # Раунд, закрытый по времени, — тоже часть партии: игрок должен увидеть,
     # где была цель, и почему за него ноль
@@ -210,7 +203,7 @@ async def session_results(db: AsyncSession, rounds: list[Round]) -> list[RoundRe
         (item for item in rounds if item.status != RoundStatus.ACTIVE),
         key=lambda item: item.position,
     )
-    return [await round_result(db, round_obj) for round_obj in played]
+    return [await round_result(db, round_obj, language) for round_obj in played]
 
 
 def session_summary(session: GameSession) -> SessionSummary:

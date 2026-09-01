@@ -19,6 +19,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import messages
 from app.config import settings
 from app.exceptions import AuthError, ConflictError, ValidationError
 from app.models.enums import Theme
@@ -82,19 +83,19 @@ def decode_token(token: str, expected_type: TokenType) -> int:
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
     except JWTError as e:
-        raise AuthError("Токен недействителен или истёк") from e
+        raise AuthError(messages.TOKEN_INVALID) from e
 
     if payload.get("type") != expected_type:
-        raise AuthError(f"Ожидался токен типа {expected_type}")
+        raise AuthError(messages.TOKEN_WRONG_TYPE.format(expected=expected_type))
 
     subject = payload.get("sub")
     if subject is None:
-        raise AuthError("Токен не содержит идентификатор пользователя")
+        raise AuthError(messages.TOKEN_WITHOUT_USER)
 
     try:
         return int(subject)
     except (TypeError, ValueError) as e:
-        raise AuthError("Идентификатор пользователя в токене испорчен") from e
+        raise AuthError(messages.TOKEN_BROKEN_USER) from e
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
@@ -126,13 +127,13 @@ def clean_display_name(raw: str) -> str:
     name = " ".join(raw.split())
 
     if len(name) < MIN_DISPLAY_NAME:
-        raise ValidationError(f"Имя короче {MIN_DISPLAY_NAME} символов")
+        raise ValidationError(messages.NAME_TOO_SHORT.format(least=MIN_DISPLAY_NAME))
     if len(name) > MAX_DISPLAY_NAME:
-        raise ValidationError(f"Имя длиннее {MAX_DISPLAY_NAME} символов")
+        raise ValidationError(messages.NAME_TOO_LONG.format(most=MAX_DISPLAY_NAME))
     if "@" in name:
-        raise ValidationError("Имя с собакой похоже на адрес почты — его видят все игроки")
+        raise ValidationError(messages.NAME_LOOKS_LIKE_EMAIL)
     if not DISPLAY_NAME_ALLOWED.match(name):
-        raise ValidationError("В имени можно использовать буквы, цифры, пробел, дефис и точку")
+        raise ValidationError(messages.NAME_BAD_CHARACTERS)
 
     return name
 
@@ -164,7 +165,7 @@ async def update_profile(
         color = avatar_color if avatar_color is not None else user.avatar_color
 
         if not avatar.is_known(shape, color):
-            raise ValidationError("Такой аватарки нет")
+            raise ValidationError(messages.NO_SUCH_AVATAR)
 
         user.avatar_shape, user.avatar_color = shape, color
 
@@ -197,7 +198,7 @@ async def register(db: AsyncSession, email: str, password: str, display_name: st
     email = email.strip().lower()
 
     if await get_user_by_email(db, email) is not None:
-        raise ConflictError("Пользователь с таким email уже зарегистрирован")
+        raise ConflictError(messages.EMAIL_TAKEN)
 
     user = User(
         username=await _unique_username(db, email.split("@")[0]),
@@ -215,7 +216,7 @@ async def register(db: AsyncSession, email: str, password: str, display_name: st
         # Проверка выше видит только уже записанное: двое могли отправить форму
         # одновременно. Последнее слово за уникальным индексом.
         await db.rollback()
-        raise ConflictError("Пользователь с таким email уже зарегистрирован") from e
+        raise ConflictError(messages.EMAIL_TAKEN) from e
 
     # Аватарка выводится из идентификатора, а он известен только после
     # записи: до неё у всех была бы одна и та же заглушка
@@ -237,9 +238,9 @@ async def authenticate(db: AsyncSession, email: str, password: str) -> User:
     password_ok = verify_password(password, password_hash)
 
     if user is None or not password_ok:
-        raise AuthError("Неверный email или пароль")
+        raise AuthError(messages.WRONG_CREDENTIALS)
     if not user.is_active:
-        raise AuthError("Учётная запись отключена")
+        raise AuthError(messages.ACCOUNT_DISABLED)
 
     user.last_login_at = datetime.now(UTC)
     return user
@@ -249,7 +250,7 @@ async def get_active_user(db: AsyncSession, user_id: int) -> User:
     """Загрузить активного пользователя по id."""
     user = await db.get(User, user_id)
     if user is None or not user.is_active:
-        raise AuthError("Пользователь не найден или отключён")
+        raise AuthError(messages.USER_GONE)
     return user
 
 
@@ -262,7 +263,7 @@ async def delete_account(db: AsyncSession, user: User, password: str) -> None:
     каскадом — так это описано в схеме, а не собирается здесь руками.
     """
     if not verify_password(password, user.password_hash):
-        raise AuthError("Неверный пароль")
+        raise AuthError(messages.WRONG_PASSWORD)
 
     user_id = user.id
     await db.delete(user)
@@ -285,7 +286,7 @@ async def _unique_friend_code(db: AsyncSession) -> str:
         if taken.scalar_one_or_none() is None:
             return code
 
-    raise ConflictError("Не удалось подобрать свободный код игрока")
+    raise ConflictError(messages.NO_PLAYER_CODE)
 
 
 async def _unique_username(db: AsyncSession, base: str) -> str:

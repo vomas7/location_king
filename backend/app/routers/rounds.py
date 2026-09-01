@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
-from app.dependencies import get_current_user, limit_by_user
+from app.dependencies import get_current_user, limit_by_user, request_language
 from app.models.user import User
 from app.schemas.game import GuessRequest, GuessResponse, RoundView
 from app.services import game as game_service
@@ -21,11 +21,12 @@ router = APIRouter(prefix="/api/rounds", tags=["rounds"])
 async def get_round(
     round_id: int,
     user: User = Depends(get_current_user),
+    language: str = Depends(request_language),
     db: AsyncSession = Depends(get_db),
 ) -> RoundView:
     """Активный раунд. Координат цели в ответе нет."""
     round_obj = await game_service.get_round_for_user(db, user, round_id)
-    return await views.round_view(db, round_obj)
+    return await views.round_view(db, round_obj, language)
 
 
 @router.post("/{round_id}/guess", response_model=GuessResponse)
@@ -33,6 +34,7 @@ async def submit_guess(
     round_id: int,
     payload: GuessRequest,
     user: User = Depends(get_current_user),
+    language: str = Depends(request_language),
     db: AsyncSession = Depends(get_db),
 ) -> GuessResponse:
     """Принять догадку и показать, где была цель."""
@@ -48,7 +50,7 @@ async def submit_guess(
 
     session = await game_service.get_session_for_user(db, user, round_obj.session_id)
 
-    return await views.guess_response(db, finished_round, session, next_round)
+    return await views.guess_response(db, finished_round, session, next_round, language)
 
 
 @router.post(
@@ -59,6 +61,7 @@ async def submit_guess(
 async def take_hint(
     round_id: int,
     user: User = Depends(get_current_user),
+    language: str = Depends(request_language),
     db: AsyncSession = Depends(get_db),
 ) -> RoundView:
     """
@@ -70,13 +73,14 @@ async def take_hint(
     round_obj = await game_service.get_round_for_user(db, user, round_id, for_update=True)
     await hints_service.take(db, round_obj)
 
-    return await views.round_view(db, round_obj)
+    return await views.round_view(db, round_obj, language)
 
 
 @router.post("/{round_id}/timeout", response_model=GuessResponse)
 async def timeout_round(
     round_id: int,
     user: User = Depends(get_current_user),
+    language: str = Depends(request_language),
     db: AsyncSession = Depends(get_db),
 ) -> GuessResponse:
     """
@@ -90,7 +94,7 @@ async def timeout_round(
 
     session = await game_service.get_session_for_user(db, user, round_obj.session_id)
 
-    return await views.guess_response(db, finished_round, session, next_round)
+    return await views.guess_response(db, finished_round, session, next_round, language)
 
 
 @router.get(

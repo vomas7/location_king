@@ -20,6 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app import messages
 from app.exceptions import ConflictError, NotFoundError
 from app.models.enums import Difficulty, MatchKind, SessionStatus
 from app.models.game_session import GameSession
@@ -152,7 +153,7 @@ async def get_duel(db: AsyncSession, code: str) -> Match:
     match = await matches_service.get(db, code)
 
     if match.kind != MatchKind.DUEL:
-        raise NotFoundError(f"Дуэль {code} не найдена")
+        raise NotFoundError(messages.DUEL_NOT_FOUND.format(code=code))
     return match
 
 
@@ -302,4 +303,4 @@ async def require_not_playing(db: AsyncSession, user: User) -> None:
     )
 
     if (await db.execute(stmt)).scalar_one_or_none() is not None:
-        raise ConflictError("Сначала доиграй начатую дуэль")
+        raise ConflictError(messages.DUEL_UNFINISHED)

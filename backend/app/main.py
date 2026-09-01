@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 
 from app.config import settings
 from app.exceptions import AppError
+from app.i18n import language_of
 from app.observability import ObservabilityMiddleware, configure_logging, metrics
 from app.routers import (
     auth,
@@ -64,7 +65,7 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     """Ошибки бизнес-логики отдаются в том же формате, что и ошибки FastAPI."""
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail},
+        content={"detail": exc.message.text(language_of(request))},
         headers=exc.headers,
     )
 

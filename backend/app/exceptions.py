@@ -3,7 +3,13 @@
 
 Сервисы бросают их, не зная про HTTP; обработчик в main.py превращает их в
 ответы. Так бизнес-логика не тянет за собой FastAPI.
+
+Сообщение берётся из `app/messages.py` и знает оба языка сразу: на каком
+отвечать игроку, решает обработчик по заголовку запроса. Обычная строка тоже
+принимается — тогда она одинакова на всех языках.
 """
+
+from app.messages import Message
 
 
 class AppError(Exception):
@@ -11,9 +17,14 @@ class AppError(Exception):
 
     status_code = 400
 
-    def __init__(self, detail: str):
-        super().__init__(detail)
-        self.detail = detail
+    def __init__(self, detail: str | Message):
+        message = detail if isinstance(detail, Message) else Message(detail, detail)
+
+        # В журнал и в текст исключения уходит русский: читать логи на двух
+        # языках вперемешку невозможно
+        super().__init__(message.ru)
+        self.message = message
+        self.detail = message.ru
 
     @property
     def headers(self) -> dict[str, str]:
@@ -62,7 +73,7 @@ class TooManyRequestsError(AppError):
 
     status_code = 429
 
-    def __init__(self, detail: str, retry_after: int):
+    def __init__(self, detail: str | Message, retry_after: int):
         super().__init__(detail)
         self.retry_after = retry_after
 

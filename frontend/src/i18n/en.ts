@@ -19,6 +19,12 @@ export const en: Dictionary = {
     switchTo: "Русский",
   },
 
+  errors: {
+    unavailable: "The server is unreachable. Try again",
+    tooOften: "Too often. Wait a little and try again",
+    status: (code) => `Error ${String(code)}`,
+  },
+
   app: {
     restoring: "Restoring your session…",
     toGame: "Back to the game",

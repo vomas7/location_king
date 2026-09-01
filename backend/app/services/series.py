@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app import messages
 from app.config import settings
 from app.exceptions import ConflictError, NotFoundError
 from app.models.enums import CATALOG_ALIASES, AnswerMode
@@ -60,7 +61,7 @@ async def create(
     решается, чей кадр сильнее.
     """
     if not MIN_ROUNDS <= rounds_total <= MAX_ROUNDS:
-        raise ConflictError(f"Раундов в серии должно быть от {MIN_ROUNDS} до {MAX_ROUNDS}")
+        raise ConflictError(messages.ROUNDS_OUT_OF_RANGE.format(least=MIN_ROUNDS, most=MAX_ROUNDS))
 
     if view_extent_km is None:
         view_extent_km = difficulty_service.view_extent_km(difficulty)
@@ -114,20 +115,22 @@ async def load(db: AsyncSession, series_id: int) -> RoundSeries:
     series = (await db.execute(stmt)).scalar_one_or_none()
 
     if series is None:
-        raise NotFoundError(f"Серия {series_id} не найдена")
+        raise NotFoundError(messages.SERIES_NOT_FOUND.format(id=series_id))
     return series
 
 
 async def open_round(db: AsyncSession, session: GameSession, position: int) -> Round:
     """Скопировать заготовку серии в раунд игрока."""
     if session.series_id is None:
-        raise ConflictError("Партия не привязана к серии")
+        raise ConflictError(messages.SESSION_WITHOUT_SERIES)
 
     series = await load(db, session.series_id)
     template = next((item for item in series.rounds if item.position == position), None)
 
     if template is None:
-        raise ConflictError(f"В серии {series.id} нет раунда {position}")
+        raise ConflictError(
+            messages.ROUND_NOT_IN_SERIES.format(series=series.id, position=position)
+        )
 
     round_obj = Round(
         session_id=session.id,
@@ -207,7 +210,7 @@ async def _build_round(
         if point is None:
             logger.info("Зона %s целиком в воде: суши в ней не нашлось", zone.name)
             if zone_id is not None:
-                raise NotFoundError(f"Зона {zone.name} целиком в воде")
+                raise NotFoundError(messages.ZONE_ALL_WATER.format(zone=zone.name))
             continue
 
         lon, lat = point
@@ -233,7 +236,7 @@ async def _build_round(
                     None if country is None else country.name,
                 )
                 if zone_id is not None:
-                    raise NotFoundError(f"Зона {zone.name} не годится для режима стран")
+                    raise NotFoundError(messages.ZONE_NOT_FOR_COUNTRIES.format(zone=zone.name))
                 continue
 
             country_code = country.code
@@ -252,7 +255,7 @@ async def _build_round(
                 if len(options) < countries_service.CHOICES:
                     logger.info("Зона %s мимо режима выбора: мало стран", zone.name)
                     if zone_id is not None:
-                        raise NotFoundError(f"Зона {zone.name} не годится для режима выбора")
+                        raise NotFoundError(messages.ZONE_NOT_FOR_CHOICE.format(zone=zone.name))
                     continue
 
                 choices = ",".join(options)
@@ -271,7 +274,7 @@ async def _build_round(
             view_extent_km=Decimal(str(round(tile_width_km(tile_x, tile_y, zoom), 3))),
         )
 
-    raise NotFoundError("Не нашлось подходящего места под заданные условия")
+    raise NotFoundError(messages.NO_PLACE_FOR_CONDITIONS)
 
 
 def _same_country(border_name: str, catalog_name: str | None) -> bool:

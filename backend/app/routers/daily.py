@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.dependencies import get_current_user, limit_by_user
+from app.dependencies import get_current_user, limit_by_user, request_language
 from app.models.user import User
 from app.schemas.daily import DailyChallengeView
 from app.schemas.game import SessionStateResponse
@@ -48,6 +48,7 @@ async def get_today(
 )
 async def start_today(
     user: User = Depends(get_current_user),
+    language: str = Depends(request_language),
     db: AsyncSession = Depends(get_db),
 ) -> SessionStateResponse:
     """Начать челлендж дня. Второй раз за день — 409."""
@@ -55,6 +56,6 @@ async def start_today(
 
     return SessionStateResponse(
         session=views.session_view(session),
-        current_round=await views.round_view(db, first_round),
+        current_round=await views.round_view(db, first_round, language),
         results=[],
     )

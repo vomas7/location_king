@@ -6,6 +6,7 @@ from collections.abc import Collection
 from sqlalchemy import Select, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import messages
 from app.exceptions import NotFoundError
 from app.models.enums import ZoneCategory, group_countries
 from app.models.location_zone import LocationZone
@@ -71,7 +72,7 @@ async def get_zone(db: AsyncSession, zone_id: int) -> LocationZone:
     zone = (await db.execute(stmt)).scalar_one_or_none()
 
     if zone is None:
-        raise NotFoundError(f"Зона {zone_id} не найдена")
+        raise NotFoundError(messages.ZONE_NOT_FOUND.format(id=zone_id))
     return zone
 
 
@@ -112,7 +113,7 @@ async def pick_random_zone(
     zone = (await db.execute(stmt.order_by(func.random()).limit(1))).scalar_one_or_none()
 
     if zone is None:
-        raise NotFoundError("Нет активных зон под заданные условия")
+        raise NotFoundError(messages.NO_ZONES_FOR_CONDITIONS)
     return zone
 
 
@@ -128,7 +129,7 @@ async def random_point_in_zone(db: AsyncSession, zone: LocationZone) -> tuple[fl
 
     row = (await db.execute(stmt)).first()
     if row is None or row[0] is None or row[1] is None:
-        raise NotFoundError(f"Не удалось выбрать точку в зоне {zone.id}: полигон пуст")
+        raise NotFoundError(messages.ZONE_EMPTY_POLYGON.format(id=zone.id))
 
     return float(row[0]), float(row[1])
 

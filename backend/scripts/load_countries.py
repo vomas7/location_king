@@ -33,7 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import AsyncSessionLocal, engine
 from app.models.country import Country
-from scripts.country_names import COUNTRY_NAMES
+from app.utils.country_names import COUNTRY_NAMES
 
 logger = logging.getLogger("countries")
 
@@ -68,15 +68,18 @@ async def load(session: AsyncSession, source: dict) -> int:
 
     for feature in source["features"]:
         code = feature["properties"]["A3"]
-        name = COUNTRY_NAMES.get(code)
+        known = COUNTRY_NAMES.get(code)
 
-        if name is None:
-            raise ValueError(f"Нет русского названия для страны {code}")
+        if known is None:
+            raise ValueError(f"Нет названия для страны {code}")
 
         session.add(
             Country(
+                # В базе лежит русское имя: по нему каталог зон сходится с
+                # границами. Игроку страна называется на его языке, и решает
+                # это слой ответов
                 code=code,
-                name=name,
+                name=known.ru,
                 # Разбирает PostGIS: он же потом с этой геометрией и работает.
                 # ST_Multi приводит одиночные полигоны к общему типу столбца
                 border=func.ST_Multi(

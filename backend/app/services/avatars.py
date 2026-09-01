@@ -24,6 +24,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import messages
 from app.exceptions import ValidationError
 from app.models.avatar_image import AvatarImage
 from app.models.user import User
@@ -56,20 +57,20 @@ def render(raw: bytes) -> bytes:
     Бросает ValidationError на всём, что не картинка или слишком велико.
     """
     if len(raw) > MAX_BYTES:
-        raise ValidationError(f"Файл больше {MAX_BYTES // (1024 * 1024)} МБ")
+        raise ValidationError(messages.FILE_TOO_BIG.format(limit=MAX_BYTES // (1024 * 1024)))
 
     try:
         image = Image.open(io.BytesIO(raw))
         image.load()
     except (UnidentifiedImageError, OSError) as e:
-        raise ValidationError("Это не картинка или файл повреждён") from e
+        raise ValidationError(messages.NOT_AN_IMAGE) from e
 
     if image.format not in ALLOWED:
-        raise ValidationError("Подойдёт JPEG, PNG, WebP или GIF")
+        raise ValidationError(messages.UNSUPPORTED_IMAGE)
 
     width, height = image.size
     if width * height > MAX_PIXELS:
-        raise ValidationError("Картинка слишком большая")
+        raise ValidationError(messages.IMAGE_TOO_LARGE)
 
     # Прозрачность превращается в белое, а не в чёрное: аватарку одинаково
     # видно и в тёмном оформлении, и в светлом

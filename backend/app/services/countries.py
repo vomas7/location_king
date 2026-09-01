@@ -28,6 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.cache import redis_client
 from app.models.country import Country
+from app.utils import country_names
 
 logger = logging.getLogger(__name__)
 
@@ -178,8 +179,14 @@ async def by_code(db: AsyncSession, code: str) -> Country | None:
 
 
 #: Ключ кэша контуров. Версия в имени: поменяли упрощение — старое значение
-#: не подхватится, и не нужно помнить про ручную очистку
-OUTLINES_CACHE_KEY = "countries:outlines:v1"
+#: не подхватится, и не нужно помнить про ручную очистку. Язык тоже в имени:
+#: названия стран в готовой строке уже подставлены
+OUTLINES_CACHE_KEY = "countries:outlines:v2"
+
+
+def _outlines_key(language: str) -> str:
+    return f"{OUTLINES_CACHE_KEY}:{language}"
+
 
 #: Мелкие острова с карты убираем, кроме самого крупного куска страны: в него
 #: игрок и целится, а сотня скал по океану весит больше, чем вся Европа.
@@ -233,7 +240,7 @@ _OUTLINES_SQL = text(
 )
 
 
-async def outlines(db: AsyncSession) -> str:
+async def outlines(db: AsyncSession, language: str) -> str:
     """
     Контуры всех стран одной готовой строкой GeoJSON.
 
@@ -241,7 +248,7 @@ async def outlines(db: AsyncSession) -> str:
     собранной. Собирать её на каждый запрос — это перебрать три тысячи
     полигонов ради ответа, который меняется раз в релиз.
     """
-    cached = await _cached_outlines()
+    cached = await _cached_outlines(language)
     if cached is not None:
         return cached
 
@@ -267,26 +274,26 @@ async def outlines(db: AsyncSession) -> str:
             "features": [
                 {
                     "type": "Feature",
-                    "properties": {"code": code, "name": name},
+                    "properties": {"code": code, "name": country_names.name_of(code, language)},
                     "geometry": json.loads(outline),
                 }
-                for code, name, outline in rows
+                for code, _name, outline in rows
             ],
         },
         ensure_ascii=False,
         separators=(",", ":"),
     )
 
-    await _cache_outlines(collection)
+    await _cache_outlines(collection, language)
     logger.info("Контуры стран собраны заново: %s стран", len(rows))
 
     return collection
 
 
-async def _cached_outlines() -> str | None:
+async def _cached_outlines(language: str) -> str | None:
     """Недоступный Redis не должен ронять режим стран."""
     try:
-        cached = await redis_client().get(OUTLINES_CACHE_KEY)
+        cached = await redis_client().get(_outlines_key(language))
     except RedisError as e:
         logger.warning("Кэш контуров недоступен на чтении: %s", e)
         return None
@@ -294,8 +301,8 @@ async def _cached_outlines() -> str | None:
     return None if cached is None else cached.decode("utf-8")
 
 
-async def _cache_outlines(collection: str) -> None:
+async def _cache_outlines(collection: str, language: str) -> None:
     try:
-        await redis_client().set(OUTLINES_CACHE_KEY, collection)
+        await redis_client().set(_outlines_key(language), collection)
     except RedisError as e:
         logger.warning("Кэш контуров недоступен на записи: %s", e)

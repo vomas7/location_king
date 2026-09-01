@@ -18,6 +18,7 @@ import logging
 import httpx
 from redis.exceptions import RedisError
 
+from app import messages
 from app.cache import close_redis, redis_client
 from app.config import settings
 from app.exceptions import NotFoundError, UpstreamError
@@ -60,11 +61,11 @@ def local_to_source_tile(round_obj: Round, z: int, x: int, y: int) -> tuple[int,
     limit = max_local_zoom(round_obj)
 
     if not 0 <= z <= limit:
-        raise NotFoundError(f"Уровень {z} за пределами раунда")
+        raise NotFoundError(messages.TILE_ZOOM_OUTSIDE.format(zoom=z))
 
     side = 2**z
     if not (0 <= x < side and 0 <= y < side):
-        raise NotFoundError(f"Тайл {x}/{y} за пределами раунда")
+        raise NotFoundError(messages.TILE_OUTSIDE.format(x=x, y=y))
 
     return (
         round_obj.tile_zoom + z,
@@ -93,7 +94,7 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
     except httpx.HTTPError as e:
         await metrics.count("tile_provider_error")
         logger.error("Провайдер снимков не отдал тайл %s: %s", url, e)
-        raise UpstreamError("Провайдер снимков недоступен") from e
+        raise UpstreamError(messages.PROVIDER_UNAVAILABLE) from e
 
     tile = response.content
     content_type = response.headers.get("content-type", "")
@@ -103,7 +104,7 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
     if not content_type.startswith("image/") or not tile:
         await metrics.count("tile_provider_error")
         logger.error("Провайдер снимков вернул не картинку (%s) для %s", content_type, url)
-        raise UpstreamError("Провайдер снимков вернул не картинку")
+        raise UpstreamError(messages.PROVIDER_NOT_AN_IMAGE)
 
     await cache_set(cache_key, tile)
     return tile

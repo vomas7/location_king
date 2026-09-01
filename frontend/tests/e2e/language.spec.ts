@@ -45,3 +45,16 @@ test("на английском форма входа и подвал тоже �
   await expect(page.getByRole("link", { name: "Source code" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Frequently asked" })).toBeVisible();
 });
+
+test("отказ сервера приходит на языке интерфейса", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "English" }).click();
+
+  await page.getByPlaceholder("you@example.com").fill("nobody@example.com");
+  await page.getByPlaceholder(/At least/).fill("whatever password");
+  await page.getByRole("button", { name: "Log in" }).click();
+
+  // Текст приходит с сервера: интерфейс его не придумывает, а только просит
+  // отвечать по-английски
+  await expect(page.getByText("Wrong email or password")).toBeVisible();
+});

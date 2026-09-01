@@ -16,6 +16,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import messages
 from app.exceptions import ConflictError
 from app.models.enums import continent_name, group_countries
 from app.models.game_session import GameSession
@@ -103,17 +104,17 @@ async def for_round(db: AsyncSession, round_obj: Round) -> Hint | None:
 async def take(db: AsyncSession, round_obj: Round) -> Hint:
     """Взять подсказку: раскрыть место и уменьшить максимум очков раунда."""
     if not round_obj.is_open:
-        raise ConflictError("Раунд уже закрыт")
+        raise ConflictError(messages.ROUND_CLOSED)
 
     if is_late(round_obj):
-        raise ConflictError("Время раунда вышло")
+        raise ConflictError(messages.ROUND_TIME_OVER)
 
     if round_obj.hint_used:
-        raise ConflictError("Подсказка по этому раунду уже взята")
+        raise ConflictError(messages.HINT_ALREADY_TAKEN)
 
     hint = await for_round(db, round_obj)
     if hint is None:
-        raise ConflictError("Подсказка ничего не добавит к условиям партии")
+        raise ConflictError(messages.HINT_ADDS_NOTHING)
 
     round_obj.hint_used = True
     round_obj.max_score = score_after_hint(round_obj.max_score)

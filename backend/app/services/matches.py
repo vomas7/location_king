@@ -17,6 +17,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app import messages
 from app.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models.enums import AnswerMode, MatchKind, MatchStatus, SessionStatus
 from app.models.game_session import GameSession
@@ -83,7 +84,7 @@ async def create(
         logger.info("Комната %s создана игроком %s", match.code, host.id)
         return match
 
-    raise ConflictError("Не удалось подобрать свободный код комнаты")
+    raise ConflictError(messages.NO_ROOM_CODE)
 
 
 async def get(db: AsyncSession, code: str) -> Match:
@@ -92,16 +93,16 @@ async def get(db: AsyncSession, code: str) -> Match:
     match = (await db.execute(stmt)).scalar_one_or_none()
 
     if match is None:
-        raise NotFoundError(f"Комната {code} не найдена")
+        raise NotFoundError(messages.ROOM_NOT_FOUND.format(code=code))
     return match
 
 
 async def join(db: AsyncSession, match: Match, user: User) -> tuple[GameSession, Round]:
     """Присоединиться к комнате и получить первый раунд."""
     if match.status != MatchStatus.OPEN:
-        raise ConflictError("Набор в эту комнату закрыт")
+        raise ConflictError(messages.ROOM_CLOSED)
     if await session_of(db, match, user) is not None:
-        raise ConflictError("Ты уже играл в этой комнате")
+        raise ConflictError(messages.ROOM_ALREADY_PLAYED)
 
     session = GameSession(
         user_id=user.id,
@@ -122,7 +123,7 @@ async def join(db: AsyncSession, match: Match, user: User) -> tuple[GameSession,
 async def close(db: AsyncSession, match: Match, user: User) -> Match:
     """Закрыть набор. Может только хост."""
     if match.host_user_id != user.id:
-        raise ForbiddenError("Закрыть комнату может только тот, кто её создал")
+        raise ForbiddenError(messages.ROOM_NOT_HOST)
 
     match.status = MatchStatus.CLOSED
     await db.flush()

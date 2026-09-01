@@ -7,8 +7,10 @@ from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import messages
 from app.database import get_db
 from app.exceptions import AuthError
+from app.i18n import language_of
 from app.models.user import User
 from app.services import auth as auth_service
 from app.services import rate_limit
@@ -24,7 +26,7 @@ async def get_current_user(
 ) -> User:
     """Единственная точка авторизации в проекте."""
     if not token:
-        raise AuthError("Требуется авторизация")
+        raise AuthError(messages.AUTH_REQUIRED)
 
     user_id = auth_service.decode_token(token, "access")
     return await auth_service.get_active_user(db, user_id)
@@ -91,3 +93,11 @@ def limit_by_user(limit: Limit) -> Callable[..., Coroutine[Any, Any, None]]:
         await rate_limit.check(limit, str(user.id))
 
     return dependency
+
+
+def request_language(request: Request) -> str:
+    """
+    Язык этого запроса. Отдельной зависимостью, чтобы роутеру не приходилось
+    держать у себя весь Request ради одного заголовка.
+    """
+    return language_of(request)

@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, File, Response, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import messages
 from app.database import get_db
 from app.dependencies import get_current_user, limit_by_user
 from app.exceptions import NotFoundError, ValidationError
@@ -39,7 +40,7 @@ async def upload_avatar(
     # байт сверх предела — уже отказ, и тянуть остальное в память незачем
     raw = await file.read(avatars_service.MAX_BYTES + 1)
     if not raw:
-        raise ValidationError("Файл пустой")
+        raise ValidationError(messages.FILE_EMPTY)
 
     updated = await avatars_service.save(db, user, raw)
     return UserProfile.model_validate(updated)
@@ -78,7 +79,7 @@ async def get_avatar(
     """
     data = await avatars_service.load(db, user_id)
     if data is None:
-        raise NotFoundError("У этого игрока нет загруженной аватарки")
+        raise NotFoundError(messages.NO_UPLOADED_AVATAR)
 
     return Response(
         content=data,

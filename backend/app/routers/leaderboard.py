@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import messages
 from app.database import get_db
 from app.dependencies import get_optional_user
 from app.exceptions import AuthError
@@ -44,7 +45,7 @@ async def get_leaderboard(
 
     if among_friends:
         if user is None:
-            raise AuthError("Зачёт среди друзей — только для своих")
+            raise AuthError(messages.FRIENDS_BOARD_PRIVATE)
         players = await friends_service.circle(db, user)
 
     filters = LeaderboardFilter(

@@ -16,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app import messages
 from app.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.models.enums import AnswerMode, RoundStatus, SessionStatus
 from app.models.game_session import GameSession
@@ -109,7 +110,7 @@ async def start_daily_challenge(
         # Уникальный индекс на (user_id, challenge_day): игрок успел начать
         # челлендж в другой вкладке
         await db.rollback()
-        raise ConflictError("Челлендж этого дня уже сыгран") from e
+        raise ConflictError(messages.DAILY_ALREADY_PLAYED) from e
 
 
 async def start_match(
@@ -133,7 +134,7 @@ async def start_match(
         # Частичный уникальный индекс на (user_id, match_code): игрок успел
         # войти в комнату из другой вкладки
         await db.rollback()
-        raise ConflictError("Ты уже играл в этой комнате") from e
+        raise ConflictError(messages.ROOM_ALREADY_PLAYED) from e
 
 
 async def submit_guess(
@@ -153,11 +154,11 @@ async def submit_guess(
     Возвращает завершённый раунд и следующий, если сессия не закончилась.
     """
     if not round_obj.is_open:
-        raise ConflictError("Догадка по этому раунду уже принята")
+        raise ConflictError(messages.GUESS_ALREADY_TAKEN)
 
     session = round_obj.session
     if not session.is_active:
-        raise ConflictError("Сессия уже завершена")
+        raise ConflictError(messages.SESSION_FINISHED)
 
     if is_late(round_obj):
         # Ответ опоздал: раунд закрывается нулём, но партия продолжается
@@ -202,7 +203,7 @@ def _accept_point(
 ) -> None:
     """Обычный раунд: очки за то, насколько близко поставлена точка."""
     if point is None:
-        raise ValidationError("В этом раунде отвечают точкой на карте")
+        raise ValidationError(messages.ANSWER_WITH_PIN)
 
     longitude, latitude = point
     result = evaluate_guess(
@@ -239,7 +240,7 @@ async def _accept_country(
     Точки здесь нет вовсе, поэтому нет и точности: вопрос был не про метры.
     """
     if code is None:
-        raise ValidationError("В этом раунде отвечают страной")
+        raise ValidationError(messages.ANSWER_WITH_COUNTRY)
 
     code = code.upper()
 
@@ -247,11 +248,11 @@ async def _accept_country(
     # Иначе список превращается в украшение: запрос можно собрать и руками, а
     # правильную страну подобрать перебором всех, минуя шесть предложенных
     if round_obj.choices and code not in round_obj.choices.split(","):
-        raise ValidationError("Такого варианта в этом раунде не предлагали")
+        raise ValidationError(messages.CHOICE_NOT_OFFERED)
 
     guessed = await countries_service.by_code(db, code)
     if guessed is None:
-        raise ValidationError("Такой страны нет")
+        raise ValidationError(messages.NO_SUCH_COUNTRY)
 
     right = guessed.code == round_obj.country_code
     miss = (
@@ -281,11 +282,11 @@ async def timeout_round(
     бесплатный пропуск неудобного раунда.
     """
     if not round_obj.is_open:
-        raise ConflictError("Раунд уже закрыт")
+        raise ConflictError(messages.ROUND_CLOSED)
     if not round_obj.session.is_active:
-        raise ConflictError("Сессия уже завершена")
+        raise ConflictError(messages.SESSION_FINISHED)
     if not is_late(round_obj):
-        raise ConflictError("Время ещё не вышло")
+        raise ConflictError(messages.ROUND_TIME_LEFT)
 
     return await _close_timed_out(db, round_obj)
 
@@ -369,7 +370,7 @@ async def get_session_for_user(db: AsyncSession, user: User, session_id: str) ->
     try:
         uuid.UUID(session_id)
     except ValueError as e:
-        raise NotFoundError(f"Сессия {session_id} не найдена") from e
+        raise NotFoundError(messages.SESSION_NOT_FOUND.format(id=session_id)) from e
 
     # populate_existing: за время запроса у сессии мог появиться новый раунд, а
     # без этого SQLAlchemy вернул бы объект из карты идентичности со старым
@@ -383,9 +384,9 @@ async def get_session_for_user(db: AsyncSession, user: User, session_id: str) ->
     session = (await db.execute(stmt)).scalar_one_or_none()
 
     if session is None:
-        raise NotFoundError(f"Сессия {session_id} не найдена")
+        raise NotFoundError(messages.SESSION_NOT_FOUND.format(id=session_id))
     if session.user_id != user.id:
-        raise ForbiddenError("Это чужая сессия")
+        raise ForbiddenError(messages.SESSION_OF_ANOTHER)
 
     return session
 
@@ -456,9 +457,9 @@ async def get_round_for_user(
     round_obj = (await db.execute(stmt)).scalar_one_or_none()
 
     if round_obj is None:
-        raise NotFoundError(f"Раунд {round_id} не найден")
+        raise NotFoundError(messages.ROUND_NOT_FOUND.format(id=round_id))
     if round_obj.session.user_id != user.id:
-        raise ForbiddenError("Это чужой раунд")
+        raise ForbiddenError(messages.ROUND_OF_ANOTHER)
 
     return round_obj
 

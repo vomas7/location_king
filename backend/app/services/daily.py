@@ -17,6 +17,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app import messages
 from app.exceptions import ConflictError
 from app.models.daily import DailyChallenge
 from app.models.enums import SessionStatus
@@ -69,7 +70,7 @@ async def get_or_create(db: AsyncSession, day: date) -> DailyChallenge:
 async def start(db: AsyncSession, user: User, day: date) -> tuple[GameSession, Round]:
     """Начать челлендж дня. Второй раз за день — конфликт."""
     if await played_session(db, user, day) is not None:
-        raise ConflictError("Челлендж этого дня уже сыгран")
+        raise ConflictError(messages.DAILY_ALREADY_PLAYED)
 
     challenge = await get_or_create(db, day)
 

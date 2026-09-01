@@ -16,8 +16,10 @@ from enum import StrEnum
 
 from redis.exceptions import RedisError
 
+from app import messages
 from app.cache import redis_client
 from app.exceptions import TooManyRequestsError
+from app.messages import Message
 from app.observability import metrics
 
 logger = logging.getLogger(__name__)
@@ -31,9 +33,13 @@ class RateLimit:
     window_seconds: int
 
     @property
-    def description(self) -> str:
+    def too_often(self) -> Message:
+        """Отказ по частоте: правило называется игроку, а не прячется."""
         minutes = self.window_seconds // 60
-        return f"{self.limit} за {minutes} мин" if minutes else f"{self.limit} за окно"
+
+        if minutes:
+            return messages.TOO_OFTEN.format(limit=self.limit, minutes=minutes)
+        return messages.TOO_OFTEN_WINDOW.format(limit=self.limit)
 
 
 class Limit(StrEnum):
@@ -121,9 +127,6 @@ async def check(limit: Limit, identity: str) -> None:
         if used > rule.limit:
             ttl = max(await client.ttl(key), 1)
             await metrics.count(f"rate_limited_{limit.value}")
-            raise TooManyRequestsError(
-                f"Слишком часто. Разрешено {rule.description}, попробуй позже",
-                retry_after=ttl,
-            )
+            raise TooManyRequestsError(rule.too_often, retry_after=ttl)
     except RedisError as e:
         logger.warning("Счётчик лимитов недоступен для %s: %s", key, e)

@@ -7,8 +7,33 @@
 
 import { authHeaders, getTokens, setTokens } from "~/api/tokens";
 import type { TokenPair } from "~/api/types";
+import type { Language } from "~/domain/language";
+import { initialLanguage } from "~/domain/language";
+import { DICTIONARIES } from "~/i18n/dictionary";
 
 const runtime = window.__CONFIG__ ?? {};
+
+/**
+ * На каком языке просить сервер отвечать.
+ *
+ * Язык интерфейса живёт в браузере, а сервер о нём узнаёт только из
+ * заголовка. Здесь он лежит рядом с токенами и по той же причине: это
+ * свойство запросов, а не экрана, и таскать его через все вызовы незачем.
+ *
+ * Начальное значение берётся тем же способом, что и в интерфейсе, а не
+ * ставится русским по умолчанию: первый запрос — это профиль игрока, и он
+ * уходит раньше, чем провайдер языка успевает что-либо сообщить.
+ */
+let language: Language = initialLanguage();
+
+export function setApiLanguage(value: Language): void {
+  language = value;
+}
+
+/** Заголовки, общие для всех запросов. */
+function commonHeaders(): Record<string, string> {
+  return { ...authHeaders(), "Accept-Language": language };
+}
 
 /** База API. Пустая строка означает тот же origin, что и у страницы. */
 export const API_BASE = (runtime.apiBase ?? "").replace(/\/+$/, "");
@@ -30,8 +55,10 @@ export class ApiError extends Error {
  * Всё остальное (обрыв связи, отказ разбора) объяснить нечем, поэтому туда
  * подставляется запасной текст, свой у каждого места.
  */
-export function errorMessage(error: unknown, fallback = "Сервер недоступен. Попробуй ещё раз") {
-  return error instanceof ApiError ? error.detail : fallback;
+export function errorMessage(error: unknown, fallback?: string) {
+  if (error instanceof ApiError) return error.detail;
+
+  return fallback ?? DICTIONARIES[language].errors.unavailable;
 }
 
 interface RequestOptions {
@@ -50,11 +77,13 @@ async function readError(response: Response): Promise<string> {
   // Отказ по частоте может прийти не только от приложения, но и от nginx —
   // тот отвечает своей страницей, и разбирать в ней нечего. Игроку в обоих
   // случаях нужно одно и то же: подождать
+  const errors = DICTIONARIES[language].errors;
+
   if (response.status === 429) {
-    return "Слишком часто. Подожди немного и попробуй снова";
+    return errors.tooOften;
   }
 
-  const fallback = `Ошибка ${String(response.status)}`;
+  const fallback = errors.status(response.status);
 
   try {
     const body = (await response.json()) as { detail?: string | ValidationDetail[] };
@@ -114,13 +143,13 @@ function refreshTokens(): Promise<boolean> {
  * начинал бы отвечать 401, и игрок видел бы дыры вместо карты.
  */
 export async function authorizedFetch(url: string): Promise<Response> {
-  const response = await fetch(url, { headers: authHeaders() });
+  const response = await fetch(url, { headers: commonHeaders() });
 
   if (response.status !== 401 || !(await refreshTokens())) {
     return response;
   }
 
-  return fetch(url, { headers: authHeaders() });
+  return fetch(url, { headers: commonHeaders() });
 }
 
 /** Запрос к API. При 401 один раз пробует обновить токен и повторить. */
@@ -136,7 +165,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const response = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
-      ...authHeaders(),
+      ...commonHeaders(),
       ...(hasBody && !isForm ? { "Content-Type": "application/json" } : {}),
     },
     ...(hasBody ? { body: isForm ? body : JSON.stringify(body) } : {}),

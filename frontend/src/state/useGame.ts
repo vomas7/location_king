@@ -157,28 +157,31 @@ export function useGame(onSessionEnd: () => void): GameController {
   const { game: text } = useText();
   const [state, dispatch] = useReducer(reducer, INITIAL);
 
-  const start = useCallback(async (options: StartSessionOptions) => {
-    dispatch({ type: "loading", text: text.loadingRound });
+  const start = useCallback(
+    async (options: StartSessionOptions) => {
+      dispatch({ type: "loading", text: text.loadingRound });
 
-    try {
-      const opened = await game.start(options);
-      if (opened.current_round === null) {
-        dispatch({ type: "failed", error: text.noRound });
-        return;
+      try {
+        const opened = await game.start(options);
+        if (opened.current_round === null) {
+          dispatch({ type: "failed", error: text.noRound });
+          return;
+        }
+
+        dispatch({
+          type: "opened",
+          session: opened.session,
+          round: opened.current_round,
+          results: opened.results,
+          options,
+        });
+      } catch (error) {
+        dispatch({ type: "failed", error: errorMessage(error) });
+        throw error;
       }
-
-      dispatch({
-        type: "opened",
-        session: opened.session,
-        round: opened.current_round,
-        results: opened.results,
-        options,
-      });
-    } catch (error) {
-      dispatch({ type: "failed", error: errorMessage(error) });
-      throw error;
-    }
-  }, [text.loadingRound, text.noRound]);
+    },
+    [text.loadingRound, text.noRound],
+  );
 
   const resume = useCallback((session: SessionState) => {
     if (session.current_round === null) return;

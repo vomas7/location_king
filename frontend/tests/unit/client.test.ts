@@ -23,7 +23,13 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-async function loadModules() {
+/**
+ * Транспорт запоминает язык при загрузке: первый запрос уходит раньше, чем
+ * интерфейс успевает что-либо сообщить. В jsdom браузер английский, поэтому
+ * язык в тестах ставится явно — тем же способом, каким его выбирает игрок.
+ */
+async function loadModules(language = "ru") {
+  localStorage.setItem("location-king:language", language);
   vi.resetModules();
   const tokens = await import("~/api/tokens");
   const client = await import("~/api/client");
@@ -106,6 +112,32 @@ describe("request", () => {
       status: 429,
       detail: "Слишком часто. Подожди немного и попробуй снова",
     });
+  });
+
+  it("на английском тот же отказ объясняется по-английски", async () => {
+    const { client } = await loadModules("en");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("<html>429</html>", { status: 429 })),
+    );
+
+    await expect(
+      client.request("/api/auth/login", { method: "POST", body: {} }),
+    ).rejects.toMatchObject({
+      status: 429,
+      detail: "Too often. Wait a little and try again",
+    });
+  });
+
+  it("называет серверу язык ответа", async () => {
+    const { client } = await loadModules("en");
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await client.request("/api/auth/me");
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(new Headers(init.headers).get("Accept-Language")).toBe("en");
   });
 
   it("превращает detail в ApiError", async () => {

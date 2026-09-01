@@ -22,6 +22,12 @@ export const ru = {
     switchTo: "English",
   },
 
+  errors: {
+    unavailable: "Сервер недоступен. Попробуй ещё раз",
+    tooOften: "Слишком часто. Подожди немного и попробуй снова",
+    status: (code: number) => `Ошибка ${String(code)}`,
+  },
+
   app: {
     restoring: "Восстанавливаем сессию…",
     toGame: "Перейти к игре",

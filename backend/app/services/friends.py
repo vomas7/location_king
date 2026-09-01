@@ -17,6 +17,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app import messages
 from app.exceptions import ConflictError, NotFoundError, ValidationError
 from app.models.enums import FriendshipStatus
 from app.models.friendship import Friendship
@@ -46,7 +47,7 @@ async def by_code(db: AsyncSession, code: str) -> User:
     user = (await db.execute(stmt)).scalar_one_or_none()
 
     if user is None:
-        raise NotFoundError("Игрока с таким кодом нет")
+        raise NotFoundError(messages.FRIEND_CODE_UNKNOWN)
     return user
 
 
@@ -66,19 +67,19 @@ async def invite(db: AsyncSession, user: User, code: str) -> Connection:
     target = await by_code(db, code)
 
     if target.id == user.id:
-        raise ValidationError("Это твой собственный код")
+        raise ValidationError(messages.FRIEND_CODE_OWN)
 
     existing = await between(db, user, target)
 
     if existing is not None:
         if existing.status == FriendshipStatus.ACCEPTED:
-            raise ConflictError("Вы уже друзья")
+            raise ConflictError(messages.FRIEND_ALREADY)
 
         # Позвали в ответ: договорились оба, спрашивать больше не о чем
         if existing.addressee_id == user.id:
             return await accept(db, user, existing.id)
 
-        raise ConflictError("Заявка уже отправлена")
+        raise ConflictError(messages.FRIEND_REQUEST_SENT)
 
     friendship = Friendship(
         requester_id=user.id,
@@ -99,7 +100,7 @@ async def accept(db: AsyncSession, user: User, friendship_id: int) -> Connection
     friendship = await _own(db, user, friendship_id)
 
     if friendship.addressee_id != user.id:
-        raise ConflictError("Эту заявку отправил ты — ждать ответа тебе")
+        raise ConflictError(messages.FRIEND_REQUEST_YOURS)
 
     if friendship.status != FriendshipStatus.ACCEPTED:
         friendship.status = FriendshipStatus.ACCEPTED
@@ -184,5 +185,5 @@ async def _own(db: AsyncSession, user: User, friendship_id: int) -> Friendship:
     friendship = (await db.execute(stmt)).scalar_one_or_none()
 
     if friendship is None:
-        raise NotFoundError("Такой заявки нет")
+        raise NotFoundError(messages.FRIEND_REQUEST_UNKNOWN)
     return friendship
