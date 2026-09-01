@@ -43,6 +43,11 @@ class LocationZone(Base):
         nullable=False,
     )
 
+    #: Свой кадр этой зоны в километрах. Пусто — кадр берётся из уровня.
+    #: Нужен достопримечательностям: Колизей в кадре на сорок пять километров
+    #: — это Рим, а не Колизей, и узнавать в нём нечего
+    view_extent_km: Mapped[float | None] = mapped_column(Float)
+
     continent: Mapped[str | None] = mapped_column(String(20), index=True)
     country: Mapped[str | None] = mapped_column(String(100))
     region: Mapped[str | None] = mapped_column(String(100))

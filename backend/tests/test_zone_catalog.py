@@ -54,8 +54,22 @@ MAX_RADIUS_KM = 200
 
 
 def test_zone_is_big_enough_for_a_round():
+    """
+    Зона должна быть больше точки и меньше области.
+
+    Нижняя граница относительная, а не в трёх километрах на всех:
+    достопримечательность показывается крупным планом, и радиус в километр при
+    кадре в три — это ровно то, что нужно. Важно, чтобы зона не была меньше
+    четверти своего кадра: тогда точка раунда всегда попадала бы почти в центр
+    кадра, и «случайная точка внутри зоны» перестала бы что-либо значить.
+    """
     for zone in ZONES:
-        assert 3 <= zone.radius_km <= MAX_RADIUS_KM, zone.name
+        assert zone.radius_km <= MAX_RADIUS_KM, zone.name
+
+        if zone.view_extent_km is None:
+            assert zone.radius_km >= 3, zone.name
+        else:
+            assert zone.radius_km >= zone.view_extent_km / 4, zone.name
 
 
 def test_city_rounds_stay_inside_the_city():
@@ -109,10 +123,17 @@ def test_wild_places_are_hardcore_only():
 
 
 def test_easy_and_normal_are_built_up_places():
-    """На двух нижних уровнях игрок ищет город, а не местность."""
+    """
+    На двух нижних уровнях игрок ищет рукотворное место, а не местность.
+
+    Достопримечательности сюда же: Колизей и Тадж-Махал узнают не хуже
+    городов, а Улуру и Наска стоят на верхних уровнях, как и положено
+    местности без ориентиров.
+    """
     for zone in ZONES:
         if zone.tier in {Difficulty.EASY, Difficulty.NORMAL}:
-            assert zone.category in URBAN_CATEGORIES, f"{zone.name} ({zone.category})"
+            allowed = URBAN_CATEGORIES | {ZoneCategory.LANDMARK}
+            assert zone.category in allowed, f"{zone.name} ({zone.category})"
 
 
 def test_categories_and_continents_are_known():
@@ -134,15 +155,22 @@ def test_zones_do_not_duplicate_each_other():
     """
     Два центра рядом означают, что место добавили дважды.
 
-    Пять километров — с запасом: даже соседние достопримечательности вроде
-    Каира и пирамид Гизы разнесены сильнее.
+    Сравниваются только те зоны, которые могут встретиться в одной партии.
+    Достопримечательности отбираются отдельно от всего остального, поэтому
+    Пентагон рядом с Вашингтоном и скала Улуру внутри хардкорной пустыни
+    Улуру — это не дубли, а разные игры: в одной ищут город в кадре на сорок
+    пять километров, в другой — объект в кадре на четыре.
     """
-    for i, first in enumerate(ZONES):
-        for second in ZONES[i + 1 :]:
-            distance = haversine_km(
-                first.longitude, first.latitude, second.longitude, second.latitude
-            )
-            assert distance > 5, f"{first.name} и {second.name} — одно и то же место"
+    landmarks = [zone for zone in ZONES if zone.category == ZoneCategory.LANDMARK]
+    everything_else = [zone for zone in ZONES if zone.category != ZoneCategory.LANDMARK]
+
+    for pool in (landmarks, everything_else):
+        for i, first in enumerate(pool):
+            for second in pool[i + 1 :]:
+                distance = haversine_km(
+                    first.longitude, first.latitude, second.longitude, second.latitude
+                )
+                assert distance > 5, f"{first.name} и {second.name} — одно и то же место"
 
 
 def test_every_country_group_has_zones():

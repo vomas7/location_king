@@ -227,6 +227,12 @@ export interface Leaderboard {
  */
 export interface StartSessionOptions {
   rounds_total: number;
+  /**
+   * Слой каталога. null — обычные места, "landmark" — достопримечательности.
+   * Они отбираются отдельно: у них свой кадр в несколько километров, и
+   * посреди обычной партии такой раунд был бы другой игрой.
+   */
+  category: string | null;
   /** Часть света, из которой берутся зоны. null — со всего мира. */
   continent: string | null;
   /** Страна или объединение стран. null — не ограничивать. */

@@ -35,7 +35,7 @@ const { MatchRoom } = await import("~/components/home/MatchRoom");
 
 const OPTIONS = {
   rounds_total: 5,
-  view_extent_km: 5,
+  category: null,
   continent: null,
   country_group: null,
   difficulty: "normal",

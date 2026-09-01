@@ -97,7 +97,7 @@ function result(index: number, score: number): RoundResult {
 
 const OPTIONS = {
   rounds_total: 2,
-  view_extent_km: 5,
+  category: null,
   continent: null,
   country_group: null,
   difficulty: "normal",

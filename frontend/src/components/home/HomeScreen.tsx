@@ -19,6 +19,7 @@ import { DailyChallenge } from "~/components/home/DailyChallenge";
 import { DuelSearch } from "~/components/home/DuelSearch";
 import { Friends } from "~/components/home/Friends";
 import { GameHistory } from "~/components/home/GameHistory";
+import { LandmarksPanel } from "~/components/home/LandmarksPanel";
 import styles from "~/components/home/HomeScreen.module.css";
 import { Leaderboard } from "~/components/home/Leaderboard";
 import { MatchRoom } from "~/components/home/MatchRoom";
@@ -186,6 +187,12 @@ export function HomeScreen({
       live: false,
     },
     {
+      key: "landmarks",
+      name: "Известные места",
+      status: "Пирамиды, Колизей, Тадж-Махал",
+      live: false,
+    },
+    {
       key: "daily",
       name: "Челлендж дня",
       status: dailyStatus(daily),
@@ -247,6 +254,19 @@ export function HomeScreen({
               newcomer={newcomer}
               onStart={() => {
                 if (mayReplaceGame()) onStart(toOptions(setup));
+              }}
+            />
+          )}
+
+          {mode === "landmarks" && (
+            <LandmarksPanel
+              setup={setup}
+              onChange={(patch) => {
+                change({ setup: { ...setup, ...patch } });
+              }}
+              error={error}
+              onStart={() => {
+                if (mayReplaceGame()) onStart(toOptions(setup, "landmark"));
               }}
             />
           )}

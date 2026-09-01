@@ -6,6 +6,7 @@ import { scopeLabel, scopeQuery } from "~/domain/scope";
 function options(overrides: Partial<StartSessionOptions> = {}): StartSessionOptions {
   return {
     rounds_total: 5,
+    category: null,
     difficulty: "normal",
     answer_mode: "point",
     continent: null,

@@ -34,6 +34,7 @@ describe("toOptions", () => {
   it("разбирает место в два фильтра сервера", () => {
     expect(toOptions({ ...DEFAULT_SETUP, place: "continent:europe" })).toEqual({
       rounds_total: 5,
+      category: null,
       difficulty: "normal",
       continent: "europe",
       country_group: null,
@@ -61,5 +62,21 @@ describe("levelHint", () => {
 
   it("молчит про уровень, которого нет в списке", () => {
     expect(levelHint("nightmare")).toBe("");
+  });
+});
+
+describe("слой каталога", () => {
+  it("обычная партия идёт по всему каталогу, кроме известных мест", () => {
+    expect(toOptions(DEFAULT_SETUP).category).toBeNull();
+  });
+
+  it("у известных мест не спрашивают ни уровень, ни место", () => {
+    // Их два десятка на весь мир: пересечение с «Океанией» или «хардкором»
+    // оставило бы игрока без единой зоны
+    const options = toOptions({ ...DEFAULT_SETUP, place: "continent:oceania" }, "landmark");
+
+    expect(options.category).toBe("landmark");
+    expect(options.continent).toBeNull();
+    expect(options.country_group).toBeNull();
   });
 });

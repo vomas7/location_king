@@ -149,6 +149,10 @@ class ZoneCategory(StrEnum):
     """Категории игровых зон."""
 
     CITY = "city"
+    #: Рукотворный объект, который узнают сам по себе, а не по городу вокруг:
+    #: пирамиды Гизы, Колизей, Пальма Джумейра. Показывается крупным планом —
+    #: в кадре города такой объект просто теряется
+    LANDMARK = "landmark"
     NATURE = "nature"
     COAST = "coast"
     MOUNTAINS = "mountains"
@@ -233,6 +237,7 @@ CONTINENT_NAMES = {
 
 CATEGORY_NAMES = {
     ZoneCategory.CITY: "Город",
+    ZoneCategory.LANDMARK: "Достопримечательность",
     ZoneCategory.NATURE: "Природа",
     ZoneCategory.COAST: "Побережье",
     ZoneCategory.MOUNTAINS: "Горы",

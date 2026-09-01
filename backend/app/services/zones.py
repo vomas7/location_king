@@ -7,7 +7,7 @@ from sqlalchemy import Select, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import NotFoundError
-from app.models.enums import group_countries
+from app.models.enums import ZoneCategory, group_countries
 from app.models.location_zone import LocationZone
 
 logger = logging.getLogger(__name__)
@@ -22,11 +22,22 @@ def _filtered(
     """Запрос активных зон с общими фильтрами."""
     stmt = select(LocationZone).where(LocationZone.is_active.is_(True))
 
+    # Достопримечательности — сами себе набор, и уровень к ним не применяется:
+    # их всего пара десятков, они размечены разными уровнями, и пересечение
+    # «достопримечательности + хардкор» оставило бы игрока без единой зоны
+    by_level = difficulty is not None and category != ZoneCategory.LANDMARK
+
     # Уровень записан у самой зоны: узнаваемость места из его категории не
     # выводится, и разложить её по категориям однажды уже не получилось
-    if difficulty is not None:
+    if by_level:
         stmt = stmt.where(LocationZone.tier == difficulty)
-    if category is not None:
+
+    if category is None:
+        # Достопримечательности не выпадают тому, кто их не просил: у них свой
+        # кадр в несколько километров, и посреди партии с кадром в сорок пять
+        # такой раунд — это другая игра, а не разнообразие
+        stmt = stmt.where(LocationZone.category != ZoneCategory.LANDMARK)
+    else:
         stmt = stmt.where(LocationZone.category == category)
     if continent is not None:
         stmt = stmt.where(LocationZone.continent == continent)

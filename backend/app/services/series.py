@@ -185,7 +185,9 @@ async def _build_round(
         # состоит из моря, и без этого игрок регулярно получал кадр ровной
         # синевы, по которому угадать нельзя ничего
         point = (
-            await zones_service.random_point_with_land(db, zone, view_extent_km)
+            await zones_service.random_point_with_land(
+                db, zone, zone.view_extent_km or view_extent_km
+            )
             if borders_loaded
             else await zones_service.random_point_in_zone(db, zone)
         )
@@ -198,7 +200,11 @@ async def _build_round(
 
         lon, lat = point
 
-        zoom = zoom_for_extent(lat, view_extent_km, max_zoom=settings.satellite_max_zoom - 1)
+        # Кадр зоны сильнее кадра уровня: достопримечательность показывают
+        # крупным планом, иначе в кадре оказывается город вокруг неё, а не она
+        frame_km = zone.view_extent_km or view_extent_km
+
+        zoom = zoom_for_extent(lat, frame_km, max_zoom=settings.satellite_max_zoom - 1)
         tile_x, tile_y = lonlat_to_tile(lon, lat, zoom)
         target_lon, target_lat = tile_center(tile_x, tile_y, zoom)
 

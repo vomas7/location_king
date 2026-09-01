@@ -19,12 +19,12 @@ import { ANSWER_MODES, LEVELS, PLACES, ROUNDS, TIME_LIMITS } from "~/domain/setu
 export const MENU_STORAGE_KEY = "location-king:menu";
 
 /** Чем играть. */
-export type ModeKey = "solo" | "daily" | "duel" | "room";
+export type ModeKey = "solo" | "landmarks" | "daily" | "duel" | "room";
 
 /** Что смотреть: разделы, в которые не играют. */
 export type SectionKey = "profile" | "friends" | "board" | "history";
 
-const MODE_KEYS: ModeKey[] = ["solo", "daily", "duel", "room"];
+const MODE_KEYS: ModeKey[] = ["solo", "landmarks", "daily", "duel", "room"];
 
 export const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "profile", label: "Профиль" },

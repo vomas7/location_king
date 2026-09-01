@@ -152,12 +152,22 @@ export function describeSetup(setup: GameSetup): string {
   ].join(" · ");
 }
 
-/** Условия в том виде, в каком их принимает сервер. */
-export function toOptions(setup: GameSetup): StartSessionOptions {
+/**
+ * Условия в том виде, в каком их принимает сервер.
+ *
+ * `category` — слой каталога: обычные места или достопримечательности. У
+ * достопримечательностей уровень и место не спрашивают, поэтому в запрос они
+ * и не уходят: их два десятка, и пересечение с «хардкором» или «Океанией»
+ * оставило бы игрока без единой зоны.
+ */
+export function toOptions(setup: GameSetup, category: string | null = null): StartSessionOptions {
+  const landmarks = category !== null;
+
   return {
     rounds_total: setup.rounds,
+    category,
     difficulty: setup.level,
-    ...placeFilter(setup.place),
+    ...(landmarks ? { continent: null, country_group: null } : placeFilter(setup.place)),
     answer_mode: setup.answerMode,
     time_limit_seconds: setup.timeLimit,
   };
