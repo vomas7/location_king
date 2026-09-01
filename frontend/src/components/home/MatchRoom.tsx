@@ -15,11 +15,11 @@ import styles from "~/components/home/MatchRoom.module.css";
 import { PlayerRow } from "~/components/ui/PlayerRow";
 import { Button } from "~/components/ui/Button";
 import { CardSubtitle, CardTitle } from "~/components/ui/Card";
-import { plural } from "~/domain/format";
 import { CODE_LENGTH, isCompleteCode, normalizeCode } from "~/domain/codes";
 import { roomFromSearch, roomLink } from "~/domain/room";
+import type { Dictionary } from "~/i18n/dictionary";
 import { type ShareState, useShare } from "~/state/useShare";
-import { useFormats } from "~/state/languageContext";
+import { useFormats, useText } from "~/state/languageContext";
 
 interface MatchRoomProps {
   /** Условия одиночной партии: комната собирается по ним же. */
@@ -39,12 +39,13 @@ interface MatchRoomProps {
 /** Как часто перечитывать таблицу, пока комната открыта. */
 const REFRESH_MS = 10000;
 
-const LINK_LABELS: Record<ShareState, string> = {
-  idle: "Скопировать ссылку",
-  shared: "Скопировать ссылку",
-  copied: "Ссылка скопирована",
-  failed: "Не получилось скопировать",
-};
+/** Подпись кнопки со ссылкой: она же говорит, что произошло после нажатия */
+function linkLabel(state: ShareState, text: Dictionary): string {
+  if (state === "copied") return text.room.linkCopied;
+  if (state === "failed") return text.room.copyFailed;
+
+  return text.room.copyLink;
+}
 
 export function MatchRoom({
   options,
@@ -56,6 +57,7 @@ export function MatchRoom({
   onError,
 }: MatchRoomProps) {
   const formats = useFormats();
+  const text = useText();
   const [room, setRoom] = useState<MatchView | null>(null);
   const [mine, setMine] = useState<MatchSummary[]>([]);
   const [code, setCode] = useState("");
@@ -69,12 +71,12 @@ export function MatchRoom({
       try {
         setRoom(await matchesApi.get(wanted));
       } catch (error) {
-        onError(errorMessage(error, "Комната не найдена"));
+        onError(errorMessage(error, text.room.notFound));
       } finally {
         setBusy(false);
       }
     },
-    [onError],
+    [onError, text.room.notFound],
   );
 
   // Пришли по ссылке-приглашению. Параметр сразу убираем: он нужен один раз, а
@@ -131,7 +133,7 @@ export function MatchRoom({
     try {
       setRoom(await matchesApi.create(options));
     } catch (error) {
-      onError(errorMessage(error, "Не удалось создать комнату"));
+      onError(errorMessage(error, text.room.createFailed));
     } finally {
       setBusy(false);
     }
@@ -151,7 +153,7 @@ export function MatchRoom({
           : await gameApi.session(current.my_session.id),
       );
     } catch (error) {
-      onError(errorMessage(error, "Не удалось войти в комнату"));
+      onError(errorMessage(error, text.room.enterFailed));
     } finally {
       setBusy(false);
     }
@@ -162,7 +164,7 @@ export function MatchRoom({
     try {
       setRoom(await matchesApi.close(wanted));
     } catch (error) {
-      onError(errorMessage(error, "Не удалось закрыть набор"));
+      onError(errorMessage(error, text.room.closeFailed));
     } finally {
       setBusy(false);
     }
@@ -171,15 +173,13 @@ export function MatchRoom({
   if (room === null) {
     return (
       <section>
-        <CardTitle>Комната</CardTitle>
-        <CardSubtitle>
-          Те же раунды для всех, кто вошёл. Играете каждый в своём темпе и сравниваете результаты.
-        </CardSubtitle>
+        <CardTitle>{text.room.title}</CardTitle>
+        <CardSubtitle>{text.room.subtitle}</CardSubtitle>
 
         <p className={styles.summary}>
-          Условия берутся из одиночной партии: {summary}
+          {text.room.fromSolo} {summary}
           <button type="button" className={styles.edit} onClick={onEditSetup}>
-            Изменить условия
+            {text.room.editSetup}
           </button>
         </p>
 
@@ -191,7 +191,7 @@ export function MatchRoom({
             void create();
           }}
         >
-          Создать комнату
+          {text.room.create}
         </Button>
 
         <form
@@ -207,20 +207,20 @@ export function MatchRoom({
             onChange={(event) => {
               setCode(normalizeCode(event.target.value));
             }}
-            placeholder="КОД"
-            aria-label="Код комнаты"
+            placeholder={text.room.codePlaceholder}
+            aria-label={text.room.codeLabel}
             inputMode="text"
             autoComplete="off"
             maxLength={CODE_LENGTH}
           />
           <Button type="submit" disabled={busy || !isCompleteCode(code)}>
-            Войти
+            {text.room.enter}
           </Button>
         </form>
 
         {mine.length > 0 && (
           <div className={styles.recent}>
-            <span className={styles.recentLabel}>Твои комнаты</span>
+            <span className={styles.recentLabel}>{text.room.mine}</span>
             <div className={styles.recentList}>
               {mine.map((entry) => (
                 <button
@@ -233,9 +233,7 @@ export function MatchRoom({
                   }}
                 >
                   <span className={styles.recentCode}>{entry.code}</span>
-                  <span className={styles.recentPlayers}>
-                    {entry.players} {plural(entry.players, "игрок", "игрока", "игроков")}
-                  </span>
+                  <span className={styles.recentPlayers}>{text.room.players(entry.players)}</span>
                 </button>
               ))}
             </div>
@@ -252,7 +250,7 @@ export function MatchRoom({
   return (
     <section>
       <div className={styles.header}>
-        <CardTitle>Комната</CardTitle>
+        <CardTitle>{text.room.title}</CardTitle>
         <button
           type="button"
           className={styles.leave}
@@ -261,16 +259,19 @@ export function MatchRoom({
             setCode("");
           }}
         >
-          Выйти
+          {text.room.leave}
         </button>
       </div>
 
       <p className={styles.code}>{room.code}</p>
 
       <p className={styles.meta}>
-        {room.rounds_total} {plural(room.rounds_total, "раунд", "раунда", "раундов")} ·{" "}
-        {formats.timeLimit(room.time_limit_seconds)} · хост {room.host_name}
-        {isOpen ? "" : " · набор закрыт"}
+        {text.room.meta(
+          room.rounds_total,
+          formats.timeLimit(room.time_limit_seconds),
+          room.host_name,
+        )}
+        {isOpen ? "" : text.room.closed}
       </p>
 
       <Button
@@ -280,11 +281,11 @@ export function MatchRoom({
           link.share(roomLink(room.code, window.location.origin, window.location.pathname));
         }}
       >
-        {LINK_LABELS[link.state]}
+        {linkLabel(link.state, text)}
       </Button>
 
       {room.standings.length === 0 ? (
-        <p className={styles.empty}>Пока никто не вошёл. Отправь ссылку друзьям.</p>
+        <p className={styles.empty}>{text.room.nobodyYet}</p>
       ) : (
         <div className={styles.table}>
           {room.standings.map((entry) => (
@@ -316,11 +317,11 @@ export function MatchRoom({
               void play(room);
             }}
           >
-            Играть
+            {text.room.play}
           </Button>
         )}
 
-        {!played && !isOpen && <p className={styles.empty}>Набор закрыт — войти уже нельзя.</p>}
+        {!played && !isOpen && <p className={styles.empty}>{text.room.signupsClosed}</p>}
 
         {played && !finished && (
           <Button
@@ -331,13 +332,13 @@ export function MatchRoom({
               void play(room);
             }}
           >
-            Продолжить партию
+            {text.room.resume}
           </Button>
         )}
 
         {finished && room.my_session !== null && (
           <div className={styles.myScore}>
-            <span className={styles.myScoreLabel}>Твой результат</span>
+            <span className={styles.myScoreLabel}>{text.room.myScore}</span>
             <span className={styles.myScoreValue}>
               {formats.number(room.my_session.total_score)}
             </span>
@@ -352,7 +353,7 @@ export function MatchRoom({
               void closeSignups(room.code);
             }}
           >
-            Закрыть набор
+            {text.room.closeSignups}
           </Button>
         )}
       </div>

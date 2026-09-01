@@ -31,15 +31,14 @@ import { Button } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import { dailyAwaits, dailyStatus } from "~/domain/daily";
 import { searchingText } from "~/domain/duel";
-import { plural } from "~/domain/format";
 import { SECTIONS } from "~/domain/menu";
 import { FIRST_GAME_SETUP, isNewPlayer } from "~/domain/onboarding";
 import { placeFilter } from "~/domain/place";
 import { roomFromSearch } from "~/domain/room";
-import { ANSWER_MODES, DEFAULT_SETUP, describeSetup, toOptions } from "~/domain/setup";
+import { DEFAULT_SETUP, describeSetup, toOptions } from "~/domain/setup";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useAuth } from "~/state/authContext";
-import { useFormats } from "~/state/languageContext";
+import { useFormats, useText } from "~/state/languageContext";
 import { useDailyChallenge } from "~/state/useDailyChallenge";
 import { useDuelSearch } from "~/state/useDuelSearch";
 import { useMenuState } from "~/state/useMenuState";
@@ -82,6 +81,8 @@ export function HomeScreen({
   refreshKey,
 }: HomeScreenProps) {
   const formats = useFormats();
+  const text = useText();
+  const { menu: menuText } = text;
   const { user } = useAuth();
 
   // Первую партию настраивать не за что: человек ещё не знает, чем «средне»
@@ -171,45 +172,40 @@ export function HomeScreen({
 
     const { rounds_done, rounds_total } = unfinished.session;
 
-    return window.confirm(
-      `Незаконченная партия (раунд ${String(rounds_done + 1)} из ${String(rounds_total)}) ` +
-        "будет брошена, и очки за неё не засчитаются. Начать новую?",
-    );
-  }, [unfinished]);
+    return window.confirm(menuText.replaceGame(rounds_done + 1, rounds_total));
+  }, [unfinished, menuText]);
 
   if (user === null) return null;
 
   const modes: Mode[] = [
     {
       key: "solo",
-      name: "Одиночная",
-      status: `${
-        ANSWER_MODES.find((mode) => mode.value === setup.answerMode)?.label ?? "Точкой"
-      } · ${String(setup.rounds)} ${plural(setup.rounds, "раунд", "раунда", "раундов")}`,
+      name: menuText.solo,
+      status: menuText.soloStatus(text.setup.answerModes[setup.answerMode].label, setup.rounds),
       live: false,
     },
     {
       key: "landmarks",
-      name: "Известные места",
-      status: "Пирамиды, Колизей, Тадж-Махал",
+      name: menuText.landmarks,
+      status: menuText.landmarksStatus,
       live: false,
     },
     {
       key: "daily",
-      name: "Челлендж дня",
-      status: dailyStatus(daily, formats),
+      name: menuText.daily,
+      status: dailyStatus(daily, text, formats),
       live: dailyAwaits(daily),
     },
     {
       key: "duel",
-      name: "Дуэль",
-      status: searchingText(duel.searching, duel.phase !== "idle"),
+      name: menuText.duel,
+      status: searchingText(duel.searching, duel.phase !== "idle", text),
       live: duel.phase !== "idle" || duel.searching > 0,
     },
     {
       key: "room",
-      name: "Комната",
-      status: "Своей компанией по коду",
+      name: menuText.room,
+      status: menuText.roomStatus,
       live: false,
     },
   ];
@@ -220,9 +216,12 @@ export function HomeScreen({
         {unfinished !== null && (
           <div className={styles.resume}>
             <div>
-              <p className={styles.resumeText}>У тебя есть незаконченная партия</p>
+              <p className={styles.resumeText}>{menuText.unfinished}</p>
               <p className={styles.resumeHint}>
-                Раунд {unfinished.session.rounds_done + 1} из {unfinished.session.rounds_total}
+                {menuText.roundOf(
+                  unfinished.session.rounds_done + 1,
+                  unfinished.session.rounds_total,
+                )}
               </p>
             </div>
             <Button
@@ -231,7 +230,7 @@ export function HomeScreen({
                 onResume(unfinished);
               }}
             >
-              Продолжить
+              {menuText.resume}
             </Button>
           </div>
         )}
@@ -287,7 +286,7 @@ export function HomeScreen({
           {mode === "room" && (
             <MatchRoom
               options={toOptions(setup)}
-              summary={describeSetup(setup, formats)}
+              summary={describeSetup(setup, text, formats)}
               refreshKey={refreshKey}
               mayStart={mayReplaceGame}
               onEditSetup={() => {
@@ -301,24 +300,24 @@ export function HomeScreen({
       </div>
 
       <div className={styles.column}>
-        <div className={styles.sections} role="tablist" aria-label="Разделы">
-          {SECTIONS.map((item) => (
+        <div className={styles.sections} role="tablist" aria-label={menuText.sections}>
+          {SECTIONS.map((key) => (
             <button
-              key={item.key}
+              key={key}
               type="button"
               role="tab"
-              id={`section-${item.key}`}
-              aria-selected={item.key === section}
+              id={`section-${key}`}
+              aria-selected={key === section}
               aria-controls="section-panel"
-              className={[styles.section, item.key === section ? styles.sectionActive : ""]
+              className={[styles.section, key === section ? styles.sectionActive : ""]
                 .filter(Boolean)
                 .join(" ")}
               onClick={() => {
-                change({ section: item.key });
+                change({ section: key });
                 reveal(sectionPanel.current);
               }}
             >
-              {item.label}
+              {menuText.section[key]}
             </button>
           ))}
         </div>

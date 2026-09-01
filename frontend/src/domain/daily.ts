@@ -11,7 +11,7 @@
 
 import type { DailyChallenge, SessionSummary } from "~/api/types";
 import type { Formats } from "~/domain/format";
-import { plural } from "~/domain/format";
+import type { Dictionary } from "~/i18n/dictionary";
 
 export type DailyStage = "fresh" | "active" | "finished" | "lost";
 
@@ -23,20 +23,24 @@ export function dailyStage(session: SessionSummary | null): DailyStage {
 }
 
 /** Что написать на плитке режима: ради чего в челлендж заходят сегодня. */
-export function dailyStatus(daily: DailyChallenge | null, formats: Formats): string {
-  if (daily === null) return "Одна попытка в сутки";
+export function dailyStatus(
+  daily: DailyChallenge | null,
+  text: Dictionary,
+  formats: Formats,
+): string {
+  if (daily === null) return text.daily.onceADay;
 
   switch (dailyStage(daily.my_session)) {
     case "finished":
-      return `Сыгран · ${formats.number(daily.my_session?.total_score ?? 0)}`;
+      return text.daily.playedStatus(formats.number(daily.my_session?.total_score ?? 0));
     case "active":
-      return "Партия не доиграна";
+      return text.daily.unfinishedStatus;
     case "lost":
-      return "Партия брошена";
+      return text.daily.abandonedStatus;
     case "fresh":
       return daily.current_streak > 0
-        ? `Серия ${String(daily.current_streak)} ${plural(daily.current_streak, "день", "дня", "дней")} — не прерывай`
-        : "Сегодня ещё не сыгран";
+        ? text.daily.streakStatus(daily.current_streak)
+        : text.daily.freshStatus;
   }
 }
 

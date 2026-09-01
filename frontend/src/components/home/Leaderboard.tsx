@@ -14,54 +14,30 @@ import { PlayerRow } from "~/components/ui/PlayerRow";
 import { CardTitle } from "~/components/ui/Card";
 import { Segmented } from "~/components/ui/Segmented";
 import { Skeleton } from "~/components/ui/Skeleton";
-import { useFormats } from "~/state/languageContext";
+import type { Dictionary } from "~/i18n/dictionary";
+import { useFormats, useText } from "~/state/languageContext";
 
 /**
  * По чему ранжируем игроков.
  *
- * Метрика описана здесь целиком: как называется в переключателе, что значит
- * и какое число показать в строке. Раньше эти три вещи лежали в трёх
- * списках, и добавление метрики означало три правки в разных местах.
+ * Метрика описана целиком в словаре: как называется в переключателе и что
+ * значит. Здесь остаётся то, что от языка не зависит, — какое число показать
+ * в строке и в каком порядке метрики стоят.
  */
-interface Metric {
-  label: string;
-  hint: string;
-  /** Число метрики словами: форматы приходят снаружи, они зависят от языка */
-  read: (entry: LeaderboardEntry, formats: Formats) => string;
-}
-
-const METRICS: Record<LeaderboardMetric, Metric> = {
-  best: {
-    label: "Партия",
-    hint: "Очков за раунд в лучшей партии",
-    read: (entry, formats) => formats.number(entry.best_score),
-  },
-  total: {
-    label: "Сумма",
-    hint: "Сумма очков за все партии",
-    read: (entry, formats) => formats.number(entry.total_score),
-  },
-  accuracy: {
-    label: "Точность",
-    hint: "Средний промах за раунд, от пяти раундов",
-    read: (entry, formats) => formats.distance(entry.average_distance),
-  },
-  sharp: {
-    label: "Меткость",
-    hint: "Раундов, взятых почти в точку",
-    read: (entry, formats) => formats.number(entry.sharp_rounds),
-  },
-  games: {
-    label: "Партий",
-    hint: "Сколько партий доиграно до конца",
-    read: (entry, formats) => formats.number(entry.games_played),
-  },
+const READ: Record<LeaderboardMetric, (entry: LeaderboardEntry, formats: Formats) => string> = {
+  best: (entry, formats) => formats.number(entry.best_score),
+  total: (entry, formats) => formats.number(entry.total_score),
+  accuracy: (entry, formats) => formats.distance(entry.average_distance),
+  sharp: (entry, formats) => formats.number(entry.sharp_rounds),
+  games: (entry, formats) => formats.number(entry.games_played),
 };
 
 /** Порядок в переключателе: от того, что понятно всем, к тому, что поточнее. */
 const METRIC_ORDER: LeaderboardMetric[] = ["best", "total", "accuracy", "sharp", "games"];
 
-const METRIC_OPTIONS = METRIC_ORDER.map((value) => ({ value, label: METRICS[value].label }));
+function metricChoices(text: Dictionary): { value: LeaderboardMetric; label: string }[] {
+  return METRIC_ORDER.map((value) => ({ value, label: text.board.metrics[value].label }));
+}
 
 /** Зачёт среди друзей: он единственный зависит от того, кто спрашивает. */
 const FRIENDS_SCOPE = "among_friends=true";
@@ -71,26 +47,26 @@ const FRIENDS_SCOPE = "among_friends=true";
  *
  * Общая таблица складывает несравнимое: партия на лёгком уровне и партия в
  * тайге стоят разного труда, а очки у них одни и те же. Значения ключей — те
- * же, что понимает сервер.
+ * же, что понимает сервер, а подписи к ним лежат в словаре.
  */
-const SCOPES: { value: string; label: string }[] = [
-  { value: "", label: "Все партии" },
-  { value: FRIENDS_SCOPE, label: "Друзья" },
-  { value: "difficulty=easy", label: "Легко" },
-  { value: "difficulty=normal", label: "Средне" },
-  { value: "difficulty=hard", label: "Сложно" },
-  { value: "difficulty=hardcore", label: "Хардкор" },
-  { value: "country_group=russia", label: "Россия" },
-  { value: "country_group=usa", label: "США" },
-  { value: "country_group=eu", label: "Евросоюз" },
+const SCOPES: { value: string; name: keyof Dictionary["board"]["scopes"] }[] = [
+  { value: "", name: "all" },
+  { value: FRIENDS_SCOPE, name: "friends" },
+  { value: "difficulty=easy", name: "easy" },
+  { value: "difficulty=normal", name: "normal" },
+  { value: "difficulty=hard", name: "hard" },
+  { value: "difficulty=hardcore", name: "hardcore" },
+  { value: "country_group=russia", name: "russia" },
+  { value: "country_group=usa", name: "usa" },
+  { value: "country_group=eu", name: "eu" },
 ];
 
 /** Почему таблица пуста — зависит от того, какой зачёт выбран. */
-function emptyText(scope: string): string {
-  if (scope === "") return "Пока никто не сыграл ни одной партии. Займи первое место";
-  if (scope === FRIENDS_SCOPE) return "Ни ты, ни твои друзья ещё не доиграли ни одной партии";
+function emptyText(scope: string, text: Dictionary): string {
+  if (scope === "") return text.board.emptyAll;
+  if (scope === FRIENDS_SCOPE) return text.board.emptyFriends;
 
-  return "На этих условиях ещё никто не играл. Займи первое место";
+  return text.board.emptyScope;
 }
 
 function Row({
@@ -109,7 +85,7 @@ function Row({
       rank={entry.rank}
       avatar={entry.avatar}
       name={entry.display_name}
-      value={METRICS[metric].read(entry, formats)}
+      value={READ[metric](entry, formats)}
       mine={isMe}
       medals
     />
@@ -117,6 +93,7 @@ function Row({
 }
 
 export function Leaderboard({ refreshKey }: { refreshKey: number }) {
+  const text = useText();
   const [metric, setMetric] = useState<LeaderboardMetric>("best");
   const [scope, setScope] = useState("");
   const [data, setData] = useState<LeaderboardData | null>(null);
@@ -148,20 +125,20 @@ export function Leaderboard({ refreshKey }: { refreshKey: number }) {
 
   return (
     <section>
-      <CardTitle>Таблица лидеров</CardTitle>
+      <CardTitle>{text.board.title}</CardTitle>
 
       <div className={styles.metrics}>
         <Segmented
-          label="Метрика"
-          options={METRIC_OPTIONS}
+          label={text.board.metric}
+          options={metricChoices(text)}
           value={metric}
           onChange={setMetric}
-          hint={METRICS[metric].hint}
+          hint={text.board.metrics[metric].hint}
         />
       </div>
 
       <label className={styles.scope}>
-        <span className={styles.scopeLabel}>Зачёт</span>
+        <span className={styles.scopeLabel}>{text.board.scope}</span>
         <select
           className={styles.scopeSelect}
           value={scope}
@@ -171,18 +148,18 @@ export function Leaderboard({ refreshKey }: { refreshKey: number }) {
         >
           {SCOPES.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.label}
+              {text.board.scopes[option.name]}
             </option>
           ))}
         </select>
       </label>
 
-      {failed && <p className={styles.empty}>Не удалось загрузить таблицу</p>}
+      {failed && <p className={styles.empty}>{text.board.failed}</p>}
 
       {!failed && data === null && <Skeleton rows={4} />}
 
       {!failed && data !== null && entries.length === 0 && (
-        <p className={styles.empty}>{emptyText(scope)}</p>
+        <p className={styles.empty}>{emptyText(scope, text)}</p>
       )}
 
       <div className={styles.table}>

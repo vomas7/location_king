@@ -21,11 +21,9 @@ import { Button } from "~/components/ui/Button";
 import { Segmented } from "~/components/ui/Segmented";
 import { TextArea } from "~/components/ui/TextArea";
 import { useModal } from "~/components/ui/useModal";
+import { useText } from "~/state/languageContext";
 
-const KINDS: { value: FeedbackKind; label: string }[] = [
-  { value: "impression", label: "Впечатление" },
-  { value: "problem", label: "Проблема" },
-];
+const KINDS: FeedbackKind[] = ["impression", "problem"];
 
 /** Столько же принимает сервер: подсказка о длине должна совпадать с правилом. */
 const MAX_LENGTH = 2000;
@@ -33,12 +31,8 @@ const MAX_LENGTH = 2000;
 /** С какого остатка показывать счётчик: раньше он только мешает писать. */
 const COUNTER_FROM = 200;
 
-const PLACEHOLDERS: Record<FeedbackKind, string> = {
-  impression: "Что понравилось, а что нет",
-  problem: "Что случилось и на каком экране",
-};
-
 export function Feedback() {
+  const { feedback: text } = useText();
   const dialog = useRef<HTMLDivElement>(null);
 
   const [open, setOpen] = useState(false);
@@ -62,7 +56,7 @@ export function Feedback() {
     setError(null);
 
     if (message.trim() === "") {
-      setError("Напиши, что случилось");
+      setError(text.empty);
       return;
     }
 
@@ -71,7 +65,7 @@ export function Feedback() {
       await feedbackApi.send(kind, message.trim());
       setSent(true);
     } catch (caught) {
-      setError(errorMessage(caught, "Не удалось отправить"));
+      setError(errorMessage(caught, text.failed));
     } finally {
       setBusy(false);
     }
@@ -88,7 +82,7 @@ export function Feedback() {
           setOpen(true);
         }}
       >
-        Отзыв об игре
+        {text.open}
       </button>
 
       {open && (
@@ -103,36 +97,36 @@ export function Feedback() {
             className={styles.sheet}
             role="dialog"
             aria-modal="true"
-            aria-label="Отзыв об игре"
+            aria-label={text.label}
           >
             {sent ? (
               <>
-                <h2 className={styles.title}>Дошло, спасибо</h2>
-                <p className={styles.text}>
-                  Прочитаю всё. Ответить лично не обещаю, но чинить и делать буду именно по таким
-                  письмам.
-                </p>
+                <h2 className={styles.title}>{text.sent}</h2>
+                <p className={styles.text}>{text.thanks}</p>
 
                 <div className={styles.actions}>
                   <Button type="button" variant="primary" onClick={close}>
-                    Закрыть
+                    {text.close}
                   </Button>
                 </div>
               </>
             ) : (
               <>
-                <h2 className={styles.title}>Как тебе игра?</h2>
-                <p className={styles.text}>
-                  Пиши прямо: что понравилось, что раздражает, что не работает.
-                </p>
+                <h2 className={styles.title}>{text.title}</h2>
+                <p className={styles.text}>{text.invitation}</p>
 
                 <form className={styles.form} onSubmit={(event) => void submit(event)} noValidate>
-                  <Segmented label="О чём" options={KINDS} value={kind} onChange={setKind} />
+                  <Segmented
+                    label={text.about}
+                    options={KINDS.map((value) => ({ value, label: text.kinds[value] }))}
+                    value={kind}
+                    onChange={setKind}
+                  />
 
                   <TextArea
-                    label="Сообщение"
-                    {...(left <= COUNTER_FROM ? { hint: `осталось ${String(left)}` } : {})}
-                    placeholder={PLACEHOLDERS[kind]}
+                    label={text.message}
+                    {...(left <= COUNTER_FROM ? { hint: text.left(left) } : {})}
+                    placeholder={text.hints[kind]}
                     value={message}
                     maxLength={MAX_LENGTH}
                     autoFocus
@@ -145,10 +139,10 @@ export function Feedback() {
 
                   <div className={styles.actions}>
                     <Button type="button" onClick={close}>
-                      Отмена
+                      {text.cancel}
                     </Button>
                     <Button type="submit" variant="primary" disabled={busy}>
-                      Отправить
+                      {text.send}
                     </Button>
                   </div>
                 </form>

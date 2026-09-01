@@ -1,24 +1,30 @@
 /**
  * Условия партии: что игрок выбрал в меню и как это пересказать.
  *
- * Списки лежат здесь, а не в компоненте, потому что нужны в двух местах:
+ * Списки лежат здесь значениями, а подписи к ним — в словаре: значения
+ * понимает сервер, а подписи зависят от языка. Списки нужны в двух местах:
  * настройками одиночной партии собирается и комната, и подпись под кнопкой
  * «Создать комнату» должна называть те же условия теми же словами.
  */
 
 import type { StartSessionOptions } from "~/api/types";
 import type { Formats } from "~/domain/format";
-import { plural } from "~/domain/format";
 import type { PlaceKey } from "~/domain/place";
 import { placeFilter } from "~/domain/place";
+import type { Dictionary } from "~/i18n/dictionary";
+
+/** Уровень: он же значение difficulty на сервере. */
+export type LevelKey = "easy" | "normal" | "hard" | "hardcore";
+
+/** Чем отвечать: точкой на карте, страной или выбором из шести. */
+export type AnswerModeKey = "point" | "country" | "choice";
 
 export interface GameSetup {
   rounds: number;
-  level: string;
+  level: LevelKey;
   place: PlaceKey;
   timeLimit: number | null;
-  /** Чем отвечать: point — точкой на карте, country — страной. */
-  answerMode: string;
+  answerMode: AnswerModeKey;
 }
 
 export interface Choice<T> {
@@ -37,24 +43,9 @@ export interface Choice<T> {
  * Порядок от простого к сложному: с ним список читается как лестница, по
  * которой поднимаются, а не как три равных варианта.
  */
-export const ANSWER_MODES: (Choice<string> & { hint: string })[] = [
-  {
-    value: "choice",
-    label: "Из шести",
-    hint: "Под снимком шесть стран, одна верная. Самый простой способ начать",
-  },
-  {
-    value: "country",
-    label: "Страной",
-    hint: "Карта со странами: попал — максимум, мимо — по промаху",
-  },
-  { value: "point", label: "Точкой", hint: "Точка на карте мира, очки за близость к цели" },
-];
+export const ANSWER_MODES: AnswerModeKey[] = ["choice", "country", "point"];
 
-export const ROUNDS: Choice<number>[] = [3, 5, 10].map((value) => ({
-  value,
-  label: String(value),
-}));
+export const ROUNDS: number[] = [3, 5, 10];
 
 /**
  * Уровень — это выбор содержания, а не множитель очков. Подсказка объясняет,
@@ -66,34 +57,12 @@ export const ROUNDS: Choice<number>[] = [3, 5, 10].map((value) => ({
  *
  * Ширину кадра уровень задаёт сам, на сервере: она не усиливает сложность, а
  * выравнивает её — чем меньше в кадре рукотворных ориентиров, тем больше
- * нужно контекста. Отдельным переключателем она была самым непонятным местом
- * меню: «сорок километров» ничего не говорит о том, будет ли трудно.
+ * нужно контекста.
  */
-export const LEVELS: (Choice<string> & { hint: string })[] = [
-  { value: "easy", label: "Легко", hint: "Узнают по силуэту: Париж, Венеция, Манхэттен" },
-  {
-    value: "normal",
-    label: "Средне",
-    hint: "Крупные города знакомых стран: Гамбург, Казань, Сиэтл",
-  },
-  {
-    value: "hard",
-    label: "Сложно",
-    hint: "Города, о которых знают мало, и обжитая местность без города",
-  },
-  { value: "hardcore", label: "Хардкор", hint: "Дикая природа: горы, пустыни, тайга, лёд" },
-];
+export const LEVELS: LevelKey[] = ["easy", "normal", "hard", "hardcore"];
 
 /** Сколько времени дают на раунд. Пусто — без ограничения. */
 export const TIME_LIMIT_VALUES: (number | null)[] = [null, 120, 60, 30];
-
-/**
- * То же списком для переключателя. Подписи собираются по запросу, а не лежат
- * готовыми: «2 мин» и «2 min» — это уже язык, а он выбирается в браузере.
- */
-export function timeLimits(formats: Formats): Choice<number | null>[] {
-  return TIME_LIMIT_VALUES.map((value) => ({ value, label: formats.timeLimit(value) }));
-}
 
 /**
  * Откуда берутся зоны. Список фиксирован: он должен совпадать с тем, что
@@ -103,19 +72,52 @@ export function timeLimits(formats: Formats): Choice<number | null>[] {
  * фильтры, но игроку нужно выбрать одно место, а не пересечение двух условий.
  * Евросоюз не совпадает с Европой — в неё входят ещё Британия, Норвегия,
  * Швейцария и Исландия.
+ *
+ * Рядом со значением — имя подписи в словаре: сами подписи переводятся, а
+ * ключ вроде `continent:north_america` — нет.
  */
-export const PLACES: Choice<PlaceKey>[] = [
-  { value: null, label: "Весь мир" },
-  { value: "country:russia", label: "Россия" },
-  { value: "country:usa", label: "США" },
-  { value: "country:eu", label: "Евросоюз" },
-  { value: "continent:europe", label: "Европа" },
-  { value: "continent:asia", label: "Азия" },
-  { value: "continent:africa", label: "Африка" },
-  { value: "continent:north_america", label: "Сев. Америка" },
-  { value: "continent:south_america", label: "Юж. Америка" },
-  { value: "continent:oceania", label: "Океания" },
+type PlaceName = keyof Dictionary["setup"]["places"];
+
+export const PLACES: { value: PlaceKey; name: PlaceName }[] = [
+  { value: null, name: "world" },
+  { value: "country:russia", name: "russia" },
+  { value: "country:usa", name: "usa" },
+  { value: "country:eu", name: "eu" },
+  { value: "continent:europe", name: "europe" },
+  { value: "continent:asia", name: "asia" },
+  { value: "continent:africa", name: "africa" },
+  { value: "continent:north_america", name: "northAmerica" },
+  { value: "continent:south_america", name: "southAmerica" },
+  { value: "continent:oceania", name: "oceania" },
 ];
+
+export const PLACE_VALUES: PlaceKey[] = PLACES.map((place) => place.value);
+
+/** Переключатель «чем отвечать» на выбранном языке. */
+export function answerModeChoices(text: Dictionary): (Choice<AnswerModeKey> & { hint: string })[] {
+  return ANSWER_MODES.map((value) => ({ value, ...text.setup.answerModes[value] }));
+}
+
+export function levelChoices(text: Dictionary): (Choice<LevelKey> & { hint: string })[] {
+  return LEVELS.map((value) => ({ value, ...text.setup.levels[value] }));
+}
+
+export function placeChoices(text: Dictionary): Choice<PlaceKey>[] {
+  return PLACES.map(({ value, name }) => ({ value, label: text.setup.places[name] }));
+}
+
+/** Число раундов подписывает само себя. */
+export function roundChoices(): Choice<number>[] {
+  return ROUNDS.map((value) => ({ value, label: String(value) }));
+}
+
+/**
+ * Время на раунд списком для переключателя. Подписи собираются по запросу, а
+ * не лежат готовыми: «2 мин» и «2 min» — это уже язык.
+ */
+export function timeLimits(formats: Formats): Choice<number | null>[] {
+  return TIME_LIMIT_VALUES.map((value) => ({ value, label: formats.timeLimit(value) }));
+}
 
 /** Настройки по умолчанию для того, кто уже играл: свои он выставит сам. */
 export const DEFAULT_SETUP: GameSetup = {
@@ -126,18 +128,14 @@ export const DEFAULT_SETUP: GameSetup = {
   answerMode: "point",
 };
 
-function labelOf<T>(choices: Choice<T>[], value: T, fallback: string): string {
-  return choices.find((choice) => choice.value === value)?.label ?? fallback;
-}
-
 /** Подсказка под выбранным уровнем: что именно достанется на этом уровне. */
-export function levelHint(level: string): string {
-  return LEVELS.find((choice) => choice.value === level)?.hint ?? "";
+export function levelHint(text: Dictionary, level: LevelKey): string {
+  return text.setup.levels[level].hint;
 }
 
 /** Подсказка под выбором ответа: за что дадут очки. */
-export function answerModeHint(mode: string): string {
-  return ANSWER_MODES.find((choice) => choice.value === mode)?.hint ?? "";
+export function answerModeHint(text: Dictionary, mode: AnswerModeKey): string {
+  return text.setup.answerModes[mode].hint;
 }
 
 /**
@@ -146,16 +144,18 @@ export function answerModeHint(mode: string): string {
  * Порядок тот же, что у переключателей: строка и панель настроек читаются
  * как одно и то же, только одна свёрнута.
  */
-export function describeSetup(setup: GameSetup, formats: Formats): string {
+export function describeSetup(setup: GameSetup, text: Dictionary, formats: Formats): string {
+  const place = PLACES.find((item) => item.value === setup.place)?.name ?? "world";
+
   return [
-    `${String(setup.rounds)} ${plural(setup.rounds, "раунд", "раунда", "раундов")}`,
-    labelOf(LEVELS, setup.level, setup.level),
-    labelOf(PLACES, setup.place, "Весь мир"),
+    text.setup.describeRounds(setup.rounds),
+    text.setup.levels[setup.level].label,
+    text.setup.places[place],
     formats.timeLimit(setup.timeLimit).toLowerCase(),
     // Ответ точкой — обычный ход игры, называть его каждый раз незачем.
     // А вот про страны игрок должен знать до того, как нажал «Начать»
-    ...(setup.answerMode === "country" ? ["ответ страной"] : []),
-    ...(setup.answerMode === "choice" ? ["выбор из шести"] : []),
+    ...(setup.answerMode === "country" ? [text.setup.describeCountry] : []),
+    ...(setup.answerMode === "choice" ? [text.setup.describeChoice] : []),
   ].join(" · ");
 }
 

@@ -12,8 +12,8 @@
  * релиза означала бы партию, для которой сервер не находит ни одной зоны.
  */
 
-import type { Choice, GameSetup } from "~/domain/setup";
-import { ANSWER_MODES, LEVELS, PLACES, ROUNDS, TIME_LIMIT_VALUES } from "~/domain/setup";
+import type { GameSetup } from "~/domain/setup";
+import { ANSWER_MODES, LEVELS, PLACE_VALUES, ROUNDS, TIME_LIMIT_VALUES } from "~/domain/setup";
 
 /** Ключ в localStorage. Он назван в документе про хранилище, и тест это сверяет. */
 export const MENU_STORAGE_KEY = "location-king:menu";
@@ -26,12 +26,8 @@ export type SectionKey = "profile" | "friends" | "board" | "history";
 
 const MODE_KEYS: ModeKey[] = ["solo", "landmarks", "daily", "duel", "room"];
 
-export const SECTIONS: { key: SectionKey; label: string }[] = [
-  { key: "profile", label: "Профиль" },
-  { key: "friends", label: "Друзья" },
-  { key: "board", label: "Таблица" },
-  { key: "history", label: "История" },
-];
+/** Порядок разделов. Подписи к ним — в словаре: они переводятся */
+export const SECTIONS: SectionKey[] = ["profile", "friends", "board", "history"];
 
 export interface MenuState {
   setup: GameSetup;
@@ -65,8 +61,7 @@ export function parseMenu(raw: string | null, fallback: MenuState): MenuState {
   return {
     setup: parseSetup(fields.setup, fallback.setup),
     mode: MODE_KEYS.find((key) => key === fields.mode) ?? fallback.mode,
-    section:
-      SECTIONS.map((item) => item.key).find((key) => key === fields.section) ?? fallback.section,
+    section: oneOf(SECTIONS, fields.section, fallback.section),
   };
 }
 
@@ -75,23 +70,15 @@ function parseSetup(stored: unknown, fallback: GameSetup): GameSetup {
   const fields = stored as Record<string, unknown>;
 
   return {
-    rounds: known(ROUNDS, fields.rounds, fallback.rounds),
-    level: known(LEVELS, fields.level, fallback.level),
-    place: known(PLACES, fields.place, fallback.place),
+    rounds: oneOf(ROUNDS, fields.rounds, fallback.rounds),
+    level: oneOf(LEVELS, fields.level, fallback.level),
+    place: oneOf(PLACE_VALUES, fields.place, fallback.place),
     timeLimit: oneOf(TIME_LIMIT_VALUES, fields.timeLimit, fallback.timeLimit),
-    answerMode: known(ANSWER_MODES, fields.answerMode, fallback.answerMode),
+    answerMode: oneOf(ANSWER_MODES, fields.answerMode, fallback.answerMode),
   };
 }
 
 /** Значение из списка вариантов — или запасное, если такого варианта нет. */
-function known<T>(choices: Choice<T>[], stored: unknown, fallback: T): T {
-  return oneOf(
-    choices.map((choice) => choice.value),
-    stored,
-    fallback,
-  );
-}
-
 function oneOf<T>(values: T[], stored: unknown, fallback: T): T {
   return values.some((value) => value === stored) ? (stored as T) : fallback;
 }

@@ -18,7 +18,7 @@ import { CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { Field } from "~/components/ui/Field";
 import { CODE_LENGTH, isCompleteCode, normalizeCode } from "~/domain/codes";
 import { useShare } from "~/state/useShare";
-import { useFormats } from "~/state/languageContext";
+import { useFormats, useText } from "~/state/languageContext";
 
 interface FriendsProps {
   onError: (message: string) => void;
@@ -32,6 +32,7 @@ function inOrder(list: Friend[]): Friend[] {
 
 export function Friends({ onError }: FriendsProps) {
   const formats = useFormats();
+  const { friends: text } = useText();
   const [list, setList] = useState<Friend[]>([]);
   const [myCode, setMyCode] = useState("");
   const [code, setCode] = useState("");
@@ -45,9 +46,9 @@ export function Friends({ onError }: FriendsProps) {
       setList(loaded.friends);
       setMyCode(loaded.my_code);
     } catch (error) {
-      onError(errorMessage(error, "Не удалось прочитать список друзей"));
+      onError(errorMessage(error, text.listFailed));
     }
-  }, [onError]);
+  }, [onError, text.listFailed]);
 
   useEffect(() => {
     void reload();
@@ -69,22 +70,18 @@ export function Friends({ onError }: FriendsProps) {
     await act(async () => {
       await friendsApi.invite(code);
       setCode("");
-    }, "Не удалось отправить заявку");
+    }, text.inviteFailed);
   };
 
   const incoming = list.filter((friend) => friend.incoming).length;
 
   return (
     <section>
-      <CardTitle>Друзья</CardTitle>
-      <CardSubtitle>
-        {incoming === 0
-          ? "Добавляют по коду игрока — имя для этого не подходит"
-          : `${String(incoming)} ${incoming === 1 ? "заявка ждёт" : "заявки ждут"} ответа`}
-      </CardSubtitle>
+      <CardTitle>{text.title}</CardTitle>
+      <CardSubtitle>{incoming === 0 ? text.byCode : text.waiting(incoming)}</CardSubtitle>
 
       <div className={styles.mine}>
-        <span className={styles.mineLabel}>Твой код</span>
+        <span className={styles.mineLabel}>{text.myCode}</span>
         <code className={styles.code}>{myCode}</code>
         <button
           type="button"
@@ -93,7 +90,7 @@ export function Friends({ onError }: FriendsProps) {
             shared.share(myCode);
           }}
         >
-          {shared.state === "copied" ? "Скопирован" : "Скопировать"}
+          {shared.state === "copied" ? text.copied : text.copy}
         </button>
       </div>
 
@@ -105,7 +102,7 @@ export function Friends({ onError }: FriendsProps) {
         }}
       >
         <Field
-          label="Код друга"
+          label={text.friendCode}
           placeholder={"A".repeat(CODE_LENGTH)}
           value={code}
           maxLength={CODE_LENGTH}
@@ -114,12 +111,12 @@ export function Friends({ onError }: FriendsProps) {
           }}
         />
         <Button type="submit" variant="primary" disabled={busy || !isCompleteCode(code)}>
-          Позвать
+          {text.invite}
         </Button>
       </form>
 
       {list.length === 0 ? (
-        <p className={styles.empty}>Пока никого. Обменяйся кодами — и увидишь общий зачёт.</p>
+        <p className={styles.empty}>{text.empty}</p>
       ) : (
         <ul className={styles.list}>
           {inOrder(list).map((friend) => (
@@ -130,7 +127,7 @@ export function Friends({ onError }: FriendsProps) {
                 {friend.display_name}
                 {!friend.accepted && (
                   <span className={styles.pending}>
-                    {friend.incoming ? "зовёт тебя" : "ждёт ответа"}
+                    {friend.incoming ? text.invitesYou : text.awaitingAnswer}
                   </span>
                 )}
               </span>
@@ -144,19 +141,19 @@ export function Friends({ onError }: FriendsProps) {
                     className={styles.accept}
                     disabled={busy}
                     onClick={() => {
-                      void act(() => friendsApi.accept(friend.id), "Не удалось принять заявку");
+                      void act(() => friendsApi.accept(friend.id), text.acceptFailed);
                     }}
                   >
-                    Принять
+                    {text.accept}
                   </button>
                 )}
                 <button
                   type="button"
                   className={styles.drop}
                   disabled={busy}
-                  aria-label={`Убрать ${friend.display_name}`}
+                  aria-label={text.remove(friend.display_name)}
                   onClick={() => {
-                    void act(() => friendsApi.remove(friend.id), "Не удалось убрать");
+                    void act(() => friendsApi.remove(friend.id), text.removeFailed);
                   }}
                 >
                   ✕

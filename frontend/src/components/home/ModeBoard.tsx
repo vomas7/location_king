@@ -9,6 +9,7 @@
 
 import styles from "~/components/home/ModeBoard.module.css";
 import type { ModeKey } from "~/domain/menu";
+import { useText } from "~/state/languageContext";
 
 export interface Mode {
   key: ModeKey;
@@ -26,8 +27,10 @@ interface ModeBoardProps {
 }
 
 export function ModeBoard({ modes, active, onPick }: ModeBoardProps) {
+  const { menu } = useText();
+
   return (
-    <div className={styles.board} role="tablist" aria-label="Режим игры">
+    <div className={styles.board} role="tablist" aria-label={menu.modes}>
       {modes.map((mode) => (
         <button
           key={mode.key}

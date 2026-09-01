@@ -23,6 +23,8 @@ export interface Formats {
   percent(value: string | number | null): string;
   /** Дата без времени: «26 августа 2026». */
   date(iso: string): string;
+  /** День без года: «26 августа». Год у сегодняшнего челленджа лишний */
+  day(iso: string): string;
   /** Ограничение времени на раунд. */
   timeLimit(seconds: number | null): string;
 }
@@ -74,6 +76,10 @@ function build(language: Language): Formats {
         month: "long",
         year: "numeric",
       });
+    },
+
+    day(iso) {
+      return new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "long" });
     },
 
     timeLimit(seconds) {

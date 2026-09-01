@@ -87,6 +87,298 @@ export const ru = {
     mustAccept: "Чтобы завести учётную запись, нужно принять условия",
   },
 
+  room: {
+    title: "Комната",
+    subtitle:
+      "Те же раунды для всех, кто вошёл. Играете каждый в своём темпе и сравниваете результаты.",
+    fromSolo: "Условия берутся из одиночной партии:",
+    editSetup: "Изменить условия",
+    create: "Создать комнату",
+    codePlaceholder: "КОД",
+    codeLabel: "Код комнаты",
+    enter: "Войти",
+    mine: "Твои комнаты",
+    players: (count: number) => `${String(count)} ${plural(count, "игрок", "игрока", "игроков")}`,
+    leave: "Выйти",
+    meta: (rounds: number, time: string, host: string) =>
+      `${String(rounds)} ${plural(rounds, "раунд", "раунда", "раундов")} · ${time} · хост ${host}`,
+    closed: " · набор закрыт",
+    copyLink: "Скопировать ссылку",
+    linkCopied: "Ссылка скопирована",
+    copyFailed: "Не получилось скопировать",
+    nobodyYet: "Пока никто не вошёл. Отправь ссылку друзьям.",
+    play: "Играть",
+    signupsClosed: "Набор закрыт — войти уже нельзя.",
+    resume: "Продолжить партию",
+    myScore: "Твой результат",
+    closeSignups: "Закрыть набор",
+    notFound: "Комната не найдена",
+    createFailed: "Не удалось создать комнату",
+    enterFailed: "Не удалось войти в комнату",
+    closeFailed: "Не удалось закрыть набор",
+  },
+
+  board: {
+    title: "Таблица лидеров",
+    metric: "Метрика",
+    scope: "Зачёт",
+    scopes: {
+      all: "Все партии",
+      friends: "Друзья",
+      easy: "Легко",
+      normal: "Средне",
+      hard: "Сложно",
+      hardcore: "Хардкор",
+      russia: "Россия",
+      usa: "США",
+      eu: "Евросоюз",
+    },
+    metrics: {
+      best: { label: "Партия", hint: "Очков за раунд в лучшей партии" },
+      total: { label: "Сумма", hint: "Сумма очков за все партии" },
+      accuracy: { label: "Точность", hint: "Средний промах за раунд, от пяти раундов" },
+      sharp: { label: "Меткость", hint: "Раундов, взятых почти в точку" },
+      games: { label: "Партий", hint: "Сколько партий доиграно до конца" },
+    },
+    emptyAll: "Пока никто не сыграл ни одной партии. Займи первое место",
+    emptyFriends: "Ни ты, ни твои друзья ещё не доиграли ни одной партии",
+    emptyScope: "На этих условиях ещё никто не играл. Займи первое место",
+    failed: "Не удалось загрузить таблицу",
+  },
+
+  profile: {
+    title: "Профиль",
+    games: "Партий",
+    rounds: "Раундов",
+    best: "Лучшая партия",
+    averageMiss: "Средний промах",
+    rating: "Рейтинг",
+    theme: "Оформление",
+    themeFailed: "Не удалось запомнить оформление",
+
+    edit: "Изменить",
+    replacePicture: "Заменить",
+    removePicture: "Убрать",
+    uploadPicture: "Загрузить свою картинку",
+    cancel: "Отмена",
+    save: "Сохранить",
+    name: "Имя в таблице",
+    nameHint: (max: number) => `его видят другие игроки, до ${String(max)} символов`,
+    avatar: "Аватарка",
+    ownPicture: "Своя картинка",
+    ownPictureHint: "Её видно другим игрокам в таблицах и в комнате",
+    patterns: "Узор аватарки",
+    pattern: (index: number) => `Узор ${String(index)}`,
+    colors: "Цвет аватарки",
+    color: (index: number) => `Цвет ${String(index)}`,
+    tooHeavy: "Картинка тяжелее четырёх мегабайт",
+    uploadFailed: "Не удалось загрузить картинку",
+    removeFailed: "Не удалось убрать картинку",
+    saveFailed: "Не удалось сохранить",
+  },
+
+  friends: {
+    title: "Друзья",
+    byCode: "Добавляют по коду игрока — имя для этого не подходит",
+    waiting: (count: number) =>
+      `${String(count)} ${plural(count, "заявка ждёт", "заявки ждут", "заявок ждут")} ответа`,
+    invite: "Позвать",
+    accept: "Принять",
+    myCode: "Твой код",
+    copy: "Скопировать",
+    copied: "Скопирован",
+    friendCode: "Код друга",
+    empty: "Пока никого. Обменяйся кодами — и увидишь общий зачёт.",
+    invitesYou: "зовёт тебя",
+    awaitingAnswer: "ждёт ответа",
+    remove: (name: string) => `Убрать ${name}`,
+    listFailed: "Не удалось прочитать список друзей",
+    inviteFailed: "Не удалось отправить заявку",
+    acceptFailed: "Не удалось принять заявку",
+    removeFailed: "Не удалось убрать",
+  },
+
+  history: {
+    title: "Последние партии",
+    empty: "Ты ещё не сыграл ни одной партии",
+    rounds: (count: number) => `${String(count)} ${plural(count, "раунд", "раунда", "раундов")}`,
+    status: { finished: "завершена", abandoned: "брошена", active: "не доиграна" },
+  },
+
+  feedback: {
+    open: "Отзыв об игре",
+    thanks:
+      "Прочитаю всё. Ответить лично не обещаю, но чинить и делать буду именно по таким письмам.",
+    invitation: "Пиши прямо: что понравилось, что раздражает, что не работает.",
+    close: "Закрыть",
+    cancel: "Отмена",
+    send: "Отправить",
+    label: "Отзыв об игре",
+    title: "Как тебе игра?",
+    sent: "Дошло, спасибо",
+    about: "О чём",
+    kinds: { impression: "Впечатление", problem: "Проблема" },
+    hints: {
+      impression: "Что понравилось, а что нет",
+      problem: "Что случилось и на каком экране",
+    },
+    message: "Сообщение",
+    left: (count: number) => `осталось ${String(count)}`,
+    empty: "Напиши, что случилось",
+    failed: "Не удалось отправить",
+  },
+
+  deleteAccount: {
+    open: "Удалить аккаунт",
+    warning:
+      "Вместе с ним исчезнут все партии, раунды, место в таблице лидеров и созданные тобой комнаты. Восстановить это будет нечем.",
+    cancel: "Отмена",
+    confirm: "Удалить навсегда",
+    label: "Удаление учётной записи",
+    title: "Удалить аккаунт?",
+    password: "Пароль",
+    passwordPlaceholder: "Подтверди, что это ты",
+    needPassword: "Введи пароль",
+    failed: "Не удалось удалить учётную запись",
+  },
+
+  duel: {
+    title: "Дуэль",
+    subtitle: "Соперник подбирается по рейтингу",
+    yourRating: "твой рейтинг",
+    noDuelsYet: " · дуэлей ещё не было",
+    rulesUnknown: "Одни и те же раунды у обоих",
+    rules: (rounds: number, time: string) =>
+      `${String(rounds)} ${plural(rounds, "раунд", "раунда", "раундов")} · ${time} на раунд · одни и те же места у обоих`,
+    find: "Найти соперника",
+    joining: "Соперник найден…",
+    cancel: "Отменить поиск",
+    lookingFor: "Ищем соперника",
+    found: "Соперник найден",
+
+    nobody: "Сейчас никто не ищет",
+    onlyYou: "Пока ищешь только ты",
+    searching: (others: number) =>
+      `${String(others)} ${plural(others, "игрок ищет", "игрока ищут", "игроков ищут")} соперника`,
+  },
+
+  daily: {
+    title: "Челлендж дня",
+    subtitle: (rounds: number) =>
+      `${String(rounds)} ${plural(rounds, "раунд", "раунда", "раундов")} — одни и те же для всех. Одна попытка в сутки.`,
+    streak: (days: number) => `${plural(days, "день", "дня", "дней")} подряд`,
+    keepStreak: " — сыграй сегодня, чтобы не прервать",
+    bestStreak: (days: number) => ` · рекорд ${String(days)}`,
+    myResult: "Твой результат сегодня",
+    onlyYouPlayed: "Ты пока единственный, кто сыграл",
+    nobodyFinished: "Сегодня ещё никто не доиграл до конца",
+    play: "Играть челлендж",
+    resume: "Продолжить челлендж",
+    lost: "Партия этого дня брошена — её закрыла другая начатая игра. Челлендж вернётся завтра.",
+    failed: "Не удалось начать челлендж",
+
+    onceADay: "Одна попытка в сутки",
+    playedStatus: (score: string) => `Сыгран · ${score}`,
+    unfinishedStatus: "Партия не доиграна",
+    abandonedStatus: "Партия брошена",
+    freshStatus: "Сегодня ещё не сыгран",
+    streakStatus: (days: number) =>
+      `Серия ${String(days)} ${plural(days, "день", "дня", "дней")} — не прерывай`,
+  },
+
+  setup: {
+    answerMode: "Чем отвечать",
+    answerModes: {
+      choice: {
+        label: "Из шести",
+        hint: "Под снимком шесть стран, одна верная. Самый простой способ начать",
+      },
+      country: {
+        label: "Страной",
+        hint: "Карта со странами: попал — максимум, мимо — по промаху",
+      },
+      point: { label: "Точкой", hint: "Точка на карте мира, очки за близость к цели" },
+    },
+
+    level: "Сложность",
+    levels: {
+      easy: { label: "Легко", hint: "Узнают по силуэту: Париж, Венеция, Манхэттен" },
+      normal: {
+        label: "Средне",
+        hint: "Крупные города знакомых стран: Гамбург, Казань, Сиэтл",
+      },
+      hard: {
+        label: "Сложно",
+        hint: "Города, о которых знают мало, и обжитая местность без города",
+      },
+      hardcore: { label: "Хардкор", hint: "Дикая природа: горы, пустыни, тайга, лёд" },
+    },
+
+    place: "Где играем",
+    places: {
+      world: "Весь мир",
+      russia: "Россия",
+      usa: "США",
+      eu: "Евросоюз",
+      europe: "Европа",
+      asia: "Азия",
+      africa: "Африка",
+      northAmerica: "Сев. Америка",
+      southAmerica: "Юж. Америка",
+      oceania: "Океания",
+    },
+
+    rounds: "Раундов",
+    time: "Время на раунд",
+    timeHint: "Чем быстрее ответ, тем больше очков",
+
+    zonesFound: (count: number) => `Подходящих зон: ${String(count)}`,
+    countryNote: "В режиме стран играем по всему миру: выбранное место подсказывало бы ответ.",
+    noZones: "На таких условиях зон нет. Возьми другой уровень или другое место.",
+    start: "Начать игру",
+
+    soloTitle: "Одиночная партия",
+    soloSubtitle: "Раунд за раундом, только ты и снимок",
+    soloNewcomer:
+      "Для первой партии всё уже выставлено: пять раундов по городам, которые узнают все. Просто жми «Начать»",
+    landmarksTitle: "Известные места",
+    landmarksSubtitle:
+      "Пирамиды Гизы, Колизей, Тадж-Махал, Пальма Джумейра — крупным планом, без города вокруг",
+
+    /** Условия одной строкой: сколько раундов, уровень, место, время */
+    describeRounds: (count: number) =>
+      `${String(count)} ${plural(count, "раунд", "раунда", "раундов")}`,
+    describeCountry: "ответ страной",
+    describeChoice: "выбор из шести",
+  },
+
+  menu: {
+    modes: "Режим игры",
+    sections: "Разделы",
+    section: {
+      profile: "Профиль",
+      friends: "Друзья",
+      board: "Таблица",
+      history: "История",
+    },
+
+    solo: "Одиночная",
+    landmarks: "Известные места",
+    landmarksStatus: "Пирамиды, Колизей, Тадж-Махал",
+    daily: "Челлендж дня",
+    duel: "Дуэль",
+    room: "Комната",
+    roomStatus: "Своей компанией по коду",
+    soloStatus: (answerMode: string, rounds: number) =>
+      `${answerMode} · ${String(rounds)} ${plural(rounds, "раунд", "раунда", "раундов")}`,
+
+    unfinished: "У тебя есть незаконченная партия",
+    roundOf: (index: number, total: number) => `Раунд ${String(index)} из ${String(total)}`,
+    resume: "Продолжить",
+    replaceGame: (index: number, total: number) =>
+      `Незаконченная партия (раунд ${String(index)} из ${String(total)}) будет брошена, и очки за неё не засчитаются. Начать новую?`,
+  },
+
   landing: {
     eyebrow: "Геогессер по спутниковым снимкам",
     titleTop: "Найди точку",

@@ -14,6 +14,7 @@
 
 import { SetupPanel } from "~/components/home/SetupPanel";
 import type { GameSetup } from "~/domain/setup";
+import { useText } from "~/state/languageContext";
 
 interface LandmarksPanelProps {
   setup: GameSetup;
@@ -23,10 +24,12 @@ interface LandmarksPanelProps {
 }
 
 export function LandmarksPanel({ setup, onChange, error, onStart }: LandmarksPanelProps) {
+  const text = useText();
+
   return (
     <SetupPanel
-      title="Известные места"
-      subtitle="Пирамиды Гизы, Колизей, Тадж-Махал, Пальма Джумейра — крупным планом, без города вокруг"
+      title={text.setup.landmarksTitle}
+      subtitle={text.setup.landmarksSubtitle}
       setup={setup}
       onChange={onChange}
       error={error}

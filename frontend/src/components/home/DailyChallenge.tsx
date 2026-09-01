@@ -16,9 +16,8 @@ import { Button } from "~/components/ui/Button";
 import { CardTitle } from "~/components/ui/Card";
 import { Skeleton } from "~/components/ui/Skeleton";
 import { dailyStage } from "~/domain/daily";
-import { plural } from "~/domain/format";
 import { useAuth } from "~/state/authContext";
-import { useFormats } from "~/state/languageContext";
+import { useFormats, useText } from "~/state/languageContext";
 
 interface DailyChallengeProps {
   /** Пусто, пока состояние челленджа не приехало. */
@@ -29,12 +28,9 @@ interface DailyChallengeProps {
   onError: (message: string) => void;
 }
 
-function formatDay(iso: string): string {
-  return new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
-}
-
 export function DailyChallenge({ data, mayStart, onStarted, onError }: DailyChallengeProps) {
   const formats = useFormats();
+  const { daily: text } = useText();
   const { user } = useAuth();
 
   const [busy, setBusy] = useState(false);
@@ -47,7 +43,7 @@ export function DailyChallenge({ data, mayStart, onStarted, onError }: DailyChal
     return (
       <section>
         <div className={styles.header}>
-          <CardTitle>Челлендж дня</CardTitle>
+          <CardTitle>{text.title}</CardTitle>
         </div>
         <Skeleton rows={4} />
       </section>
@@ -69,7 +65,7 @@ export function DailyChallenge({ data, mayStart, onStarted, onError }: DailyChal
     try {
       onStarted(mine === null ? await challengeApi.start() : await gameApi.session(mine.id));
     } catch (error) {
-      onError(errorMessage(error, "Не удалось начать челлендж"));
+      onError(errorMessage(error, text.failed));
     } finally {
       setBusy(false);
     }
@@ -78,37 +74,31 @@ export function DailyChallenge({ data, mayStart, onStarted, onError }: DailyChal
   return (
     <section>
       <div className={styles.header}>
-        <CardTitle>Челлендж дня</CardTitle>
-        <span className={styles.day}>{formatDay(data.day)}</span>
+        <CardTitle>{text.title}</CardTitle>
+        <span className={styles.day}>{formats.day(data.day)}</span>
       </div>
 
-      <p className={styles.subtitle}>
-        {data.rounds_total} {plural(data.rounds_total, "раунд", "раунда", "раундов")} — одни и те же
-        для всех. Одна попытка в сутки.
-      </p>
+      <p className={styles.subtitle}>{text.subtitle(data.rounds_total)}</p>
 
       {data.current_streak > 0 && (
         <p className={styles.streak}>
-          <strong>{data.current_streak}</strong>{" "}
-          {plural(data.current_streak, "день", "дня", "дней")} подряд
-          {finished ? "" : " — сыграй сегодня, чтобы не прервать"}
+          <strong>{data.current_streak}</strong> {text.streak(data.current_streak)}
+          {finished ? "" : text.keepStreak}
           {data.best_streak > data.current_streak && (
-            <span className={styles.streakBest}> · рекорд {data.best_streak}</span>
+            <span className={styles.streakBest}>{text.bestStreak(data.best_streak)}</span>
           )}
         </p>
       )}
 
       {finished && mine !== null && (
         <div className={styles.played}>
-          <span className={styles.playedLabel}>Твой результат сегодня</span>
+          <span className={styles.playedLabel}>{text.myResult}</span>
           <span className={styles.playedScore}>{formats.number(mine.total_score)}</span>
         </div>
       )}
 
       {data.results.length === 0 ? (
-        <p className={styles.empty}>
-          {finished ? "Ты пока единственный, кто сыграл" : "Сегодня ещё никто не доиграл до конца"}
-        </p>
+        <p className={styles.empty}>{finished ? text.onlyYouPlayed : text.nobodyFinished}</p>
       ) : (
         <div className={styles.results}>
           {data.results.map((entry) => (
@@ -134,7 +124,7 @@ export function DailyChallenge({ data, mayStart, onStarted, onError }: DailyChal
             void handleStart();
           }}
         >
-          Играть челлендж
+          {text.play}
         </Button>
       )}
 
@@ -147,15 +137,11 @@ export function DailyChallenge({ data, mayStart, onStarted, onError }: DailyChal
             void handleStart();
           }}
         >
-          Продолжить челлендж
+          {text.resume}
         </Button>
       )}
 
-      {stage === "lost" && (
-        <p className={styles.lost}>
-          Партия этого дня брошена — её закрыла другая начатая игра. Челлендж вернётся завтра.
-        </p>
-      )}
+      {stage === "lost" && <p className={styles.lost}>{text.lost}</p>}
     </section>
   );
 }

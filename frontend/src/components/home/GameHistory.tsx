@@ -7,17 +7,21 @@ import type { SessionSummary } from "~/api/types";
 import styles from "~/components/home/GameHistory.module.css";
 import { CardTitle } from "~/components/ui/Card";
 import { Skeleton } from "~/components/ui/Skeleton";
-import { plural } from "~/domain/format";
-import { useFormats } from "~/state/languageContext";
+import type { Dictionary } from "~/i18n/dictionary";
+import { useFormats, useText } from "~/state/languageContext";
 
-const STATUS_LABELS: Record<string, string> = {
-  finished: "завершена",
-  abandoned: "брошена",
-  active: "не доиграна",
-};
+/**
+ * Как называется состояние партии. Сервер может прислать и то, чего словарь
+ * не знает, — тогда показываем как есть: это лучше пустого места
+ */
+function statusLabel(status: string, text: Dictionary): string {
+  const known: Record<string, string> = text.history.status;
+  return known[status] ?? status;
+}
 
 export function GameHistory({ refreshKey }: { refreshKey: number }) {
   const formats = useFormats();
+  const text = useText();
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
 
   useEffect(() => {
@@ -39,12 +43,12 @@ export function GameHistory({ refreshKey }: { refreshKey: number }) {
 
   return (
     <section>
-      <CardTitle>Последние партии</CardTitle>
+      <CardTitle>{text.history.title}</CardTitle>
 
       {sessions === null ? (
         <Skeleton rows={3} />
       ) : sessions.length === 0 ? (
-        <p className={styles.empty}>Ты ещё не сыграл ни одной партии</p>
+        <p className={styles.empty}>{text.history.empty}</p>
       ) : (
         <div className={styles.history}>
           {sessions.map((session) => (
@@ -52,9 +56,9 @@ export function GameHistory({ refreshKey }: { refreshKey: number }) {
               <span className={styles.historyDate}>{formats.date(session.started_at)}</span>
               <span className={styles.historyScore}>{formats.number(session.total_score)}</span>
               <span className={styles.historyMeta}>
-                {session.rounds_done} {plural(session.rounds_done, "раунд", "раунда", "раундов")}
+                {text.history.rounds(session.rounds_done)}
                 {" · "}
-                {STATUS_LABELS[session.status] ?? session.status}
+                {statusLabel(session.status, text)}
               </span>
             </div>
           ))}

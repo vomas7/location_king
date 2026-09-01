@@ -30,6 +30,7 @@ interface ProfilePanelProps {
 export function ProfilePanel({ onOpenLegal, onError }: ProfilePanelProps) {
   const formats = useFormats();
   const { language, text, choose } = useLanguage();
+  const { profile } = text;
   const { user, accept } = useAuth();
 
   if (user === null) return null;
@@ -40,42 +41,42 @@ export function ProfilePanel({ onOpenLegal, onError }: ProfilePanelProps) {
     try {
       accept(await auth.setTheme(theme));
     } catch (error) {
-      onError(errorMessage(error, "Не удалось запомнить оформление"));
+      onError(errorMessage(error, profile.themeFailed));
     }
   };
 
   return (
     <section>
-      <CardTitle>Профиль</CardTitle>
+      <CardTitle>{profile.title}</CardTitle>
 
       <PublicProfile />
 
       <dl className={styles.metrics}>
         <div className={styles.metric}>
-          <dt>Партий</dt>
+          <dt>{profile.games}</dt>
           <dd>{formats.number(user.games_played)}</dd>
         </div>
         <div className={styles.metric}>
-          <dt>Раундов</dt>
+          <dt>{profile.rounds}</dt>
           <dd>{formats.number(user.total_rounds)}</dd>
         </div>
         <div className={styles.metric}>
-          <dt>Лучшая партия</dt>
+          <dt>{profile.best}</dt>
           <dd>{formats.number(user.best_score)}</dd>
         </div>
         <div className={styles.metric}>
-          <dt>Средний промах</dt>
+          <dt>{profile.averageMiss}</dt>
           <dd>{formats.distance(user.average_distance)}</dd>
         </div>
         <div className={styles.metric}>
-          <dt>Рейтинг</dt>
+          <dt>{profile.rating}</dt>
           <dd>{formats.number(user.rating)}</dd>
         </div>
       </dl>
 
       <div className={styles.settings}>
         <Segmented
-          label="Оформление"
+          label={profile.theme}
           options={THEMES}
           value={user.theme}
           onChange={(theme) => {

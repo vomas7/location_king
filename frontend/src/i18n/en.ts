@@ -81,6 +81,295 @@ export const en: Dictionary = {
     mustAccept: "To create an account you need to accept the terms",
   },
 
+  room: {
+    title: "Room",
+    subtitle:
+      "The same rounds for everyone who joins. You each play at your own pace and compare results.",
+    fromSolo: "Conditions come from the single game:",
+    editSetup: "Change the conditions",
+    create: "Create a room",
+    codePlaceholder: "CODE",
+    codeLabel: "Room code",
+    enter: "Join",
+    mine: "Your rooms",
+    players: (count) => `${String(count)} ${count === 1 ? "player" : "players"}`,
+    leave: "Leave",
+    meta: (rounds, time, host) =>
+      `${String(rounds)} ${rounds === 1 ? "round" : "rounds"} · ${time} · host ${host}`,
+    closed: " · closed for new players",
+    copyLink: "Copy the link",
+    linkCopied: "Link copied",
+    copyFailed: "Could not copy",
+    nobodyYet: "Nobody has joined yet. Send the link to your friends.",
+    play: "Play",
+    signupsClosed: "The room is closed — joining is no longer possible.",
+    resume: "Continue the game",
+    myScore: "Your result",
+    closeSignups: "Close the room",
+    notFound: "Room not found",
+    createFailed: "Could not create the room",
+    enterFailed: "Could not join the room",
+    closeFailed: "Could not close the room",
+  },
+
+  board: {
+    title: "Leaderboard",
+    metric: "Metric",
+    scope: "Standings",
+    scopes: {
+      all: "All games",
+      friends: "Friends",
+      easy: "Easy",
+      normal: "Normal",
+      hard: "Hard",
+      hardcore: "Hardcore",
+      russia: "Russia",
+      usa: "USA",
+      eu: "European Union",
+    },
+    metrics: {
+      best: { label: "Game", hint: "Points per round in the best game" },
+      total: { label: "Total", hint: "Points across all games" },
+      accuracy: { label: "Accuracy", hint: "Average miss per round, from five rounds up" },
+      sharp: { label: "Sharp", hint: "Rounds taken almost exactly" },
+      games: { label: "Games", hint: "Games played to the end" },
+    },
+    emptyAll: "Nobody has played a single game yet. Take the first place",
+    emptyFriends: "Neither you nor your friends have finished a game yet",
+    emptyScope: "Nobody has played these conditions yet. Take the first place",
+    failed: "Could not load the table",
+  },
+
+  profile: {
+    title: "Profile",
+    games: "Games",
+    rounds: "Rounds",
+    best: "Best game",
+    averageMiss: "Average miss",
+    rating: "Rating",
+    theme: "Appearance",
+    themeFailed: "Could not save the appearance",
+
+    edit: "Edit",
+    replacePicture: "Replace",
+    removePicture: "Remove",
+    uploadPicture: "Upload your own picture",
+    cancel: "Cancel",
+    save: "Save",
+    name: "Name in the table",
+    nameHint: (max) => `other players see it, up to ${String(max)} characters`,
+    avatar: "Avatar",
+    ownPicture: "Your own picture",
+    ownPictureHint: "Other players see it in the tables and in the room",
+    patterns: "Avatar pattern",
+    pattern: (index) => `Pattern ${String(index)}`,
+    colors: "Avatar colour",
+    color: (index) => `Colour ${String(index)}`,
+    tooHeavy: "The picture is heavier than four megabytes",
+    uploadFailed: "Could not upload the picture",
+    removeFailed: "Could not remove the picture",
+    saveFailed: "Could not save",
+  },
+
+  friends: {
+    title: "Friends",
+    byCode: "Friends are added by player code — a name will not do",
+    waiting: (count) => `${String(count)} ${count === 1 ? "request is" : "requests are"} waiting`,
+    invite: "Invite",
+    accept: "Accept",
+    myCode: "Your code",
+    copy: "Copy",
+    copied: "Copied",
+    friendCode: "Friend's code",
+    empty: "Nobody yet. Swap codes and you will see a shared standing.",
+    invitesYou: "invites you",
+    awaitingAnswer: "waiting for an answer",
+    remove: (name) => `Remove ${name}`,
+    listFailed: "Could not read the friend list",
+    inviteFailed: "Could not send the request",
+    acceptFailed: "Could not accept the request",
+    removeFailed: "Could not remove",
+  },
+
+  history: {
+    title: "Recent games",
+    empty: "You have not played a single game yet",
+    rounds: (count) => `${String(count)} ${count === 1 ? "round" : "rounds"}`,
+    status: { finished: "finished", abandoned: "dropped", active: "unfinished" },
+  },
+
+  feedback: {
+    open: "Feedback",
+    thanks:
+      "I read everything. I cannot promise a personal reply, but fixes and new things come exactly from letters like this.",
+    invitation: "Write plainly: what you liked, what annoys you, what does not work.",
+    close: "Close",
+    cancel: "Cancel",
+    send: "Send",
+    label: "Feedback about the game",
+    title: "How do you like the game?",
+    sent: "Got it, thank you",
+    about: "About",
+    kinds: { impression: "Impression", problem: "Problem" },
+    hints: {
+      impression: "What you liked and what you did not",
+      problem: "What happened and on which screen",
+    },
+    message: "Message",
+    left: (count) => `${String(count)} left`,
+    empty: "Write what happened",
+    failed: "Could not send",
+  },
+
+  deleteAccount: {
+    open: "Delete the account",
+    warning:
+      "All your games, rounds, place on the leaderboard and rooms you created go with it. There will be nothing to restore it from.",
+    cancel: "Cancel",
+    confirm: "Delete for good",
+    label: "Deleting the account",
+    title: "Delete the account?",
+    password: "Password",
+    passwordPlaceholder: "Confirm it is you",
+    needPassword: "Enter the password",
+    failed: "Could not delete the account",
+  },
+
+  duel: {
+    title: "Duel",
+    subtitle: "Opponents are matched by rating",
+    yourRating: "your rating",
+    noDuelsYet: " · no duels yet",
+    rulesUnknown: "The same rounds for both",
+    rules: (rounds, time) =>
+      `${String(rounds)} ${rounds === 1 ? "round" : "rounds"} · ${time} per round · the same places for both`,
+    find: "Find an opponent",
+    joining: "Opponent found…",
+    cancel: "Cancel the search",
+    lookingFor: "Looking for an opponent",
+    found: "Opponent found",
+
+    nobody: "Nobody is searching right now",
+    onlyYou: "So far it is only you",
+    searching: (others) =>
+      `${String(others)} ${others === 1 ? "player is" : "players are"} looking for an opponent`,
+  },
+
+  daily: {
+    title: "Daily challenge",
+    subtitle: (rounds) =>
+      `${String(rounds)} ${rounds === 1 ? "round" : "rounds"}, the same for everyone. One attempt a day.`,
+    streak: (days) => `${days === 1 ? "day" : "days"} in a row`,
+    keepStreak: " — play today to keep it going",
+    bestStreak: (days) => ` · record ${String(days)}`,
+    myResult: "Your result today",
+    onlyYouPlayed: "You are the only one who has played so far",
+    nobodyFinished: "Nobody has finished today yet",
+    play: "Play the challenge",
+    resume: "Continue the challenge",
+    lost: "Today's game was dropped — another game replaced it. The challenge is back tomorrow.",
+    failed: "Could not start the challenge",
+
+    onceADay: "One attempt a day",
+    playedStatus: (score) => `Played · ${score}`,
+    unfinishedStatus: "Game unfinished",
+    abandonedStatus: "Game dropped",
+    freshStatus: "Not played today",
+    streakStatus: (days) => `${String(days)} ${days === 1 ? "day" : "days"} in a row — keep it`,
+  },
+
+  setup: {
+    answerMode: "How to answer",
+    answerModes: {
+      choice: {
+        label: "One of six",
+        hint: "Six countries under the image, one is right. The easiest way to start",
+      },
+      country: {
+        label: "By country",
+        hint: "A map with borders: hit it and take the maximum, miss and score by distance",
+      },
+      point: { label: "By pin", hint: "A pin on the world map, points for being close" },
+    },
+
+    level: "Difficulty",
+    levels: {
+      easy: { label: "Easy", hint: "Known by their outline: Paris, Venice, Manhattan" },
+      normal: {
+        label: "Normal",
+        hint: "Large cities of familiar countries: Hamburg, Kazan, Seattle",
+      },
+      hard: {
+        label: "Hard",
+        hint: "Cities few people know, and inhabited land without a city",
+      },
+      hardcore: { label: "Hardcore", hint: "The wild: mountains, deserts, taiga, ice" },
+    },
+
+    place: "Where to play",
+    places: {
+      world: "Whole world",
+      russia: "Russia",
+      usa: "USA",
+      eu: "European Union",
+      europe: "Europe",
+      asia: "Asia",
+      africa: "Africa",
+      northAmerica: "North America",
+      southAmerica: "South America",
+      oceania: "Oceania",
+    },
+
+    rounds: "Rounds",
+    time: "Time per round",
+    timeHint: "The faster you answer, the more points",
+
+    zonesFound: (count) => `Places to draw from: ${String(count)}`,
+    countryNote:
+      "In country mode we play the whole world: a chosen place would hint at the answer.",
+    noZones: "No places match these conditions. Take another level or another place.",
+    start: "Start playing",
+
+    soloTitle: "Single game",
+    soloSubtitle: "Round after round, just you and the image",
+    soloNewcomer:
+      "Everything is set for your first game: five rounds over cities everyone knows. Just hit Start",
+    landmarksTitle: "Famous places",
+    landmarksSubtitle:
+      "The Pyramids of Giza, the Colosseum, the Taj Mahal, Palm Jumeirah — close up, without the city around them",
+
+    describeRounds: (count) => `${String(count)} ${count === 1 ? "round" : "rounds"}`,
+    describeCountry: "answer by country",
+    describeChoice: "one of six",
+  },
+
+  menu: {
+    modes: "Game mode",
+    sections: "Sections",
+    section: {
+      profile: "Profile",
+      friends: "Friends",
+      board: "Leaderboard",
+      history: "History",
+    },
+
+    solo: "Single",
+    landmarks: "Famous places",
+    landmarksStatus: "Pyramids, Colosseum, Taj Mahal",
+    daily: "Daily challenge",
+    duel: "Duel",
+    room: "Room",
+    roomStatus: "With your friends, by code",
+    soloStatus: (answerMode, rounds) =>
+      `${answerMode} · ${String(rounds)} ${rounds === 1 ? "round" : "rounds"}`,
+
+    unfinished: "You have an unfinished game",
+    roundOf: (index, total) => `Round ${String(index)} of ${String(total)}`,
+    resume: "Continue",
+    replaceGame: (index, total) =>
+      `The unfinished game (round ${String(index)} of ${String(total)}) will be dropped, and its points will not count. Start a new one?`,
+  },
+
   landing: {
     eyebrow: "A geoguesser on satellite imagery",
     titleTop: "Find the spot",

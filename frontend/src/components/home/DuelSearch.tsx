@@ -13,13 +13,13 @@ import { useEffect, useState } from "react";
 
 import { duels as duelsApi } from "~/api/endpoints";
 import type { DuelFormat } from "~/api/types";
+import type { Dictionary } from "~/i18n/dictionary";
 import styles from "~/components/home/DuelSearch.module.css";
 import { Button } from "~/components/ui/Button";
 import { CardSubtitle, CardTitle } from "~/components/ui/Card";
-import { plural } from "~/domain/format";
 import { useAuth } from "~/state/authContext";
 import type { DuelPhase, DuelSearchController } from "~/state/useDuelSearch";
-import { useFormats } from "~/state/languageContext";
+import { useFormats, useText } from "~/state/languageContext";
 
 interface DuelSearchProps {
   search: DuelSearchController;
@@ -32,14 +32,17 @@ interface DuelSearchProps {
  * в ней стоит, написано на плитке режима прямо над панелью, и повторять это
  * дважды на одном экране незачем.
  */
-const QUEUE_TEXTS: Record<DuelPhase, string> = {
-  idle: "",
-  searching: "Ищем соперника",
-  joining: "Соперник найден",
-};
+function queueText(phase: DuelPhase, text: Dictionary): string {
+  if (phase === "searching") return text.duel.lookingFor;
+  if (phase === "joining") return text.duel.found;
+
+  return "";
+}
 
 export function DuelSearch({ search, mayStart }: DuelSearchProps) {
   const formats = useFormats();
+  const text = useText();
+  const { duel } = text;
   const { user } = useAuth();
   const [format, setFormat] = useState<DuelFormat | null>(null);
 
@@ -62,19 +65,19 @@ export function DuelSearch({ search, mayStart }: DuelSearchProps) {
 
   const rules =
     format === null
-      ? "Одни и те же раунды у обоих"
-      : `${String(format.rounds_total)} ${plural(format.rounds_total, "раунд", "раунда", "раундов")} · ${formats.timeLimit(format.time_limit_seconds)} на раунд · одни и те же места у обоих`;
+      ? duel.rulesUnknown
+      : duel.rules(format.rounds_total, formats.timeLimit(format.time_limit_seconds));
 
   return (
     <section>
-      <CardTitle>Дуэль</CardTitle>
-      <CardSubtitle>Соперник подбирается по рейтингу</CardSubtitle>
+      <CardTitle>{duel.title}</CardTitle>
+      <CardSubtitle>{duel.subtitle}</CardSubtitle>
 
       <div className={styles.rating}>
         <span className={styles.value}>{formats.number(user?.rating ?? 0)}</span>
         <span className={styles.label}>
-          твой рейтинг
-          {user !== null && user.duels_played === 0 && " · дуэлей ещё не было"}
+          {duel.yourRating}
+          {user !== null && user.duels_played === 0 && duel.noDuelsYet}
         </span>
       </div>
 
@@ -91,7 +94,7 @@ export function DuelSearch({ search, mayStart }: DuelSearchProps) {
             if (mayStart()) search.start();
           }}
         >
-          Найти соперника
+          {duel.find}
         </Button>
       ) : (
         <Button
@@ -101,13 +104,13 @@ export function DuelSearch({ search, mayStart }: DuelSearchProps) {
           onClick={search.stop}
           disabled={search.phase === "joining"}
         >
-          {search.phase === "joining" ? "Соперник найден…" : "Отменить поиск"}
+          {search.phase === "joining" ? duel.joining : duel.cancel}
         </Button>
       )}
 
       <p className={styles.queue} aria-live="polite">
         {search.phase === "searching" && <span className={styles.pulse} aria-hidden="true" />}
-        {QUEUE_TEXTS[search.phase]}
+        {queueText(search.phase, text)}
       </p>
     </section>
   );

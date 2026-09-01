@@ -15,9 +15,11 @@ import { Alert } from "~/components/ui/Alert";
 import { Button } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Field";
 import { useModal } from "~/components/ui/useModal";
+import { useText } from "~/state/languageContext";
 import { useAuth } from "~/state/authContext";
 
 export function DeleteAccount() {
+  const { deleteAccount: text } = useText();
   const { logout } = useAuth();
   const dialog = useRef<HTMLDivElement>(null);
 
@@ -39,7 +41,7 @@ export function DeleteAccount() {
     setError(null);
 
     if (password === "") {
-      setError("Введи пароль");
+      setError(text.needPassword);
       return;
     }
 
@@ -48,7 +50,7 @@ export function DeleteAccount() {
       await auth.deleteAccount(password);
       logout();
     } catch (caught) {
-      setError(errorMessage(caught, "Не удалось удалить учётную запись"));
+      setError(errorMessage(caught, text.failed));
     } finally {
       setBusy(false);
     }
@@ -63,7 +65,7 @@ export function DeleteAccount() {
           setOpen(true);
         }}
       >
-        Удалить аккаунт
+        {text.open}
       </button>
 
       {open && (
@@ -78,21 +80,18 @@ export function DeleteAccount() {
             className={styles.sheet}
             role="dialog"
             aria-modal="true"
-            aria-label="Удаление учётной записи"
+            aria-label={text.label}
           >
-            <h2 className={styles.title}>Удалить аккаунт?</h2>
+            <h2 className={styles.title}>{text.title}</h2>
 
-            <p className={styles.text}>
-              Вместе с ним исчезнут все партии, раунды, место в таблице лидеров и созданные тобой
-              комнаты. Восстановить это будет нечем.
-            </p>
+            <p className={styles.text}>{text.warning}</p>
 
             <form className={styles.form} onSubmit={(event) => void submit(event)} noValidate>
               <Field
-                label="Пароль"
+                label={text.password}
                 type="password"
                 autoComplete="current-password"
-                placeholder="Подтверди, что это ты"
+                placeholder={text.passwordPlaceholder}
                 value={password}
                 onChange={(event) => {
                   setPassword(event.target.value);
@@ -103,10 +102,10 @@ export function DeleteAccount() {
 
               <div className={styles.actions}>
                 <Button type="button" onClick={close}>
-                  Отмена
+                  {text.cancel}
                 </Button>
                 <Button type="submit" variant="primary" disabled={busy}>
-                  Удалить навсегда
+                  {text.confirm}
                 </Button>
               </div>
             </form>

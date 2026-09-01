@@ -21,6 +21,7 @@ import { Avatar } from "~/components/ui/Avatar";
 import { Button } from "~/components/ui/Button";
 import { Field } from "~/components/ui/Field";
 import { useAuth } from "~/state/authContext";
+import { useText } from "~/state/languageContext";
 
 /** Столько же разрешает сервер: подсказка о длине должна совпадать с правилом. */
 const MAX_LENGTH = 24;
@@ -33,6 +34,7 @@ const COLORS = [0, 1, 2, 3, 4, 5];
 const MAX_BYTES = 4 * 1024 * 1024;
 
 export function PublicProfile() {
+  const { profile: text } = useText();
   const { user, accept } = useAuth();
 
   const current = user?.display_name ?? user?.username ?? "";
@@ -54,7 +56,7 @@ export function PublicProfile() {
     setError(null);
 
     if (file.size > MAX_BYTES) {
-      setError("Картинка тяжелее четырёх мегабайт");
+      setError(text.tooHeavy);
       return;
     }
 
@@ -64,7 +66,7 @@ export function PublicProfile() {
       // незачем, а у загрузки на сервере свой лимит
       accept(await auth.uploadAvatar(file));
     } catch (caught) {
-      setError(errorMessage(caught, "Не удалось загрузить картинку"));
+      setError(errorMessage(caught, text.uploadFailed));
     } finally {
       setBusy(false);
     }
@@ -76,7 +78,7 @@ export function PublicProfile() {
     try {
       accept(await auth.dropAvatar());
     } catch (caught) {
-      setError(errorMessage(caught, "Не удалось убрать картинку"));
+      setError(errorMessage(caught, text.removeFailed));
     } finally {
       setBusy(false);
     }
@@ -119,7 +121,7 @@ export function PublicProfile() {
       );
       setEditing(false);
     } catch (caught) {
-      setError(errorMessage(caught, "Не удалось сохранить"));
+      setError(errorMessage(caught, text.saveFailed));
     } finally {
       setBusy(false);
     }
@@ -131,7 +133,7 @@ export function PublicProfile() {
         <Avatar avatar={user.avatar} size={28} name={current} />
         <span className={styles.value}>{current}</span>
         <button type="button" className={styles.trigger} onClick={open}>
-          Изменить
+          {text.edit}
         </button>
       </div>
     );
@@ -140,8 +142,8 @@ export function PublicProfile() {
   return (
     <form className={styles.form} onSubmit={(event) => void submit(event)} noValidate>
       <Field
-        label="Имя в таблице"
-        hint={`его видят другие игроки, до ${String(MAX_LENGTH)} символов`}
+        label={text.name}
+        hint={text.nameHint(MAX_LENGTH)}
         value={name}
         maxLength={MAX_LENGTH}
         autoComplete="nickname"
@@ -155,7 +157,7 @@ export function PublicProfile() {
       />
 
       <fieldset className={styles.picker}>
-        <legend className={styles.pickerLabel}>Аватарка</legend>
+        <legend className={styles.pickerLabel}>{text.avatar}</legend>
 
         {/* Поле выбора файла системное и некрасивое, поэтому спрятано за
             обычной кнопкой — она же объясняет, что будет с картинкой */}
@@ -177,8 +179,8 @@ export function PublicProfile() {
           <div className={styles.uploaded}>
             <Avatar avatar={user.avatar} size={64} name={current} />
             <div className={styles.uploadedText}>
-              <p className={styles.uploadedTitle}>Своя картинка</p>
-              <p className={styles.uploadedHint}>Её видно другим игрокам в таблицах и в комнате</p>
+              <p className={styles.uploadedTitle}>{text.ownPicture}</p>
+              <p className={styles.uploadedHint}>{text.ownPictureHint}</p>
               <div className={styles.uploadedActions}>
                 <Button
                   type="button"
@@ -186,7 +188,7 @@ export function PublicProfile() {
                   disabled={busy}
                   onClick={() => fileInput.current?.click()}
                 >
-                  Заменить
+                  {text.replacePicture}
                 </Button>
                 <Button
                   type="button"
@@ -196,26 +198,26 @@ export function PublicProfile() {
                     void dropPicture();
                   }}
                 >
-                  Убрать
+                  {text.removePicture}
                 </Button>
               </div>
             </div>
           </div>
         ) : (
           <Button type="button" block disabled={busy} onClick={() => fileInput.current?.click()}>
-            Загрузить свою картинку
+            {text.uploadPicture}
           </Button>
         )}
 
         {!picture && (
-          <div className={styles.choices} role="radiogroup" aria-label="Узор аватарки">
+          <div className={styles.choices} role="radiogroup" aria-label={text.patterns}>
             {SHAPES.map((option) => (
               <button
                 key={option}
                 type="button"
                 role="radio"
                 aria-checked={option === shape}
-                aria-label={`Узор ${String(option + 1)}`}
+                aria-label={text.pattern(option + 1)}
                 className={[styles.choice, option === shape ? styles.choiceActive : ""]
                   .filter(Boolean)
                   .join(" ")}
@@ -230,14 +232,14 @@ export function PublicProfile() {
         )}
 
         {!picture && (
-          <div className={styles.choices} role="radiogroup" aria-label="Цвет аватарки">
+          <div className={styles.choices} role="radiogroup" aria-label={text.colors}>
             {COLORS.map((option) => (
               <button
                 key={option}
                 type="button"
                 role="radio"
                 aria-checked={option === color}
-                aria-label={`Цвет ${String(option + 1)}`}
+                aria-label={text.color(option + 1)}
                 className={[styles.choice, option === color ? styles.choiceActive : ""]
                   .filter(Boolean)
                   .join(" ")}
@@ -256,10 +258,10 @@ export function PublicProfile() {
 
       <div className={styles.actions}>
         <Button type="button" onClick={close}>
-          Отмена
+          {text.cancel}
         </Button>
         <Button type="submit" variant="primary" disabled={busy}>
-          Сохранить
+          {text.save}
         </Button>
       </div>
     </form>

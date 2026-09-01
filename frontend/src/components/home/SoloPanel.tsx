@@ -10,7 +10,8 @@ import { SetupPanel } from "~/components/home/SetupPanel";
 import styles from "~/components/home/SetupPanel.module.css";
 import { Segmented } from "~/components/ui/Segmented";
 import type { GameSetup } from "~/domain/setup";
-import { LEVELS, levelHint, PLACES } from "~/domain/setup";
+import { levelChoices, levelHint, placeChoices } from "~/domain/setup";
+import { useText } from "~/state/languageContext";
 
 interface SoloPanelProps {
   setup: GameSetup;
@@ -31,18 +32,16 @@ export function SoloPanel({
   newcomer,
   onStart,
 }: SoloPanelProps) {
+  const text = useText();
+
   // И карта стран, и выбор из шести спрашивают страну: место в условиях
   // партии в обоих случаях было бы готовым ответом
   const byCountry = setup.answerMode !== "point";
 
   return (
     <SetupPanel
-      title="Одиночная партия"
-      subtitle={
-        newcomer
-          ? "Для первой партии всё уже выставлено: пять раундов по городам, которые узнают все. Просто жми «Начать»"
-          : "Раунд за раундом, только ты и снимок"
-      }
+      title={text.setup.soloTitle}
+      subtitle={newcomer ? text.setup.soloNewcomer : text.setup.soloSubtitle}
       setup={setup}
       onChange={onChange}
       warning={
@@ -54,30 +53,28 @@ export function SoloPanel({
       onStart={onStart}
     >
       <Segmented
-        label="Сложность"
-        options={LEVELS}
+        label={text.setup.level}
+        options={levelChoices(text)}
         value={setup.level}
         onChange={(level) => {
           onChange({ level });
         }}
-        hint={levelHint(setup.level)}
+        hint={levelHint(text, setup.level)}
       />
 
       {/* В режиме стран выбирать место нельзя: «Россия» в условиях
           партии — это и есть ответ на все её раунды */}
       {byCountry ? (
-        <p className={styles.note}>
-          В режиме стран играем по всему миру: выбранное место подсказывало бы ответ.
-        </p>
+        <p className={styles.note}>{text.setup.countryNote}</p>
       ) : (
         <Segmented
-          label="Где играем"
-          options={PLACES}
+          label={text.setup.place}
+          options={placeChoices(text)}
           value={setup.place}
           onChange={(place) => {
             onChange({ place });
           }}
-          {...(zoneCount === null ? {} : { hint: `Подходящих зон: ${String(zoneCount)}` })}
+          {...(zoneCount === null ? {} : { hint: text.setup.zonesFound(zoneCount) })}
         />
       )}
     </SetupPanel>

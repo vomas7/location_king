@@ -19,8 +19,8 @@ import { Button } from "~/components/ui/Button";
 import { CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { Segmented } from "~/components/ui/Segmented";
 import type { GameSetup } from "~/domain/setup";
-import { ANSWER_MODES, answerModeHint, ROUNDS, timeLimits } from "~/domain/setup";
-import { useFormats } from "~/state/languageContext";
+import { answerModeChoices, answerModeHint, roundChoices, timeLimits } from "~/domain/setup";
+import { useFormats, useText } from "~/state/languageContext";
 
 interface SetupPanelProps {
   title: string;
@@ -46,6 +46,7 @@ export function SetupPanel({
   onStart,
 }: SetupPanelProps) {
   const formats = useFormats();
+  const text = useText();
 
   return (
     <section>
@@ -56,15 +57,15 @@ export function SetupPanel({
         {/* Чем отвечать — главный выбор в игре, поэтому он первый: от него
             зависит, во что игрок будет играть, а не насколько трудно */}
         <Segmented
-          label="Чем отвечать"
-          options={ANSWER_MODES}
+          label={text.setup.answerMode}
+          options={answerModeChoices(text)}
           value={setup.answerMode}
           onChange={(answerMode) => {
             // Выбор места вместе с ответом страной — это уже не игра:
             // «Россия» в условиях партии и есть правильный ответ
             onChange({ answerMode, ...(answerMode === "point" ? {} : { place: null }) });
           }}
-          hint={answerModeHint(setup.answerMode)}
+          hint={answerModeHint(text, setup.answerMode)}
         />
 
         {children}
@@ -73,8 +74,8 @@ export function SetupPanel({
             содержание, поэтому стоят парой и на широком экране делят строку */}
         <div className={styles.pair}>
           <Segmented
-            label="Раундов"
-            options={ROUNDS}
+            label={text.setup.rounds}
+            options={roundChoices()}
             value={setup.rounds}
             onChange={(rounds) => {
               onChange({ rounds });
@@ -82,13 +83,13 @@ export function SetupPanel({
           />
 
           <Segmented
-            label="Время на раунд"
+            label={text.setup.time}
             options={timeLimits(formats)}
             value={setup.timeLimit}
             onChange={(timeLimit) => {
               onChange({ timeLimit });
             }}
-            hint="Чем быстрее ответ, тем больше очков"
+            hint={text.setup.timeHint}
           />
         </div>
       </div>
@@ -102,7 +103,7 @@ export function SetupPanel({
       )}
 
       <Button variant="primary" size="large" block disabled={warning !== null} onClick={onStart}>
-        Начать игру
+        {text.setup.start}
       </Button>
     </section>
   );
