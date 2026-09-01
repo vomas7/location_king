@@ -41,21 +41,28 @@ from app.services import game as game_service
 from app.services import hints as hints_service
 from app.services.leaderboard import LeaderboardRow
 from app.services.scoring import score_after_hint
-from app.utils import country_names
+from app.utils import country_names, zone_names
 
 
-def zone_view(zone: LocationZone) -> ZoneView:
-    """Публичное представление зоны."""
+def zone_view(zone: LocationZone, language: str) -> ZoneView:
+    """
+    Публичное представление зоны на языке игрока.
+
+    Каталог написан по-русски, и русское имя остаётся первичным: по нему зона
+    ищется и по нему сходятся границы. Игроку название переводится — «Бангкок»
+    кириллицей англоязычному не говорит ничего. Описание не переводится: его
+    не показывают, оно для того, кто правит каталог.
+    """
     return ZoneView(
         id=zone.id,
-        name=zone.name,
+        name=zone_names.place_name(zone.name, language) or zone.name,
         description=zone.description,
         category=zone.category,
-        category_name=category_name(zone.category),
+        category_name=category_name(zone.category, language),
         continent=zone.continent,
-        continent_name=continent_name(zone.continent),
-        country=zone.country,
-        region=zone.region,
+        continent_name=continent_name(zone.continent, language),
+        country=zone_names.country_name(zone.country, language),
+        region=zone_names.place_name(zone.region, language),
         tags=zone.tag_list,
         total_rounds=zone.total_rounds,
         average_distance=zone.average_distance,
@@ -102,7 +109,7 @@ async def round_view(db: AsyncSession, round_obj: Round, language: str) -> Round
     Цена нужна и до того, как подсказку взяли: игрок должен знать, что платит,
     а нулевая цена означает, что раскрывать нечего и предлагать её не надо.
     """
-    available = await hints_service.for_round(db, round_obj)
+    available = await hints_service.for_round(db, round_obj, language)
     taken = round_obj.hint_used
     choices = choice_names(round_obj, language)
 
@@ -172,7 +179,7 @@ async def round_result(db: AsyncSession, round_obj: Round, language: str) -> Rou
         country=country_names.name_of(round_obj.country_code, language),
         guess_country=country_names.name_of(round_obj.guess_country_code, language),
         answer_seconds=round_obj.answer_seconds,
-        zone=zone_view(round_obj.zone),
+        zone=zone_view(round_obj.zone, language),
         guessed_at=round_obj.guessed_at,
     )
 

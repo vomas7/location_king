@@ -8,6 +8,8 @@
 
 import { expect, test } from "@playwright/test";
 
+import { register } from "./helpers";
+
 test.describe("английский браузер", () => {
   test.use({ locale: "en-US" });
 
@@ -57,4 +59,34 @@ test("отказ сервера приходит на языке интерфе�
   // Текст приходит с сервера: интерфейс его не придумывает, а только просит
   // отвечать по-английски
   await expect(page.getByText("Wrong email or password")).toBeVisible();
+});
+
+test("на английском место в результате раунда названо латиницей", async ({ page }) => {
+  await register(page);
+  await page.getByRole("button", { name: "English" }).click();
+
+  await page.getByRole("button", { name: "Start playing" }).first().click();
+  await expect(page.getByRole("button", { name: "Answer" })).toBeVisible();
+
+  const coach = page.getByRole("button", { name: "Do not show this" });
+  if (await coach.count()) await coach.click();
+
+  // На компьютере карта догадки раскрывается наведением, как и в остальных
+  // сценариях: кнопки «Открыть карту» там нет
+  const guessMap = page.locator(".ol-viewport").nth(1);
+  await guessMap.hover();
+  await page.waitForTimeout(600);
+
+  const box = await guessMap.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.click(box!.x + box!.width * 0.5, box!.y + box!.height * 0.45);
+
+  await page.getByRole("button", { name: "Answer" }).click();
+  const result = page.getByRole("dialog");
+  await expect(result).toBeVisible();
+
+  // Каталог написан по-русски, а игрок выбрал английский: ни названия места,
+  // ни страны кириллицей в результате быть не должно
+  await expect(result.getByText(/[А-Яа-я]/)).toHaveCount(0);
+  await expect(result.getByRole("button", { name: /Next round|See the summary/ })).toBeVisible();
 });

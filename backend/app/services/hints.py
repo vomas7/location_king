@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import messages
 from app.exceptions import ConflictError
+from app.messages import Message
 from app.models.enums import continent_name, group_countries
 from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
@@ -26,6 +27,7 @@ from app.models.series import RoundSeries
 from app.observability import metrics
 from app.services.round_timer import is_late
 from app.services.scoring import score_after_hint
+from app.utils import zone_names
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,13 @@ class Hint:
     value: str
 
 
-def choose(zone: LocationZone, series: RoundSeries | None) -> Hint | None:
+#: Подписи полей подсказки. Игрок их читает, поэтому они знают оба языка
+HINT_CONTINENT = Message("Часть света", "Continent")
+HINT_COUNTRY = Message("Страна", "Country")
+HINT_REGION = Message("Регион", "Region")
+
+
+def choose(zone: LocationZone, series: RoundSeries | None, language: str) -> Hint | None:
     """
     Самое широкое, чего игрок ещё не знает.
 
@@ -59,21 +67,21 @@ def choose(zone: LocationZone, series: RoundSeries | None) -> Hint | None:
     candidates = (
         (
             not place_chosen,
-            "Часть света",
-            None if zone.continent is None else continent_name(zone.continent),
+            HINT_CONTINENT,
+            None if zone.continent is None else continent_name(zone.continent, language),
         ),
-        (not country_chosen, "Страна", zone.country),
-        (True, "Регион", zone.region),
+        (not country_chosen, HINT_COUNTRY, zone_names.country_name(zone.country, language)),
+        (True, HINT_REGION, zone_names.place_name(zone.region, language)),
     )
 
     for unknown, label, value in candidates:
         if unknown and value:
-            return Hint(label=label, value=value)
+            return Hint(label=label.text(language), value=value)
 
     return None
 
 
-async def for_round(db: AsyncSession, round_obj: Round) -> Hint | None:
+async def for_round(db: AsyncSession, round_obj: Round, language: str) -> Hint | None:
     """
     Подсказка этого раунда — та же самая при каждом обращении.
 
@@ -98,10 +106,10 @@ async def for_round(db: AsyncSession, round_obj: Round) -> Hint | None:
         else await db.get(RoundSeries, session.series_id)
     )
 
-    return choose(zone, series)
+    return choose(zone, series, language)
 
 
-async def take(db: AsyncSession, round_obj: Round) -> Hint:
+async def take(db: AsyncSession, round_obj: Round, language: str) -> Hint:
     """Взять подсказку: раскрыть место и уменьшить максимум очков раунда."""
     if not round_obj.is_open:
         raise ConflictError(messages.ROUND_CLOSED)
@@ -112,7 +120,7 @@ async def take(db: AsyncSession, round_obj: Round) -> Hint:
     if round_obj.hint_used:
         raise ConflictError(messages.HINT_ALREADY_TAKEN)
 
-    hint = await for_round(db, round_obj)
+    hint = await for_round(db, round_obj, language)
     if hint is None:
         raise ConflictError(messages.HINT_ADDS_NOTHING)
 

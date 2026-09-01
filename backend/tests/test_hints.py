@@ -43,7 +43,7 @@ def series(**overrides) -> RoundSeries:
 
 
 def test_world_game_gets_the_continent():
-    hint = choose(make_zone(), series())
+    hint = choose(make_zone(), series(), "ru")
 
     assert hint is not None
     assert hint.label == "Часть света"
@@ -51,7 +51,7 @@ def test_world_game_gets_the_continent():
 
 
 def test_chosen_continent_moves_the_hint_to_the_country():
-    hint = choose(make_zone(), series(continent="europe"))
+    hint = choose(make_zone(), series(continent="europe"), "ru")
 
     assert hint is not None
     assert hint.label == "Страна"
@@ -59,7 +59,9 @@ def test_chosen_continent_moves_the_hint_to_the_country():
 
 
 def test_single_country_game_moves_the_hint_to_the_region():
-    hint = choose(make_zone(country="Россия", region="Камчатка"), series(country_group="russia"))
+    hint = choose(
+        make_zone(country="Россия", region="Камчатка"), series(country_group="russia"), "ru"
+    )
 
     assert hint is not None
     assert hint.label == "Регион"
@@ -68,7 +70,7 @@ def test_single_country_game_moves_the_hint_to_the_region():
 
 def test_group_of_many_countries_still_reveals_the_country():
     """Евросоюз — это двадцать семь стран, и знать, какая из них, полезно."""
-    hint = choose(make_zone(), series(country_group="eu"))
+    hint = choose(make_zone(), series(country_group="eu"), "ru")
 
     assert hint is not None
     assert hint.label == "Страна"
@@ -76,7 +78,7 @@ def test_group_of_many_countries_still_reveals_the_country():
 
 def test_hint_falls_through_empty_fields():
     """У зоны без части света подсказка съезжает на страну."""
-    hint = choose(make_zone(continent=None), series())
+    hint = choose(make_zone(continent=None), series(), "ru")
 
     assert hint is not None
     assert hint.label == "Страна"
@@ -86,12 +88,12 @@ def test_nothing_left_to_reveal():
     """Партия по одной стране и зона без региона: добавить нечего."""
     zone = make_zone(country="Россия", region=None, continent=None)
 
-    assert choose(zone, series(country_group="russia")) is None
+    assert choose(zone, series(country_group="russia"), "ru") is None
 
 
 def test_series_without_conditions_behaves_like_the_whole_world():
     """Партия, собранная до того, как условия начали запоминать."""
-    hint = choose(make_zone(), None)
+    hint = choose(make_zone(), None, "ru")
 
     assert hint is not None
     assert hint.label == "Часть света"

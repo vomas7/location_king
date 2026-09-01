@@ -2,6 +2,8 @@
 
 from enum import StrEnum
 
+from app.messages import Message
+
 
 class SessionStatus(StrEnum):
     """Статусы игровой сессии."""
@@ -226,37 +228,42 @@ COUNTRY_GROUP_NAMES = {
 }
 
 CONTINENT_NAMES = {
-    Continent.EUROPE: "Европа",
-    Continent.ASIA: "Азия",
-    Continent.AFRICA: "Африка",
-    Continent.NORTH_AMERICA: "Северная Америка",
-    Continent.SOUTH_AMERICA: "Южная Америка",
-    Continent.OCEANIA: "Австралия и Океания",
-    Continent.ANTARCTICA: "Антарктида",
+    Continent.EUROPE: Message("Европа", "Europe"),
+    Continent.ASIA: Message("Азия", "Asia"),
+    Continent.AFRICA: Message("Африка", "Africa"),
+    Continent.NORTH_AMERICA: Message("Северная Америка", "North America"),
+    Continent.SOUTH_AMERICA: Message("Южная Америка", "South America"),
+    Continent.OCEANIA: Message("Австралия и Океания", "Australia and Oceania"),
+    Continent.ANTARCTICA: Message("Антарктида", "Antarctica"),
 }
+
+#: Часть света у зоны может быть не указана
+CONTINENT_UNKNOWN = Message("Не указано", "Not set")
 
 CATEGORY_NAMES = {
-    ZoneCategory.CITY: "Город",
-    ZoneCategory.LANDMARK: "Достопримечательность",
-    ZoneCategory.NATURE: "Природа",
-    ZoneCategory.COAST: "Побережье",
-    ZoneCategory.MOUNTAINS: "Горы",
-    ZoneCategory.DESERT: "Пустыня",
-    ZoneCategory.ISLANDS: "Острова",
-    ZoneCategory.HISTORICAL: "Историческое место",
-    ZoneCategory.ARCHITECTURE: "Архитектура",
-    ZoneCategory.INDUSTRIAL: "Промышленная зона",
-    ZoneCategory.RURAL: "Сельская местность",
-    ZoneCategory.POLAR: "Полярный регион",
-    ZoneCategory.MIXED: "Смешанная местность",
+    ZoneCategory.CITY: Message("Город", "City"),
+    ZoneCategory.LANDMARK: Message("Достопримечательность", "Landmark"),
+    ZoneCategory.NATURE: Message("Природа", "Nature"),
+    ZoneCategory.COAST: Message("Побережье", "Coast"),
+    ZoneCategory.MOUNTAINS: Message("Горы", "Mountains"),
+    ZoneCategory.DESERT: Message("Пустыня", "Desert"),
+    ZoneCategory.ISLANDS: Message("Острова", "Islands"),
+    ZoneCategory.HISTORICAL: Message("Историческое место", "Historical site"),
+    ZoneCategory.ARCHITECTURE: Message("Архитектура", "Architecture"),
+    ZoneCategory.INDUSTRIAL: Message("Промышленная зона", "Industrial area"),
+    ZoneCategory.RURAL: Message("Сельская местность", "Countryside"),
+    ZoneCategory.POLAR: Message("Полярный регион", "Polar region"),
+    ZoneCategory.MIXED: Message("Смешанная местность", "Mixed terrain"),
 }
 
 
-def category_name(category: str | None) -> str:
-    """Читаемое название категории зоны."""
+def category_name(category: str | None, language: str) -> str:
+    """Читаемое название категории зоны на языке игрока."""
     if category is None:
-        return CATEGORY_NAMES[ZoneCategory.MIXED]
-    return CATEGORY_NAMES.get(ZoneCategory(category), category)
+        return CATEGORY_NAMES[ZoneCategory.MIXED].text(language)
+
+    known = CATEGORY_NAMES.get(ZoneCategory(category))
+    return category if known is None else known.text(language)
 
 
 def group_countries(group: str) -> tuple[str, ...]:
@@ -264,8 +271,10 @@ def group_countries(group: str) -> tuple[str, ...]:
     return COUNTRY_GROUPS[CountryGroup(group)]
 
 
-def continent_name(continent: str | None) -> str:
-    """Читаемое название части света."""
+def continent_name(continent: str | None, language: str) -> str:
+    """Читаемое название части света на языке игрока."""
     if continent is None:
-        return "Не указано"
-    return CONTINENT_NAMES.get(Continent(continent), continent)
+        return CONTINENT_UNKNOWN.text(language)
+
+    known = CONTINENT_NAMES.get(Continent(continent))
+    return continent if known is None else known.text(language)

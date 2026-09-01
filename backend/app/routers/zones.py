@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.dependencies import request_language
 from app.models.enums import Continent, CountryGroup, Difficulty
 from app.schemas.game import ZoneView
 from app.services import views
@@ -19,16 +20,21 @@ async def list_zones(
     continent: Continent | None = None,
     country_group: CountryGroup | None = None,
     limit: int = Query(default=200, ge=1, le=500),
+    language: str = Depends(request_language),
     db: AsyncSession = Depends(get_db),
 ) -> list[ZoneView]:
     """Список активных зон."""
     zones = await zones_service.list_zones(
         db, difficulty, category, continent, country_group, limit
     )
-    return [views.zone_view(zone) for zone in zones]
+    return [views.zone_view(zone, language) for zone in zones]
 
 
 @router.get("/{zone_id}", response_model=ZoneView)
-async def get_zone(zone_id: int, db: AsyncSession = Depends(get_db)) -> ZoneView:
+async def get_zone(
+    zone_id: int,
+    language: str = Depends(request_language),
+    db: AsyncSession = Depends(get_db),
+) -> ZoneView:
     """Одна зона по id."""
-    return views.zone_view(await zones_service.get_zone(db, zone_id))
+    return views.zone_view(await zones_service.get_zone(db, zone_id), language)

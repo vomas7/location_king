@@ -71,7 +71,7 @@ async def take_hint(
     партии, ничего не добавляет, и такую он не выдаёт вовсе.
     """
     round_obj = await game_service.get_round_for_user(db, user, round_id, for_update=True)
-    await hints_service.take(db, round_obj)
+    await hints_service.take(db, round_obj, language)
 
     return await views.round_view(db, round_obj, language)
 
