@@ -16,11 +16,10 @@ import { PublicProfile } from "~/components/home/PublicProfile";
 import { Credits, LegalLinks } from "~/components/layout/AboutLinks";
 import { CardTitle } from "~/components/ui/Card";
 import { Segmented } from "~/components/ui/Segmented";
-import { LANGUAGES } from "~/domain/language";
 import { THEMES } from "~/domain/theme";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useAuth } from "~/state/authContext";
-import { useFormats, useLanguage } from "~/state/languageContext";
+import { useFormats, useText } from "~/state/languageContext";
 
 interface ProfilePanelProps {
   onOpenLegal: (document: LegalDocumentId) => void;
@@ -29,8 +28,7 @@ interface ProfilePanelProps {
 
 export function ProfilePanel({ onOpenLegal, onError }: ProfilePanelProps) {
   const formats = useFormats();
-  const { language, text, choose } = useLanguage();
-  const { profile } = text;
+  const { profile } = useText();
   const { user, accept } = useAuth();
 
   if (user === null) return null;
@@ -82,15 +80,6 @@ export function ProfilePanel({ onOpenLegal, onError }: ProfilePanelProps) {
           onChange={(theme) => {
             void chooseTheme(theme);
           }}
-        />
-
-        {/* Язык лежит в браузере, а не в профиле: одним аккаунтом играют и с
-            рабочего ноутбука, и с чужого телефона, а язык там разный */}
-        <Segmented
-          label={text.language.label}
-          options={LANGUAGES}
-          value={language}
-          onChange={choose}
         />
       </div>
 

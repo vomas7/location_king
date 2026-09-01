@@ -16,7 +16,6 @@ import type { Dictionary } from "~/i18n/dictionary";
 export const en: Dictionary = {
   language: {
     label: "Language",
-    switchTo: "Русский",
   },
 
   errors: {

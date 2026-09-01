@@ -3,6 +3,7 @@
 import { Button } from "~/components/ui/Button";
 import type { AvatarView } from "~/api/types";
 import { Avatar } from "~/components/ui/Avatar";
+import { LanguageSwitch } from "~/components/layout/LanguageSwitch";
 import styles from "~/components/layout/TopBar.module.css";
 import { useFormats, useText } from "~/state/languageContext";
 
@@ -91,6 +92,8 @@ export function TopBar({ playerName, playerAvatar, progress, onQuit, onLogout }:
       {progress !== null && <ProgressBar {...progress} />}
 
       <div className={styles.user}>
+        <LanguageSwitch />
+
         {playerName !== null && (
           <span className={styles.player}>
             {playerAvatar !== null && <Avatar avatar={playerAvatar} size={22} name={playerName} />}

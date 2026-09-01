@@ -11,6 +11,7 @@ import { useRef } from "react";
 import { AuthCard } from "~/components/auth/AuthCard";
 import { HeroSight } from "~/components/landing/HeroSight";
 import { Footer } from "~/components/layout/Footer";
+import { LanguageSwitch } from "~/components/layout/LanguageSwitch";
 import styles from "~/components/landing/LandingScreen.module.css";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useFormats, useText } from "~/state/languageContext";
@@ -37,6 +38,12 @@ export function LandingScreen({ onOpenLegal }: LandingScreenProps) {
 
   return (
     <div className={styles.screen}>
+      {/* Язык — первое, что нужно тому, кто пришёл и не читает по-русски:
+          поэтому он наверху страницы, а не в подвале и не в профиле */}
+      <div className={styles.bar}>
+        <LanguageSwitch />
+      </div>
+
       <section className={styles.hero} ref={hero}>
         <div className={styles.pitch}>
           <p className={styles.eyebrow}>{landing.eyebrow}</p>

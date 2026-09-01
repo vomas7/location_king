@@ -18,8 +18,6 @@ import { QUESTIONS } from "~/i18n/faq.ru";
 export const ru = {
   language: {
     label: "Язык",
-    /** Подпись у переключателя в подвале: короткая, это сноска */
-    switchTo: "English",
   },
 
   errors: {

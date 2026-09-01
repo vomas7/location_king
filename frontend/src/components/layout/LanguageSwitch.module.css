@@ -1,0 +1,60 @@
+/* Подпись и два флага одной строкой. Компактно: это не орган управления
+   игрой, а указатель, к которому возвращаются раз или два */
+.switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.label {
+  color: var(--text-faint);
+  font-size: var(--fs-micro);
+  white-space: nowrap;
+}
+
+.flags {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Кнопка размером с флаг, а область нажатия — больше: по маленькому значку
+   пальцем промахиваются, и второй язык включался бы через раз */
+.choice {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  opacity: 0.5;
+  transition:
+    opacity var(--motion-base) var(--ease),
+    border-color var(--motion-base) var(--ease);
+}
+
+.choice::after {
+  position: absolute;
+  content: "";
+  inset: calc((var(--tap) - 100%) / -2) calc((var(--tap) - 100%) / -2);
+}
+
+.choiceActive {
+  border-color: var(--accent);
+  opacity: 1;
+}
+
+.flag {
+  display: block;
+  width: 22px;
+  height: 11px;
+  border-radius: 1px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .choice:hover {
+    opacity: 1;
+  }
+}
