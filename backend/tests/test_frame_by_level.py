@@ -19,11 +19,29 @@ from app.schemas.game import StartSessionRequest
 from app.services import difficulty as difficulty_service
 
 
-def test_every_level_has_its_own_frame():
-    frames = [difficulty_service.view_extent_km(level) for level in Difficulty]
+def test_frame_never_shrinks_as_content_gets_harder():
+    """
+    Кадр растёт вслед за размером зоны: чем больше зона, тем больше нужно
+    контекста, чтобы место вообще можно было прочитать. Совпадать у соседних
+    уровней он при этом может — у «легко» и «средне» зоны одного размера.
+    """
+    frames = [
+        difficulty_service.view_extent_km(level)
+        for level in (Difficulty.EASY, Difficulty.NORMAL, Difficulty.HARD, Difficulty.HARDCORE)
+    ]
 
-    assert len(set(frames)) == len(frames)
+    assert frames == sorted(frames)
     assert all(frame > 0 for frame in frames)
+
+
+def test_no_level_shows_an_unreadable_square():
+    """
+    Кадр до двадцати километров показывает сетку кварталов, по которой нельзя
+    опознать даже Шанхай: на первых полутысячах раундов такие кадры давали
+    средний промах в 4170 километров против 2895 у кадров пошире.
+    """
+    for level in Difficulty:
+        assert difficulty_service.view_extent_km(level) >= 40.0
 
 
 def test_unknown_level_falls_back_to_the_default():
@@ -57,24 +75,21 @@ async def test_started_round_uses_the_frame_of_its_level(
 ) -> None:
     """
     Кадр раунда — ближайший к заказанному тайл, а не ровно заказанное число:
-    участок это один тайл Web Mercator, и его ширина зависит от широты. Поэтому
-    проверяется то, что действительно должно выполняться: из всех уровней
-    полученный кадр ближе всего к своему.
+    участок это один тайл Web Mercator, его ширина зависит от широты, а соседние
+    зумы отличаются вдвое. Поэтому проверяется то, что действительно
+    выполняется: полученный кадр отстоит от заказанного меньше чем на зум.
     """
-    zone.tier = Difficulty.HARD
+    zone.tier = Difficulty.HARDCORE
     await db.flush()
 
     response = await client.post(
         "/api/sessions",
-        json={"rounds_total": 1, "difficulty": Difficulty.HARD},
+        json={"rounds_total": 1, "difficulty": Difficulty.HARDCORE},
         headers=auth_headers,
     )
     assert response.status_code == 201
 
     round_obj = (await db.execute(select(Round))).scalars().one()
-    frame = float(round_obj.view_extent_km)
+    wanted = difficulty_service.view_extent_km(Difficulty.HARDCORE)
 
-    closest = min(
-        Difficulty, key=lambda level: abs(difficulty_service.view_extent_km(level) - frame)
-    )
-    assert closest == Difficulty.HARD
+    assert 0.5 < float(round_obj.view_extent_km) / wanted < 2.0
