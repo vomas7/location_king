@@ -10,6 +10,7 @@ import { useState } from "react";
 
 import styles from "~/components/legal/StorageNotice.module.css";
 import { Button } from "~/components/ui/Button";
+import { useText } from "~/state/languageContext";
 
 /** Ключ в localStorage. Он назван в документе про хранилище, и тест это сверяет. */
 export const NOTICE_STORAGE_KEY = "location-king:notice";
@@ -28,6 +29,7 @@ interface StorageNoticeProps {
 }
 
 export function StorageNotice({ onDetails }: StorageNoticeProps) {
+  const { notice } = useText();
   const [hidden, setHidden] = useState(wasDismissed);
 
   if (hidden) return null;
@@ -42,15 +44,15 @@ export function StorageNotice({ onDetails }: StorageNoticeProps) {
   };
 
   return (
-    <aside className={styles.notice} role="note" aria-label="О хранилище браузера">
-      <p className={styles.text}>Куки мы не ставим — в браузере остаётся только токен входа.</p>
+    <aside className={styles.notice} role="note" aria-label={notice.label}>
+      <p className={styles.text}>{notice.text}</p>
 
       <div className={styles.actions}>
         <button type="button" className={styles.details} onClick={onDetails}>
-          Подробнее
+          {notice.details}
         </button>
         <Button size="small" onClick={dismiss}>
-          Понятно
+          {notice.ok}
         </Button>
       </div>
     </aside>

@@ -16,8 +16,9 @@ import { Button } from "~/components/ui/Button";
 import { CardTitle } from "~/components/ui/Card";
 import { Skeleton } from "~/components/ui/Skeleton";
 import { dailyStage } from "~/domain/daily";
-import { formatNumber, plural } from "~/domain/format";
+import { plural } from "~/domain/format";
 import { useAuth } from "~/state/authContext";
+import { useFormats } from "~/state/languageContext";
 
 interface DailyChallengeProps {
   /** Пусто, пока состояние челленджа не приехало. */
@@ -33,6 +34,7 @@ function formatDay(iso: string): string {
 }
 
 export function DailyChallenge({ data, mayStart, onStarted, onError }: DailyChallengeProps) {
+  const formats = useFormats();
   const { user } = useAuth();
 
   const [busy, setBusy] = useState(false);
@@ -99,7 +101,7 @@ export function DailyChallenge({ data, mayStart, onStarted, onError }: DailyChal
       {finished && mine !== null && (
         <div className={styles.played}>
           <span className={styles.playedLabel}>Твой результат сегодня</span>
-          <span className={styles.playedScore}>{formatNumber(mine.total_score)}</span>
+          <span className={styles.playedScore}>{formats.number(mine.total_score)}</span>
         </div>
       )}
 
@@ -115,7 +117,7 @@ export function DailyChallenge({ data, mayStart, onStarted, onError }: DailyChal
               rank={entry.rank}
               avatar={entry.avatar}
               name={entry.display_name}
-              value={formatNumber(entry.total_score)}
+              value={formats.number(entry.total_score)}
               mine={entry.display_name === (user.display_name ?? user.username)}
               medals
             />

@@ -6,10 +6,10 @@ import type { RoundResult as RoundResultData } from "~/api/types";
 import styles from "~/components/game/RoundResult.module.css";
 import { Button } from "~/components/ui/Button";
 import { useModal } from "~/components/ui/useModal";
-import { formatDistance, formatNumber, formatPercent } from "~/domain/format";
 import { scoreRatio, scoreTier, zoneStanding } from "~/domain/score";
 import { COLOR_GUESS, COLOR_TARGET } from "~/map/styles";
 import { createResultMap, type ResultMap } from "~/map/result";
+import { useFormats } from "~/state/languageContext";
 
 const TIER_CLASS: Record<string, string | undefined> = {
   perfect: styles.tierPerfect,
@@ -26,6 +26,7 @@ interface RoundResultProps {
 }
 
 export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
+  const formats = useFormats();
   const container = useRef<HTMLDivElement>(null);
   const instance = useRef<ResultMap | null>(null);
   const nextButton = useRef<HTMLButtonElement>(null);
@@ -89,8 +90,8 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
 
           <div aria-live="polite">
             <h2 className={styles.score}>
-              {formatNumber(result.score)}
-              <small>из {formatNumber(result.max_score)} очков</small>
+              {formats.number(result.score)}
+              <small>из {formats.number(result.max_score)} очков</small>
             </h2>
           </div>
 
@@ -119,11 +120,13 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
               <>
                 <div className={styles.readout}>
                   <span className={styles.readoutLabel}>Промах</span>
-                  <span className={styles.readoutValue}>{formatDistance(result.distance_km)}</span>
+                  <span className={styles.readoutValue}>
+                    {formats.distance(result.distance_km)}
+                  </span>
                 </div>
                 <div className={styles.readout}>
                   <span className={styles.readoutLabel}>Точность</span>
-                  <span className={styles.readoutValue}>{formatPercent(result.accuracy)}</span>
+                  <span className={styles.readoutValue}>{formats.percent(result.accuracy)}</span>
                 </div>
               </>
             )}
@@ -135,7 +138,7 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
 
             {!byCountry && standing !== null && (
               <p className={styles.standing}>
-                Здесь обычно промахиваются на {formatDistance(standing.averageKm)} —{" "}
+                Здесь обычно промахиваются на {formats.distance(standing.averageKm)} —{" "}
                 <span className={standing.better ? styles.betterThanOthers : undefined}>
                   {standing.better ? "ты точнее" : "ты дальше"}
                 </span>

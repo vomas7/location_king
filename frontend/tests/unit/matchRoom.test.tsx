@@ -5,10 +5,13 @@
  * а не сам API.
  */
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "~/api/client";
+
+import { renderWithLanguage as render } from "./withLanguage";
+
 import type { MatchView, SessionState } from "~/api/types";
 
 const create = vi.fn();

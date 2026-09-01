@@ -4,7 +4,7 @@ import { Button } from "~/components/ui/Button";
 import type { AvatarView } from "~/api/types";
 import { Avatar } from "~/components/ui/Avatar";
 import styles from "~/components/layout/TopBar.module.css";
-import { formatNumber } from "~/domain/format";
+import { useFormats, useText } from "~/state/languageContext";
 
 interface Progress {
   roundIndex: number;
@@ -43,13 +43,14 @@ function Reticle() {
  * осталось, не читая текст.
  */
 function ProgressBar({ roundIndex, roundsTotal, score }: Progress) {
+  const { topbar } = useText();
+  const formats = useFormats();
+
   return (
     <div className={styles.progress}>
       <div className={styles.progressLine}>
-        <span className={styles.progressLabel}>
-          Раунд {roundIndex} из {roundsTotal}
-        </span>
-        <span className={styles.progressScore}>{formatNumber(score)}</span>
+        <span className={styles.progressLabel}>{topbar.round(roundIndex, roundsTotal)}</span>
+        <span className={styles.progressScore}>{formats.number(score)}</span>
       </div>
 
       <div
@@ -58,7 +59,7 @@ function ProgressBar({ roundIndex, roundsTotal, score }: Progress) {
         aria-valuemin={0}
         aria-valuemax={roundsTotal}
         aria-valuenow={roundIndex - 1}
-        aria-label="Прогресс партии"
+        aria-label={topbar.progress}
       >
         {Array.from({ length: roundsTotal }, (_, index) => (
           <span
@@ -78,6 +79,8 @@ function ProgressBar({ roundIndex, roundsTotal, score }: Progress) {
 }
 
 export function TopBar({ playerName, playerAvatar, progress, onQuit, onLogout }: TopBarProps) {
+  const { topbar } = useText();
+
   return (
     <header className={styles.topbar}>
       <div className={styles.brand}>
@@ -100,11 +103,11 @@ export function TopBar({ playerName, playerAvatar, progress, onQuit, onLogout }:
             нему стоит игроку всех набранных очков */}
         {onQuit === undefined ? (
           <Button variant="ghost" size="small" onClick={onLogout}>
-            Выйти
+            {topbar.logout}
           </Button>
         ) : (
           <Button variant="ghost" size="small" onClick={onQuit}>
-            Завершить
+            {topbar.quit}
           </Button>
         )}
       </div>

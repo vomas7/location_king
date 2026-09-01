@@ -16,9 +16,9 @@ import { Avatar } from "~/components/ui/Avatar";
 import { Button } from "~/components/ui/Button";
 import { CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { Field } from "~/components/ui/Field";
-import { formatNumber } from "~/domain/format";
 import { CODE_LENGTH, isCompleteCode, normalizeCode } from "~/domain/codes";
 import { useShare } from "~/state/useShare";
+import { useFormats } from "~/state/languageContext";
 
 interface FriendsProps {
   onError: (message: string) => void;
@@ -31,6 +31,7 @@ function inOrder(list: Friend[]): Friend[] {
 }
 
 export function Friends({ onError }: FriendsProps) {
+  const formats = useFormats();
   const [list, setList] = useState<Friend[]>([]);
   const [myCode, setMyCode] = useState("");
   const [code, setCode] = useState("");
@@ -134,7 +135,7 @@ export function Friends({ onError }: FriendsProps) {
                 )}
               </span>
 
-              <span className={styles.rating}>{formatNumber(friend.rating)}</span>
+              <span className={styles.rating}>{formats.number(friend.rating)}</span>
 
               <span className={styles.actions}>
                 {friend.incoming && (

@@ -2,31 +2,38 @@
 
 import { describe, expect, it } from "vitest";
 
+import { formats } from "~/domain/format";
 import { DEFAULT_SETUP, describeSetup, levelHint, toOptions } from "~/domain/setup";
+
+const ru = formats("ru");
 
 describe("describeSetup", () => {
   it("называет все условия подряд", () => {
     // Ширины кадра здесь нет: её задаёт уровень, и выбирать её игрок не может
-    expect(describeSetup(DEFAULT_SETUP)).toBe("5 раундов · Средне · Весь мир · без лимита");
+    expect(describeSetup(DEFAULT_SETUP, ru)).toBe("5 раундов · Средне · Весь мир · без лимита");
   });
 
   it("склоняет раунды", () => {
-    expect(describeSetup({ ...DEFAULT_SETUP, rounds: 3 })).toContain("3 раунда");
-    expect(describeSetup({ ...DEFAULT_SETUP, rounds: 10 })).toContain("10 раундов");
+    expect(describeSetup({ ...DEFAULT_SETUP, rounds: 3 }, ru)).toContain("3 раунда");
+    expect(describeSetup({ ...DEFAULT_SETUP, rounds: 10 }, ru)).toContain("10 раундов");
   });
 
   it("называет выбранное место, а не ключ фильтра", () => {
-    expect(describeSetup({ ...DEFAULT_SETUP, place: "continent:oceania" })).toContain("Океания");
-    expect(describeSetup({ ...DEFAULT_SETUP, place: "country:eu" })).toContain("Евросоюз");
+    expect(describeSetup({ ...DEFAULT_SETUP, place: "continent:oceania" }, ru)).toContain(
+      "Океания",
+    );
+    expect(describeSetup({ ...DEFAULT_SETUP, place: "country:eu" }, ru)).toContain("Евросоюз");
   });
 
   it("называет таймер", () => {
-    expect(describeSetup({ ...DEFAULT_SETUP, timeLimit: 30 })).toContain("30 сек");
+    expect(describeSetup({ ...DEFAULT_SETUP, timeLimit: 30 }, ru)).toContain("30 сек");
   });
 
   it("предупреждает про ответ страной и молчит про обычный ответ", () => {
-    expect(describeSetup({ ...DEFAULT_SETUP, answerMode: "country" })).toContain("ответ страной");
-    expect(describeSetup(DEFAULT_SETUP)).not.toContain("ответ");
+    expect(describeSetup({ ...DEFAULT_SETUP, answerMode: "country" }, ru)).toContain(
+      "ответ страной",
+    );
+    expect(describeSetup(DEFAULT_SETUP, ru)).not.toContain("ответ");
   });
 });
 

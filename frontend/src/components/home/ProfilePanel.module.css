@@ -27,8 +27,12 @@
   font-weight: 700;
 }
 
-.theme {
+/* Оформление и язык: две настройки того, как игра выглядит и на чём говорит */
+.settings {
+  display: grid;
   margin: var(--space-5) 0;
+  gap: var(--space-5);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .actions {

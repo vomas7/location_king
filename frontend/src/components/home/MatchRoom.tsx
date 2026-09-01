@@ -15,10 +15,11 @@ import styles from "~/components/home/MatchRoom.module.css";
 import { PlayerRow } from "~/components/ui/PlayerRow";
 import { Button } from "~/components/ui/Button";
 import { CardSubtitle, CardTitle } from "~/components/ui/Card";
-import { formatNumber, formatTimeLimit, plural } from "~/domain/format";
+import { plural } from "~/domain/format";
 import { CODE_LENGTH, isCompleteCode, normalizeCode } from "~/domain/codes";
 import { roomFromSearch, roomLink } from "~/domain/room";
 import { type ShareState, useShare } from "~/state/useShare";
+import { useFormats } from "~/state/languageContext";
 
 interface MatchRoomProps {
   /** Условия одиночной партии: комната собирается по ним же. */
@@ -54,6 +55,7 @@ export function MatchRoom({
   onJoined,
   onError,
 }: MatchRoomProps) {
+  const formats = useFormats();
   const [room, setRoom] = useState<MatchView | null>(null);
   const [mine, setMine] = useState<MatchSummary[]>([]);
   const [code, setCode] = useState("");
@@ -267,7 +269,7 @@ export function MatchRoom({
 
       <p className={styles.meta}>
         {room.rounds_total} {plural(room.rounds_total, "раунд", "раунда", "раундов")} ·{" "}
-        {formatTimeLimit(room.time_limit_seconds)} · хост {room.host_name}
+        {formats.timeLimit(room.time_limit_seconds)} · хост {room.host_name}
         {isOpen ? "" : " · набор закрыт"}
       </p>
 
@@ -295,7 +297,7 @@ export function MatchRoom({
               // сыграно: иначе лидером выглядел бы тот, кто просто быстрее
               value={
                 entry.is_finished
-                  ? formatNumber(entry.total_score)
+                  ? formats.number(entry.total_score)
                   : `${String(entry.rounds_done)}/${String(room.rounds_total)}`
               }
               mine={entry.is_you}
@@ -336,7 +338,9 @@ export function MatchRoom({
         {finished && room.my_session !== null && (
           <div className={styles.myScore}>
             <span className={styles.myScoreLabel}>Твой результат</span>
-            <span className={styles.myScoreValue}>{formatNumber(room.my_session.total_score)}</span>
+            <span className={styles.myScoreValue}>
+              {formats.number(room.my_session.total_score)}
+            </span>
           </div>
         )}
 

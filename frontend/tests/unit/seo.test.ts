@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { QUESTIONS } from "~/components/landing/content";
+import { QUESTIONS } from "~/i18n/faq.ru";
 import { structuredData } from "~/seo";
 
 interface Graph {

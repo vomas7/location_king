@@ -10,7 +10,8 @@
  */
 
 import type { DailyChallenge, SessionSummary } from "~/api/types";
-import { formatNumber, plural } from "~/domain/format";
+import type { Formats } from "~/domain/format";
+import { plural } from "~/domain/format";
 
 export type DailyStage = "fresh" | "active" | "finished" | "lost";
 
@@ -22,12 +23,12 @@ export function dailyStage(session: SessionSummary | null): DailyStage {
 }
 
 /** Что написать на плитке режима: ради чего в челлендж заходят сегодня. */
-export function dailyStatus(daily: DailyChallenge | null): string {
+export function dailyStatus(daily: DailyChallenge | null, formats: Formats): string {
   if (daily === null) return "Одна попытка в сутки";
 
   switch (dailyStage(daily.my_session)) {
     case "finished":
-      return `Сыгран · ${formatNumber(daily.my_session?.total_score ?? 0)}`;
+      return `Сыгран · ${formats.number(daily.my_session?.total_score ?? 0)}`;
     case "active":
       return "Партия не доиграна";
     case "lost":

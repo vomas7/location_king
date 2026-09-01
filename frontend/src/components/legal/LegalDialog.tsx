@@ -12,6 +12,7 @@ import styles from "~/components/legal/LegalDialog.module.css";
 import { Button } from "~/components/ui/Button";
 import { useModal } from "~/components/ui/useModal";
 import { LEGAL_DOCUMENTS, legalDocument, type LegalDocumentId } from "~/legal/documents";
+import { useText } from "~/state/languageContext";
 
 interface LegalDialogProps {
   /** Какой документ открыть. null — окно закрыто. */
@@ -20,6 +21,7 @@ interface LegalDialogProps {
 }
 
 export function LegalDialog({ open, onClose }: LegalDialogProps) {
+  const { legal } = useText();
   const dialog = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
   const body = useRef<HTMLDivElement>(null);
@@ -62,7 +64,7 @@ export function LegalDialog({ open, onClose }: LegalDialogProps) {
         aria-label={document.title}
       >
         <header className={styles.header}>
-          <div className={styles.tabs} role="tablist" aria-label="Документы">
+          <div className={styles.tabs} role="tablist" aria-label={legal.list}>
             {LEGAL_DOCUMENTS.map((item) => (
               <button
                 key={item.id}
@@ -77,19 +79,27 @@ export function LegalDialog({ open, onClose }: LegalDialogProps) {
                   setCurrent(item.id);
                 }}
               >
-                {item.tab}
+                {legal.tabs[item.id]}
               </button>
             ))}
           </div>
 
           <Button ref={closeButton} variant="ghost" size="small" onClick={onClose}>
-            Закрыть
+            {legal.close}
           </Button>
         </header>
 
         <div className={styles.body} ref={body} tabIndex={0}>
           <h2 className={styles.title}>{document.title}</h2>
-          <p className={styles.updated}>Редакция от {document.updated}</p>
+          <p className={styles.updated}>{legal.revision(document.updated)}</p>
+
+          {/* Документы существуют только по-русски: сказать об этом честнее,
+              чем показать англоязычному игроку страницу, которую он не ждал */}
+          {legal.russianOnly !== "" && (
+            <p className={styles.updated} lang="en">
+              {legal.russianOnly}
+            </p>
+          )}
 
           {document.sections.map((section) => (
             <section key={section.heading} className={styles.section}>

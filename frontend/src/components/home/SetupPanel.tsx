@@ -19,7 +19,8 @@ import { Button } from "~/components/ui/Button";
 import { CardSubtitle, CardTitle } from "~/components/ui/Card";
 import { Segmented } from "~/components/ui/Segmented";
 import type { GameSetup } from "~/domain/setup";
-import { ANSWER_MODES, answerModeHint, ROUNDS, TIME_LIMITS } from "~/domain/setup";
+import { ANSWER_MODES, answerModeHint, ROUNDS, timeLimits } from "~/domain/setup";
+import { useFormats } from "~/state/languageContext";
 
 interface SetupPanelProps {
   title: string;
@@ -44,6 +45,8 @@ export function SetupPanel({
   error,
   onStart,
 }: SetupPanelProps) {
+  const formats = useFormats();
+
   return (
     <section>
       <CardTitle>{title}</CardTitle>
@@ -80,7 +83,7 @@ export function SetupPanel({
 
           <Segmented
             label="Время на раунд"
-            options={TIME_LIMITS}
+            options={timeLimits(formats)}
             value={setup.timeLimit}
             onChange={(timeLimit) => {
               onChange({ timeLimit });

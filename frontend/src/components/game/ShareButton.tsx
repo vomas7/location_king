@@ -3,6 +3,7 @@
 import type { RoundResult, SessionView } from "~/api/types";
 import { Button } from "~/components/ui/Button";
 import { buildShareText } from "~/domain/share";
+import { useFormats } from "~/state/languageContext";
 import { type ShareState, useShare } from "~/state/useShare";
 
 interface ShareButtonProps {
@@ -19,6 +20,7 @@ const LABELS: Record<ShareState, string> = {
 };
 
 export function ShareButton({ session, results, challengeDay }: ShareButtonProps) {
+  const formats = useFormats();
   const { state, share } = useShare();
 
   return (
@@ -28,6 +30,7 @@ export function ShareButton({ session, results, challengeDay }: ShareButtonProps
       onClick={() => {
         share(
           buildShareText({
+            formats,
             session,
             results,
             ...(challengeDay === undefined ? {} : { challengeDay }),

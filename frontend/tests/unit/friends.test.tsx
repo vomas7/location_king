@@ -4,8 +4,10 @@
  * Сеть подменена: проверяется, что видит игрок и что уходит на сервер.
  */
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithLanguage as render } from "./withLanguage";
 
 import type { Friend, FriendList } from "~/api/types";
 

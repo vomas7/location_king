@@ -7,7 +7,8 @@ import type { SessionSummary } from "~/api/types";
 import styles from "~/components/home/GameHistory.module.css";
 import { CardTitle } from "~/components/ui/Card";
 import { Skeleton } from "~/components/ui/Skeleton";
-import { formatDate, formatNumber, plural } from "~/domain/format";
+import { plural } from "~/domain/format";
+import { useFormats } from "~/state/languageContext";
 
 const STATUS_LABELS: Record<string, string> = {
   finished: "завершена",
@@ -16,6 +17,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export function GameHistory({ refreshKey }: { refreshKey: number }) {
+  const formats = useFormats();
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
 
   useEffect(() => {
@@ -47,8 +49,8 @@ export function GameHistory({ refreshKey }: { refreshKey: number }) {
         <div className={styles.history}>
           {sessions.map((session) => (
             <div key={session.id} className={styles.historyRow}>
-              <span className={styles.historyDate}>{formatDate(session.started_at)}</span>
-              <span className={styles.historyScore}>{formatNumber(session.total_score)}</span>
+              <span className={styles.historyDate}>{formats.date(session.started_at)}</span>
+              <span className={styles.historyScore}>{formats.number(session.total_score)}</span>
               <span className={styles.historyMeta}>
                 {session.rounds_done} {plural(session.rounds_done, "раунд", "раунда", "раундов")}
                 {" · "}

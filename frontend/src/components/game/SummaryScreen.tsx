@@ -8,10 +8,11 @@ import styles from "~/components/game/SummaryScreen.module.css";
 import { ShareButton } from "~/components/game/ShareButton";
 import { Button } from "~/components/ui/Button";
 import { Card, Eyebrow } from "~/components/ui/Card";
-import { formatDistance, formatNumber, plural } from "~/domain/format";
+import { plural } from "~/domain/format";
 import { scoreRatio } from "~/domain/score";
 import { scopeLabel, scopeQuery } from "~/domain/scope";
 import { createReviewMap, type ReviewMap, type ReviewRound } from "~/map/review";
+import { useFormats } from "~/state/languageContext";
 
 interface SummaryScreenProps {
   session: SessionView;
@@ -38,6 +39,7 @@ export function SummaryScreen({
   onPlayAgain,
   onHome,
 }: SummaryScreenProps) {
+  const formats = useFormats();
   const played = results.length;
   const average = played === 0 ? 0 : Math.round(session.total_score / played);
   const isRecord = played > 0 && session.total_score > previousBest;
@@ -106,14 +108,14 @@ export function SummaryScreen({
           <Eyebrow>Партия окончена</Eyebrow>
 
           <h2 className={styles.score}>
-            {formatNumber(session.total_score)}
+            {formats.number(session.total_score)}
             <small>очков</small>
           </h2>
 
           <p className={styles.subtitle}>
             {played === 0
               ? "Ни одного раунда не сыграно"
-              : `${String(played)} ${plural(played, "раунд", "раунда", "раундов")} · в среднем ${formatNumber(average)} за раунд`}
+              : `${String(played)} ${plural(played, "раунд", "раунда", "раундов")} · в среднем ${formats.number(average)} за раунд`}
           </p>
 
           {isRecord && <p className={styles.record}>Это твой лучший результат</p>}
@@ -160,8 +162,8 @@ export function SummaryScreen({
               >
                 <span className={styles.number}>{result.index}</span>
                 <span className={styles.place}>{result.zone.name}</span>
-                <span className={styles.distance}>{formatDistance(result.distance_km)}</span>
-                <span className={styles.points}>{formatNumber(result.score)}</span>
+                <span className={styles.distance}>{formats.distance(result.distance_km)}</span>
+                <span className={styles.points}>{formats.number(result.score)}</span>
                 <span className={styles.bar}>
                   <span
                     className={styles.barFill}

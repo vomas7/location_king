@@ -13,7 +13,7 @@
  */
 
 import type { Choice, GameSetup } from "~/domain/setup";
-import { ANSWER_MODES, LEVELS, PLACES, ROUNDS, TIME_LIMITS } from "~/domain/setup";
+import { ANSWER_MODES, LEVELS, PLACES, ROUNDS, TIME_LIMIT_VALUES } from "~/domain/setup";
 
 /** Ключ в localStorage. Он назван в документе про хранилище, и тест это сверяет. */
 export const MENU_STORAGE_KEY = "location-king:menu";
@@ -78,12 +78,20 @@ function parseSetup(stored: unknown, fallback: GameSetup): GameSetup {
     rounds: known(ROUNDS, fields.rounds, fallback.rounds),
     level: known(LEVELS, fields.level, fallback.level),
     place: known(PLACES, fields.place, fallback.place),
-    timeLimit: known(TIME_LIMITS, fields.timeLimit, fallback.timeLimit),
+    timeLimit: oneOf(TIME_LIMIT_VALUES, fields.timeLimit, fallback.timeLimit),
     answerMode: known(ANSWER_MODES, fields.answerMode, fallback.answerMode),
   };
 }
 
 /** Значение из списка вариантов — или запасное, если такого варианта нет. */
 function known<T>(choices: Choice<T>[], stored: unknown, fallback: T): T {
-  return choices.some((choice) => choice.value === stored) ? (stored as T) : fallback;
+  return oneOf(
+    choices.map((choice) => choice.value),
+    stored,
+    fallback,
+  );
+}
+
+function oneOf<T>(values: T[], stored: unknown, fallback: T): T {
+  return values.some((value) => value === stored) ? (stored as T) : fallback;
 }

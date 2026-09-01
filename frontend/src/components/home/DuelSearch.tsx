@@ -16,9 +16,10 @@ import type { DuelFormat } from "~/api/types";
 import styles from "~/components/home/DuelSearch.module.css";
 import { Button } from "~/components/ui/Button";
 import { CardSubtitle, CardTitle } from "~/components/ui/Card";
-import { formatNumber, formatTimeLimit, plural } from "~/domain/format";
+import { plural } from "~/domain/format";
 import { useAuth } from "~/state/authContext";
 import type { DuelPhase, DuelSearchController } from "~/state/useDuelSearch";
+import { useFormats } from "~/state/languageContext";
 
 interface DuelSearchProps {
   search: DuelSearchController;
@@ -38,6 +39,7 @@ const QUEUE_TEXTS: Record<DuelPhase, string> = {
 };
 
 export function DuelSearch({ search, mayStart }: DuelSearchProps) {
+  const formats = useFormats();
   const { user } = useAuth();
   const [format, setFormat] = useState<DuelFormat | null>(null);
 
@@ -61,7 +63,7 @@ export function DuelSearch({ search, mayStart }: DuelSearchProps) {
   const rules =
     format === null
       ? "Одни и те же раунды у обоих"
-      : `${String(format.rounds_total)} ${plural(format.rounds_total, "раунд", "раунда", "раундов")} · ${formatTimeLimit(format.time_limit_seconds)} на раунд · одни и те же места у обоих`;
+      : `${String(format.rounds_total)} ${plural(format.rounds_total, "раунд", "раунда", "раундов")} · ${formats.timeLimit(format.time_limit_seconds)} на раунд · одни и те же места у обоих`;
 
   return (
     <section>
@@ -69,7 +71,7 @@ export function DuelSearch({ search, mayStart }: DuelSearchProps) {
       <CardSubtitle>Соперник подбирается по рейтингу</CardSubtitle>
 
       <div className={styles.rating}>
-        <span className={styles.value}>{formatNumber(user?.rating ?? 0)}</span>
+        <span className={styles.value}>{formats.number(user?.rating ?? 0)}</span>
         <span className={styles.label}>
           твой рейтинг
           {user !== null && user.duels_played === 0 && " · дуэлей ещё не было"}

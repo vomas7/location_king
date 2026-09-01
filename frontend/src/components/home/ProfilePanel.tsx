@@ -16,10 +16,11 @@ import { PublicProfile } from "~/components/home/PublicProfile";
 import { Credits, LegalLinks } from "~/components/layout/AboutLinks";
 import { CardTitle } from "~/components/ui/Card";
 import { Segmented } from "~/components/ui/Segmented";
-import { formatDistance, formatNumber } from "~/domain/format";
+import { LANGUAGES } from "~/domain/language";
 import { THEMES } from "~/domain/theme";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useAuth } from "~/state/authContext";
+import { useFormats, useLanguage } from "~/state/languageContext";
 
 interface ProfilePanelProps {
   onOpenLegal: (document: LegalDocumentId) => void;
@@ -27,6 +28,8 @@ interface ProfilePanelProps {
 }
 
 export function ProfilePanel({ onOpenLegal, onError }: ProfilePanelProps) {
+  const formats = useFormats();
+  const { language, text, choose } = useLanguage();
   const { user, accept } = useAuth();
 
   if (user === null) return null;
@@ -50,27 +53,27 @@ export function ProfilePanel({ onOpenLegal, onError }: ProfilePanelProps) {
       <dl className={styles.metrics}>
         <div className={styles.metric}>
           <dt>Партий</dt>
-          <dd>{formatNumber(user.games_played)}</dd>
+          <dd>{formats.number(user.games_played)}</dd>
         </div>
         <div className={styles.metric}>
           <dt>Раундов</dt>
-          <dd>{formatNumber(user.total_rounds)}</dd>
+          <dd>{formats.number(user.total_rounds)}</dd>
         </div>
         <div className={styles.metric}>
           <dt>Лучшая партия</dt>
-          <dd>{formatNumber(user.best_score)}</dd>
+          <dd>{formats.number(user.best_score)}</dd>
         </div>
         <div className={styles.metric}>
           <dt>Средний промах</dt>
-          <dd>{formatDistance(user.average_distance)}</dd>
+          <dd>{formats.distance(user.average_distance)}</dd>
         </div>
         <div className={styles.metric}>
           <dt>Рейтинг</dt>
-          <dd>{formatNumber(user.rating)}</dd>
+          <dd>{formats.number(user.rating)}</dd>
         </div>
       </dl>
 
-      <div className={styles.theme}>
+      <div className={styles.settings}>
         <Segmented
           label="Оформление"
           options={THEMES}
@@ -78,6 +81,15 @@ export function ProfilePanel({ onOpenLegal, onError }: ProfilePanelProps) {
           onChange={(theme) => {
             void chooseTheme(theme);
           }}
+        />
+
+        {/* Язык лежит в браузере, а не в профиле: одним аккаунтом играют и с
+            рабочего ноутбука, и с чужого телефона, а язык там разный */}
+        <Segmented
+          label={text.language.label}
+          options={LANGUAGES}
+          value={language}
+          onChange={choose}
         />
       </div>
 

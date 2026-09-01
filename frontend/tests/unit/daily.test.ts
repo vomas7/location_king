@@ -9,6 +9,9 @@ import { describe, expect, it } from "vitest";
 
 import type { DailyChallenge, SessionSummary } from "~/api/types";
 import { dailyAwaits, dailyStage, dailyStatus } from "~/domain/daily";
+import { formats } from "~/domain/format";
+
+const ru = formats("ru");
 
 function session(status: string, total_score = 0): SessionSummary {
   return {
@@ -56,21 +59,21 @@ describe("состояние челленджа", () => {
 
 describe("подпись на плитке", () => {
   it("без ответа сервера говорит про правило", () => {
-    expect(dailyStatus(null)).toBe("Одна попытка в сутки");
+    expect(dailyStatus(null, ru)).toBe("Одна попытка в сутки");
   });
 
   it("законченная называет счёт", () => {
-    expect(dailyStatus(challenge(session("finished", 12500)))).toContain("12");
+    expect(dailyStatus(challenge(session("finished", 12500)), ru)).toContain("12");
   });
 
   it("брошенная и начатая называются по-разному", () => {
-    expect(dailyStatus(challenge(session("abandoned")))).not.toBe(
-      dailyStatus(challenge(session("active"))),
+    expect(dailyStatus(challenge(session("abandoned")), ru)).not.toBe(
+      dailyStatus(challenge(session("active")), ru),
     );
   });
 
   it("серия дней зовёт вернуться", () => {
-    expect(dailyStatus(challenge(null, 3))).toContain("3");
+    expect(dailyStatus(challenge(null, 3), ru)).toContain("3");
   });
 });
 

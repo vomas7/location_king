@@ -39,6 +39,7 @@ import { roomFromSearch } from "~/domain/room";
 import { ANSWER_MODES, DEFAULT_SETUP, describeSetup, toOptions } from "~/domain/setup";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useAuth } from "~/state/authContext";
+import { useFormats } from "~/state/languageContext";
 import { useDailyChallenge } from "~/state/useDailyChallenge";
 import { useDuelSearch } from "~/state/useDuelSearch";
 import { useMenuState } from "~/state/useMenuState";
@@ -80,6 +81,7 @@ export function HomeScreen({
   onOpenLegal,
   refreshKey,
 }: HomeScreenProps) {
+  const formats = useFormats();
   const { user } = useAuth();
 
   // Первую партию настраивать не за что: человек ещё не знает, чем «средне»
@@ -195,7 +197,7 @@ export function HomeScreen({
     {
       key: "daily",
       name: "Челлендж дня",
-      status: dailyStatus(daily),
+      status: dailyStatus(daily, formats),
       live: dailyAwaits(daily),
     },
     {
@@ -285,7 +287,7 @@ export function HomeScreen({
           {mode === "room" && (
             <MatchRoom
               options={toOptions(setup)}
-              summary={describeSetup(setup)}
+              summary={describeSetup(setup, formats)}
               refreshKey={refreshKey}
               mayStart={mayReplaceGame}
               onEditSetup={() => {

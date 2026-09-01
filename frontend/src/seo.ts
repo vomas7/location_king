@@ -9,7 +9,7 @@
 
 // Путь относительный, а не через «~»: этот модуль читает ещё и
 // vite.config.ts, где псевдонимы Vite пока не действуют
-import { QUESTIONS } from "./components/landing/content";
+import { QUESTIONS } from "./i18n/faq.ru";
 
 export const SITE_NAME = "Location King";
 export const SITE_DESCRIPTION =

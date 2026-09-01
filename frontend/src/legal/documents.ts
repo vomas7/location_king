@@ -22,8 +22,6 @@ export interface LegalSection {
 export interface LegalDocument {
   id: LegalDocumentId;
   title: string;
-  /** Короткая подпись для вкладки. */
-  tab: string;
   updated: string;
   sections: LegalSection[];
 }
@@ -34,7 +32,6 @@ const UPDATED = "27 августа 2026 года";
 const TERMS: LegalDocument = {
   id: "terms",
   title: "Условия использования",
-  tab: "Условия",
   updated: UPDATED,
   sections: [
     {
@@ -117,7 +114,6 @@ const TERMS: LegalDocument = {
 const PRIVACY: LegalDocument = {
   id: "privacy",
   title: "Политика конфиденциальности",
-  tab: "Конфиденциальность",
   updated: UPDATED,
   sections: [
     {
@@ -212,7 +208,6 @@ const PRIVACY: LegalDocument = {
 const STORAGE: LegalDocument = {
   id: "storage",
   title: "Куки и хранилище браузера",
-  tab: "Куки",
   updated: UPDATED,
   sections: [
     {

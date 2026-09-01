@@ -7,7 +7,8 @@
  */
 
 import type { StartSessionOptions } from "~/api/types";
-import { formatTimeLimit, plural } from "~/domain/format";
+import type { Formats } from "~/domain/format";
+import { plural } from "~/domain/format";
 import type { PlaceKey } from "~/domain/place";
 import { placeFilter } from "~/domain/place";
 
@@ -83,10 +84,16 @@ export const LEVELS: (Choice<string> & { hint: string })[] = [
   { value: "hardcore", label: "Хардкор", hint: "Дикая природа: горы, пустыни, тайга, лёд" },
 ];
 
-export const TIME_LIMITS: Choice<number | null>[] = [null, 120, 60, 30].map((value) => ({
-  value,
-  label: formatTimeLimit(value),
-}));
+/** Сколько времени дают на раунд. Пусто — без ограничения. */
+export const TIME_LIMIT_VALUES: (number | null)[] = [null, 120, 60, 30];
+
+/**
+ * То же списком для переключателя. Подписи собираются по запросу, а не лежат
+ * готовыми: «2 мин» и «2 min» — это уже язык, а он выбирается в браузере.
+ */
+export function timeLimits(formats: Formats): Choice<number | null>[] {
+  return TIME_LIMIT_VALUES.map((value) => ({ value, label: formats.timeLimit(value) }));
+}
 
 /**
  * Откуда берутся зоны. Список фиксирован: он должен совпадать с тем, что
@@ -139,12 +146,12 @@ export function answerModeHint(mode: string): string {
  * Порядок тот же, что у переключателей: строка и панель настроек читаются
  * как одно и то же, только одна свёрнута.
  */
-export function describeSetup(setup: GameSetup): string {
+export function describeSetup(setup: GameSetup, formats: Formats): string {
   return [
     `${String(setup.rounds)} ${plural(setup.rounds, "раунд", "раунда", "раундов")}`,
     labelOf(LEVELS, setup.level, setup.level),
     labelOf(PLACES, setup.place, "Весь мир"),
-    labelOf(TIME_LIMITS, setup.timeLimit, formatTimeLimit(setup.timeLimit)).toLowerCase(),
+    formats.timeLimit(setup.timeLimit).toLowerCase(),
     // Ответ точкой — обычный ход игры, называть его каждый раз незачем.
     // А вот про страны игрок должен знать до того, как нажал «Начать»
     ...(setup.answerMode === "country" ? ["ответ страной"] : []),

@@ -14,9 +14,10 @@ import { useEffect, useState } from "react";
 
 import { community } from "~/api/endpoints";
 import styles from "~/components/layout/Footnotes.module.css";
-import { formatNumber, plural } from "~/domain/format";
+import { useText } from "~/state/languageContext";
 
 export function PlayerCount() {
+  const { footer } = useText();
   const [players, setPlayers] = useState<number | null>(null);
 
   useEffect(() => {
@@ -39,9 +40,5 @@ export function PlayerCount() {
 
   if (players === null) return null;
 
-  return (
-    <p className={styles.credits}>
-      Играют {formatNumber(players)} {plural(players, "человек", "человека", "человек")}
-    </p>
-  );
+  return <p className={styles.credits}>{footer.players(players)}</p>;
 }

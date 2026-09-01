@@ -23,11 +23,13 @@ import { isNewPlayer } from "~/domain/onboarding";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useAppTheme } from "~/state/useAppTheme";
 import { useAuth } from "~/state/authContext";
+import { useText } from "~/state/languageContext";
 import { useGame } from "~/state/useGame";
 import { useToast } from "~/state/useToast";
 
 export function App() {
   const { status, user, logout, refresh } = useAuth();
+  const { app } = useText();
   const { message, show } = useToast();
 
   useAppTheme();
@@ -64,12 +66,12 @@ export function App() {
   );
 
   const quitGame = useCallback(() => {
-    if (!window.confirm("Завершить партию досрочно?")) return;
+    if (!window.confirm(app.quitConfirm)) return;
     void game.quit();
-  }, [game]);
+  }, [game, app.quitConfirm]);
 
   if (status === "loading") {
-    return <Loader text="Восстанавливаем сессию…" />;
+    return <Loader text={app.restoring} />;
   }
 
   const closeLegal = () => {
@@ -104,7 +106,7 @@ export function App() {
   return (
     <>
       <a className="skip-link" href="#main">
-        Перейти к игре
+        {app.toGame}
       </a>
 
       <TopBar
@@ -172,7 +174,7 @@ export function App() {
               // хочет играть, а не настраивать то же самое заново
               if (state.options === null) {
                 game.reset();
-                show("Настрой партию и жми «Начать»");
+                show(app.setupHint);
                 return;
               }
               startGame(state.options);

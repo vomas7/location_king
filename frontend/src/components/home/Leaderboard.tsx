@@ -9,11 +9,12 @@ import type {
   LeaderboardMetric,
 } from "~/api/types";
 import styles from "~/components/home/Leaderboard.module.css";
+import type { Formats } from "~/domain/format";
 import { PlayerRow } from "~/components/ui/PlayerRow";
 import { CardTitle } from "~/components/ui/Card";
 import { Segmented } from "~/components/ui/Segmented";
 import { Skeleton } from "~/components/ui/Skeleton";
-import { formatDistance, formatNumber } from "~/domain/format";
+import { useFormats } from "~/state/languageContext";
 
 /**
  * По чему ранжируем игроков.
@@ -25,34 +26,35 @@ import { formatDistance, formatNumber } from "~/domain/format";
 interface Metric {
   label: string;
   hint: string;
-  read: (entry: LeaderboardEntry) => string;
+  /** Число метрики словами: форматы приходят снаружи, они зависят от языка */
+  read: (entry: LeaderboardEntry, formats: Formats) => string;
 }
 
 const METRICS: Record<LeaderboardMetric, Metric> = {
   best: {
     label: "Партия",
     hint: "Очков за раунд в лучшей партии",
-    read: (entry) => formatNumber(entry.best_score),
+    read: (entry, formats) => formats.number(entry.best_score),
   },
   total: {
     label: "Сумма",
     hint: "Сумма очков за все партии",
-    read: (entry) => formatNumber(entry.total_score),
+    read: (entry, formats) => formats.number(entry.total_score),
   },
   accuracy: {
     label: "Точность",
     hint: "Средний промах за раунд, от пяти раундов",
-    read: (entry) => formatDistance(entry.average_distance),
+    read: (entry, formats) => formats.distance(entry.average_distance),
   },
   sharp: {
     label: "Меткость",
     hint: "Раундов, взятых почти в точку",
-    read: (entry) => formatNumber(entry.sharp_rounds),
+    read: (entry, formats) => formats.number(entry.sharp_rounds),
   },
   games: {
     label: "Партий",
     hint: "Сколько партий доиграно до конца",
-    read: (entry) => formatNumber(entry.games_played),
+    read: (entry, formats) => formats.number(entry.games_played),
   },
 };
 
@@ -100,12 +102,14 @@ function Row({
   metric: LeaderboardMetric;
   isMe: boolean;
 }) {
+  const formats = useFormats();
+
   return (
     <PlayerRow
       rank={entry.rank}
       avatar={entry.avatar}
       name={entry.display_name}
-      value={METRICS[metric].read(entry)}
+      value={METRICS[metric].read(entry, formats)}
       mine={isMe}
       medals
     />

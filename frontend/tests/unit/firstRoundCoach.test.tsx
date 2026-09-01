@@ -5,10 +5,12 @@
  * нажатиями на саму подсказку.
  */
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { FirstRoundCoach } from "~/components/game/FirstRoundCoach";
+
+import { renderWithLanguage as render } from "./withLanguage";
 
 /**
  * jsdom не знает про matchMedia, а подсказка спрашивает у него, есть ли

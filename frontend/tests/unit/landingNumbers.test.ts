@@ -20,12 +20,12 @@ function zonesInCatalog(): number {
   return readFileSync(SEED, "utf8").split("ZoneSpec(").length - 1;
 }
 
-/** Число под подписью «Мест в игре» на странице. */
+/** Число, которое страница обещает под подписью «Мест в игре». */
 function zonesOnLanding(): number {
-  const html = readFileSync(LANDING, "utf8");
-  const found = /<dt>Мест в игре<\/dt>[\s\S]*?<dd>(\d+)<\/dd>/.exec(html);
+  const source = readFileSync(LANDING, "utf8");
+  const found = /const PLACES_IN_GAME = (\d+);/.exec(source);
 
-  expect(found, "на странице нет блока «Мест в игре»").not.toBeNull();
+  expect(found, "на странице нет числа мест").not.toBeNull();
   return Number(found?.[1]);
 }
 

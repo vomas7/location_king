@@ -7,10 +7,13 @@
  * нельзя: указание правообладателей это условие лицензии, а не вежливость.
  */
 
+import type { ReactNode } from "react";
+
 import styles from "~/components/layout/Footnotes.module.css";
 import type { LegalDocumentId } from "~/legal/documents";
 import { LEGAL_DOCUMENTS } from "~/legal/documents";
 import { OPERATOR_EMAIL } from "~/legal/operator";
+import { useText } from "~/state/languageContext";
 
 /**
  * Где лежит игра. Адрес постоянный и публичный — как ссылка на лицензию
@@ -21,6 +24,8 @@ const REPOSITORY_URL = "https://github.com/vomas7/location_king";
 
 interface AboutLinksProps {
   onOpen: (document: LegalDocumentId) => void;
+  /** Что ещё встаёт в ту же строку сносок: например, выбор языка. */
+  children?: ReactNode;
 }
 
 /**
@@ -31,9 +36,11 @@ interface AboutLinksProps {
  * подряд, и на телефоне подвал занимал половину экрана. Сетка в два столбца
  * держит их парами независимо от длины подписи и языка.
  */
-export function LegalLinks({ onOpen }: AboutLinksProps) {
+export function LegalLinks({ onOpen, children }: AboutLinksProps) {
+  const { footer, legal } = useText();
+
   return (
-    <nav className={styles.links} aria-label="Об игре и документы">
+    <nav className={styles.links} aria-label={footer.navLabel}>
       {LEGAL_DOCUMENTS.map((document) => (
         <button
           key={document.id}
@@ -43,19 +50,21 @@ export function LegalLinks({ onOpen }: AboutLinksProps) {
             onOpen(document.id);
           }}
         >
-          {document.tab}
+          {legal.tabs[document.id]}
         </button>
       ))}
 
       {OPERATOR_EMAIL !== "" && (
         <a className={styles.link} href={`mailto:${OPERATOR_EMAIL}`}>
-          Написать нам
+          {footer.write}
         </a>
       )}
 
       <a className={styles.link} href={REPOSITORY_URL} target="_blank" rel="noreferrer noopener">
-        Исходный код
+        {footer.source}
       </a>
+
+      {children}
     </nav>
   );
 }
@@ -66,9 +75,11 @@ export function LegalLinks({ onOpen }: AboutLinksProps) {
  * прямо на экране игры: его название приходит вместе с раундом.
  */
 export function Credits() {
+  const { footer } = useText();
+
   return (
     <p className={styles.credits}>
-      Карта и границы стран — © участники{" "}
+      {footer.creditsBefore}{" "}
       <a
         className={styles.credit}
         href="https://www.openstreetmap.org/copyright"
@@ -77,6 +88,7 @@ export function Credits() {
       >
         OpenStreetMap
       </a>
+      {footer.creditsAfter === "" ? "" : ` ${footer.creditsAfter}`}
     </p>
   );
 }

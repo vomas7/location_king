@@ -7,7 +7,7 @@
  */
 
 import type { RoundResult, SessionView } from "~/api/types";
-import { formatNumber } from "~/domain/format";
+import type { Formats } from "~/domain/format";
 import { scoreRatio } from "~/domain/score";
 
 /** Квадратик по доле набранных очков. */
@@ -32,10 +32,18 @@ export interface ShareOptions {
   challengeDay?: string;
   /** Адрес игры. Без него ссылка в текст не попадёт. */
   url?: string;
+  /** Числа по правилам выбранного языка. */
+  formats: Formats;
 }
 
 /** Собрать текст для отправки. */
-export function buildShareText({ session, results, challengeDay, url }: ShareOptions): string {
+export function buildShareText({
+  session,
+  results,
+  challengeDay,
+  url,
+  formats,
+}: ShareOptions): string {
   const title =
     challengeDay === undefined
       ? "Location King"
@@ -45,7 +53,7 @@ export function buildShareText({ session, results, challengeDay, url }: ShareOpt
         })}`;
 
   const marks = results.map((result) => roundMark(result.score, result.max_score)).join("");
-  const score = `${formatNumber(session.total_score)} очков`;
+  const score = `${formats.number(session.total_score)} очков`;
 
   const lines = [title, `${marks} ${score}`];
 

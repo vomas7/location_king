@@ -5,8 +5,10 @@
  * уходит на сервер.
  */
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithLanguage as render } from "./withLanguage";
 
 import type { UserProfile } from "~/api/types";
 

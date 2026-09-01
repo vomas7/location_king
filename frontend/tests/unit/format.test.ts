@@ -1,71 +1,66 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  formatDate,
-  formatDistance,
-  formatExtent,
-  formatNumber,
-  formatPercent,
-  formatTimeLimit,
-  plural,
-} from "~/domain/format";
+import { formats, plural } from "~/domain/format";
+
+const ru = formats("ru");
+const en = formats("en");
 
 describe("formatNumber", () => {
   it("разделяет разряды", () => {
-    expect(formatNumber(5000)).toMatch(/^5.000$/);
-    expect(formatNumber(12)).toBe("12");
+    expect(ru.number(5000)).toMatch(/^5.000$/);
+    expect(ru.number(12)).toBe("12");
   });
 
   it("округляет дробное", () => {
-    expect(formatNumber(1234.6)).toMatch(/^1.235$/);
+    expect(ru.number(1234.6)).toMatch(/^1.235$/);
   });
 });
 
 describe("formatDistance", () => {
   it("до километра показывает метры", () => {
-    expect(formatDistance(0.35)).toBe("350 м");
-    expect(formatDistance(0)).toBe("0 м");
+    expect(ru.distance(0.35)).toBe("350 м");
+    expect(ru.distance(0)).toBe("0 м");
   });
 
   it("до сотни километров показывает десятые", () => {
-    expect(formatDistance(4.27)).toBe("4.3 км");
+    expect(ru.distance(4.27)).toBe("4,3 км");
   });
 
   it("дальше округляет до километра", () => {
-    expect(formatDistance(1234.5)).toMatch(/^1.235 км$/);
+    expect(ru.distance(1234.5)).toMatch(/^1.235 км$/);
   });
 
   it("принимает строку — так расстояние приходит из API", () => {
-    expect(formatDistance("12.500")).toBe("12.5 км");
+    expect(ru.distance("12.500")).toBe("12,5 км");
   });
 
   it("на отсутствующем значении даёт прочерк", () => {
-    expect(formatDistance(null)).toBe("—");
-    expect(formatDistance("не число")).toBe("—");
+    expect(ru.distance(null)).toBe("—");
+    expect(ru.distance("не число")).toBe("—");
   });
 });
 
 describe("formatExtent", () => {
   it("мелкие участки с десятыми, крупные целыми", () => {
-    expect(formatExtent("4.312")).toBe("4.3 км");
-    expect(formatExtent(61.7)).toBe("62 км");
+    expect(ru.extent("4.312")).toBe("4,3 км");
+    expect(ru.extent(61.7)).toBe("62 км");
   });
 });
 
 describe("formatPercent", () => {
   it("округляет до целого процента", () => {
-    expect(formatPercent("87.44")).toBe("87%");
-    expect(formatPercent(0)).toBe("0%");
+    expect(ru.percent("87.44")).toBe("87%");
+    expect(ru.percent(0)).toBe("0%");
   });
 
   it("на пустом значении даёт прочерк", () => {
-    expect(formatPercent(null)).toBe("—");
+    expect(ru.percent(null)).toBe("—");
   });
 });
 
 describe("formatDate", () => {
   it("выдаёт человеческую дату", () => {
-    expect(formatDate("2026-08-27T10:00:00Z")).toContain("2026");
+    expect(ru.date("2026-08-27T10:00:00Z")).toContain("2026");
   });
 });
 
@@ -86,15 +81,29 @@ describe("plural", () => {
 
 describe("formatTimeLimit", () => {
   it("без ограничения", () => {
-    expect(formatTimeLimit(null)).toBe("Без лимита");
+    expect(ru.timeLimit(null)).toBe("Без лимита");
   });
 
   it("меньше минуты показывает секунды", () => {
-    expect(formatTimeLimit(30)).toBe("30 сек");
+    expect(ru.timeLimit(30)).toBe("30 сек");
   });
 
   it("от минуты показывает минуты", () => {
-    expect(formatTimeLimit(60)).toBe("1 мин");
-    expect(formatTimeLimit(120)).toBe("2 мин");
+    expect(ru.timeLimit(60)).toBe("1 мин");
+    expect(ru.timeLimit(120)).toBe("2 мин");
+  });
+});
+
+describe("английский набор", () => {
+  it("считает по-английски: точка в дробях и запятая в разрядах", () => {
+    expect(en.distance(4.27)).toBe("4.3 km");
+    expect(en.number(5000)).toBe("5,000");
+    expect(en.distance(0.35)).toBe("350 m");
+  });
+
+  it("время на раунд называет по-английски", () => {
+    expect(en.timeLimit(null)).toBe("No limit");
+    expect(en.timeLimit(30)).toBe("30 s");
+    expect(en.timeLimit(120)).toBe("2 min");
   });
 });

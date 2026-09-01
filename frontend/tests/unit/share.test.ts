@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { RoundResult, SessionView } from "~/api/types";
+import { formats } from "~/domain/format";
 import { buildShareText, roundMark } from "~/domain/share";
 
 function result(score: number, distanceKm: string | null = "12.500"): RoundResult {
@@ -62,7 +63,11 @@ describe("roundMark", () => {
 
 describe("buildShareText", () => {
   it("собирает строку квадратиков и счёт", () => {
-    const text = buildShareText({ session, results: [result(5000), result(2000), result(0)] });
+    const text = buildShareText({
+      formats: formats("ru"),
+      session,
+      results: [result(5000), result(2000), result(0)],
+    });
 
     expect(text).toContain("Location King");
     expect(text).toContain("⭐");
@@ -71,7 +76,7 @@ describe("buildShareText", () => {
   });
 
   it("не выдаёт места тем, кто ещё не играл", () => {
-    const text = buildShareText({ session, results: [result(5000)] });
+    const text = buildShareText({ formats: formats("ru"), session, results: [result(5000)] });
 
     expect(text).not.toContain("Секретное место");
     expect(text).not.toContain("0,");
@@ -79,6 +84,7 @@ describe("buildShareText", () => {
 
   it("отмечает челлендж отдельно", () => {
     const text = buildShareText({
+      formats: formats("ru"),
       session,
       results: [result(1000)],
       challengeDay: "2026-08-27",
@@ -90,11 +96,16 @@ describe("buildShareText", () => {
 
   it("добавляет ссылку, если она передана", () => {
     const withLink = buildShareText({
+      formats: formats("ru"),
       session,
       results: [result(1000)],
       url: "https://example.com",
     });
-    const withoutLink = buildShareText({ session, results: [result(1000)] });
+    const withoutLink = buildShareText({
+      formats: formats("ru"),
+      session,
+      results: [result(1000)],
+    });
 
     expect(withLink).toContain("https://example.com");
     expect(withoutLink).not.toContain("http");
@@ -102,6 +113,7 @@ describe("buildShareText", () => {
 
   it("показывает лучший раунд", () => {
     const text = buildShareText({
+      formats: formats("ru"),
       session,
       results: [result(1000, "48.200"), result(2000, "0.350")],
     });
@@ -110,7 +122,7 @@ describe("buildShareText", () => {
   });
 
   it("переживает раунды без расстояния", () => {
-    const text = buildShareText({ session, results: [result(0, null)] });
+    const text = buildShareText({ formats: formats("ru"), session, results: [result(0, null)] });
     expect(text).not.toContain("Лучший раунд");
   });
 });

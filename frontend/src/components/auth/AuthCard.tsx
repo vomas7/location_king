@@ -11,6 +11,7 @@ import { Checkbox } from "~/components/ui/Checkbox";
 import { Field } from "~/components/ui/Field";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useAuth } from "~/state/authContext";
+import { useText } from "~/state/languageContext";
 
 type Mode = "login" | "register";
 
@@ -26,6 +27,7 @@ interface AuthCardProps {
 
 export function AuthCard({ onOpenLegal }: AuthCardProps) {
   const { login, register } = useAuth();
+  const { auth: text } = useText();
 
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
@@ -45,15 +47,15 @@ export function AuthCard({ onOpenLegal }: AuthCardProps) {
     setError(null);
 
     if (email.trim() === "" || password === "") {
-      setError("Заполни email и пароль");
+      setError(text.fillBoth);
       return;
     }
     if (mode === "register" && password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Пароль должен быть не короче ${String(MIN_PASSWORD_LENGTH)} символов`);
+      setError(text.tooShort(MIN_PASSWORD_LENGTH));
       return;
     }
     if (mode === "register" && !accepted) {
-      setError("Чтобы завести учётную запись, нужно принять условия");
+      setError(text.mustAccept);
       return;
     }
 
@@ -85,7 +87,7 @@ export function AuthCard({ onOpenLegal }: AuthCardProps) {
             switchMode("login");
           }}
         >
-          Вход
+          {text.login}
         </button>
         <button
           type="button"
@@ -98,13 +100,13 @@ export function AuthCard({ onOpenLegal }: AuthCardProps) {
             switchMode("register");
           }}
         >
-          Регистрация
+          {text.register}
         </button>
       </div>
 
       <form className={styles.form} onSubmit={(event) => void handleSubmit(event)} noValidate>
         <Field
-          label="Email"
+          label={text.email}
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
@@ -115,10 +117,10 @@ export function AuthCard({ onOpenLegal }: AuthCardProps) {
         />
 
         <Field
-          label="Пароль"
+          label={text.password}
           type="password"
           autoComplete={mode === "login" ? "current-password" : "new-password"}
-          placeholder={`Не короче ${String(MIN_PASSWORD_LENGTH)} символов`}
+          placeholder={text.passwordPlaceholder(MIN_PASSWORD_LENGTH)}
           value={password}
           onChange={(event) => {
             setPassword(event.target.value);
@@ -127,11 +129,11 @@ export function AuthCard({ onOpenLegal }: AuthCardProps) {
 
         {mode === "register" && (
           <Field
-            label="Имя в таблице лидеров"
-            hint="необязательно"
+            label={text.displayName}
+            hint={text.displayNameHint}
             type="text"
             autoComplete="nickname"
-            placeholder="Как тебя показывать"
+            placeholder={text.displayNamePlaceholder}
             value={displayName}
             onChange={(event) => {
               setDisplayName(event.target.value);
@@ -146,7 +148,7 @@ export function AuthCard({ onOpenLegal }: AuthCardProps) {
               setAccepted(event.target.checked);
             }}
           >
-            Принимаю{" "}
+            {text.acceptBefore}{" "}
             <button
               type="button"
               className={styles.link}
@@ -154,9 +156,9 @@ export function AuthCard({ onOpenLegal }: AuthCardProps) {
                 onOpenLegal("terms");
               }}
             >
-              условия использования
+              {text.acceptTerms}
             </button>{" "}
-            и{" "}
+            {text.acceptAnd}{" "}
             <button
               type="button"
               className={styles.link}
@@ -164,7 +166,7 @@ export function AuthCard({ onOpenLegal }: AuthCardProps) {
                 onOpenLegal("privacy");
               }}
             >
-              политику конфиденциальности
+              {text.acceptPrivacy}
             </button>
           </Checkbox>
         )}
@@ -172,14 +174,14 @@ export function AuthCard({ onOpenLegal }: AuthCardProps) {
         <Alert message={error} />
 
         <Button type="submit" variant="primary" block disabled={busy}>
-          {mode === "login" ? "Войти" : "Создать аккаунт"}
+          {mode === "login" ? text.submitLogin : text.submitRegister}
         </Button>
       </form>
 
       <p className={styles.note}>
         {mode === "login" ? (
           <>
-            Ещё нет аккаунта?{" "}
+            {text.noAccount}{" "}
             <button
               type="button"
               className={styles.link}
@@ -187,12 +189,12 @@ export function AuthCard({ onOpenLegal }: AuthCardProps) {
                 switchMode("register");
               }}
             >
-              Зарегистрируйся
+              {text.goRegister}
             </button>
-            {" — это полминуты"}
+            {text.quick}
           </>
         ) : (
-          "Нужны только email и пароль. Писем мы не отправляем и адрес никому не передаём"
+          text.onlyEmail
         )}
       </p>
     </Card>
