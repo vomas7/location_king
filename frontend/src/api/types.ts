@@ -218,10 +218,15 @@ export interface Leaderboard {
   me: LeaderboardEntry | null;
 }
 
-/** Параметры новой партии. */
+/**
+ * Параметры новой партии.
+ *
+ * Ширины кадра здесь нет: её задаёт уровень, и считает это сервер. Игрок её
+ * не выбирает — два независимых регулятора сложности сводились в
+ * бессмысленную пару.
+ */
 export interface StartSessionOptions {
   rounds_total: number;
-  view_extent_km: number;
   /** Часть света, из которой берутся зоны. null — со всего мира. */
   continent: string | null;
   /** Страна или объединение стран. null — не ограничивать. */

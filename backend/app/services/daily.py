@@ -23,15 +23,17 @@ from app.models.enums import SessionStatus
 from app.models.game_session import GameSession
 from app.models.round import Round
 from app.models.user import User
+from app.services import difficulty as difficulty_service
 from app.services import series as series_service
 from app.utils.streak import current_and_best
 
 logger = logging.getLogger(__name__)
 
 # Условия челленджа одинаковы каждый день: сравнивать результаты можно только
-# при равных правилах
+# при равных правилах. Кадр берётся из уровня по умолчанию — правило про кадр
+# в игре одно
 ROUNDS_TOTAL = 5
-VIEW_EXTENT_KM = 15.0
+VIEW_EXTENT_KM = difficulty_service.DEFAULT_VIEW_EXTENT_KM
 
 
 def today() -> date:

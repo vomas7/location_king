@@ -1,10 +1,14 @@
 /**
  * Одиночная партия.
  *
- * Условия свёрнуты в одну строку, а не разложены пятью переключателями:
- * чаще всего игрок начинает партию на тех же условиях, что и прошлую, и
- * пролистывать ради этого экран настроек ему незачем. Строка при этом
- * называет условия целиком — свёрнутое не значит спрятанное.
+ * Условия лежат открыто, все сразу. Раньше они были свёрнуты в строку под
+ * кнопкой «Настроить» — считалось, что чаще всего игрок начинает партию на тех
+ * же условиях, что и прошлую. На деле вышло иначе: игроки не знали, что
+ * условия вообще есть, и год играли одним режимом на одном уровне.
+ *
+ * Так что порядок здесь линейный: игрок выбрал, с кем играет, — и сразу видит,
+ * во что именно. Ничего не спрятано, а тому, кому всё равно, по-прежнему
+ * достаточно нажать «Начать игру»: всё уже выставлено.
  */
 
 import styles from "~/components/home/SoloPanel.module.css";
@@ -16,8 +20,6 @@ import type { GameSetup } from "~/domain/setup";
 import {
   ANSWER_MODES,
   answerModeHint,
-  describeSetup,
-  EXTENTS,
   LEVELS,
   levelHint,
   PLACES,
@@ -27,9 +29,6 @@ import {
 
 interface SoloPanelProps {
   setup: GameSetup;
-  /** Развёрнуты ли настройки. Состояние снаружи: в них приходят из комнаты. */
-  open: boolean;
-  onToggle: () => void;
   onChange: (change: Partial<GameSetup>) => void;
   /** Сколько зон подходит под выбранные уровень и место. null — неизвестно. */
   zoneCount: number | null;
@@ -41,8 +40,6 @@ interface SoloPanelProps {
 
 export function SoloPanel({
   setup,
-  open,
-  onToggle,
   onChange,
   zoneCount,
   error,
@@ -63,23 +60,9 @@ export function SoloPanel({
           : "Раунд за раундом, только ты и снимок"}
       </CardSubtitle>
 
-      <div className={styles.setup}>
-        <p className={styles.summary}>{describeSetup(setup)}</p>
-        <button
-          type="button"
-          className={styles.toggle}
-          aria-expanded={open}
-          aria-controls="solo-setup"
-          onClick={onToggle}
-        >
-          {open ? "Свернуть" : "Настроить"}
-        </button>
-      </div>
-
-      {/* Чем отвечать — главный выбор в игре, а не строка настроек. Пока он
-          лежал под кнопкой «Настроить», игрок мог год играть точками и не
-          узнать, что есть режимы попроще */}
-      <div className={styles.mode}>
+      <div className={styles.options}>
+        {/* Чем отвечать — главный выбор в игре, поэтому он первый: от него
+            зависит, во что игрок будет играть, а не насколько трудно */}
         <Segmented
           label="Чем отвечать"
           options={ANSWER_MODES}
@@ -91,64 +74,54 @@ export function SoloPanel({
           }}
           hint={answerModeHint(setup.answerMode)}
         />
-      </div>
 
-      {open && (
-        <div id="solo-setup" className={styles.options}>
+        <Segmented
+          label="Сложность"
+          options={LEVELS}
+          value={setup.level}
+          onChange={(level) => {
+            onChange({ level });
+          }}
+          hint={levelHint(setup.level)}
+        />
+
+        {/* В режиме стран выбирать место нельзя: «Россия» в условиях
+            партии — это и есть ответ на все её раунды */}
+        {byCountry ? (
+          <p className={styles.note}>
+            В режиме стран играем по всему миру: выбранное место подсказывало бы ответ.
+          </p>
+        ) : (
           <Segmented
-            label="Раундов"
-            options={ROUNDS}
-            value={setup.rounds}
-            onChange={(rounds) => {
-              onChange({ rounds });
+            label="Где играем"
+            options={PLACES}
+            value={setup.place}
+            onChange={(place) => {
+              onChange({ place });
             }}
+            {...(zoneCount === null ? {} : { hint: `Подходящих зон: ${String(zoneCount)}` })}
           />
-          <Segmented
-            label="Сложность"
-            options={LEVELS}
-            value={setup.level}
-            onChange={(level) => {
-              onChange({ level });
-            }}
-            hint={levelHint(setup.level)}
-          />
-          <Segmented
-            label="Размер участка"
-            options={EXTENTS}
-            value={setup.extent}
-            onChange={(extent) => {
-              onChange({ extent });
-            }}
-            hint="Чем меньше участок, тем труднее узнать место"
-          />
-          {/* В режиме стран выбирать место нельзя: «Россия» в условиях
-              партии — это и есть ответ на все её раунды */}
-          {byCountry ? (
-            <p className={styles.note}>
-              В режиме стран играем по всему миру: выбранное место подсказывало бы ответ.
-            </p>
-          ) : (
-            <Segmented
-              label="Где играем"
-              options={PLACES}
-              value={setup.place}
-              onChange={(place) => {
-                onChange({ place });
-              }}
-              {...(zoneCount === null ? {} : { hint: `Подходящих зон: ${String(zoneCount)}` })}
-            />
-          )}
-          <Segmented
-            label="Время на раунд"
-            options={TIME_LIMITS}
-            value={setup.timeLimit}
-            onChange={(timeLimit) => {
-              onChange({ timeLimit });
-            }}
-            hint="Чем быстрее ответ, тем больше очков за раунд"
-          />
-        </div>
-      )}
+        )}
+
+        <Segmented
+          label="Раундов"
+          options={ROUNDS}
+          value={setup.rounds}
+          onChange={(rounds) => {
+            onChange({ rounds });
+          }}
+        />
+
+        <Segmented
+          label="Время на раунд"
+          options={TIME_LIMITS}
+          value={setup.timeLimit}
+          onChange={(timeLimit) => {
+            onChange({ timeLimit });
+          }}
+          hint="Чем быстрее ответ, тем больше очков за раунд"
+        />
+      </div>
 
       {empty && (
         <p className={styles.warning}>

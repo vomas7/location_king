@@ -62,9 +62,11 @@ describe("coachStep", () => {
 });
 
 describe("FIRST_GAME_SETUP", () => {
-  it("первая партия — известные города крупным планом и без таймера", () => {
+  it("первая партия — известные города, точкой и без таймера", () => {
     expect(FIRST_GAME_SETUP.level).toBe("easy");
     expect(FIRST_GAME_SETUP.timeLimit).toBeNull();
-    expect(FIRST_GAME_SETUP.extent).toBeGreaterThan(15);
+    expect(FIRST_GAME_SETUP.answerMode).toBe("point");
+    // Кадр задаёт уровень, и считает это сервер: выбирать его игрок не может
+    expect(FIRST_GAME_SETUP).not.toHaveProperty("extent");
   });
 });

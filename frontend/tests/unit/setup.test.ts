@@ -5,8 +5,9 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETUP, describeSetup, levelHint, toOptions } from "~/domain/setup";
 
 describe("describeSetup", () => {
-  it("называет все пять условий подряд", () => {
-    expect(describeSetup(DEFAULT_SETUP)).toBe("5 раундов · Средне · 15 км · Весь мир · без лимита");
+  it("называет все условия подряд", () => {
+    // Ширины кадра здесь нет: её задаёт уровень, и выбирать её игрок не может
+    expect(describeSetup(DEFAULT_SETUP)).toBe("5 раундов · Средне · Весь мир · без лимита");
   });
 
   it("склоняет раунды", () => {
@@ -33,7 +34,6 @@ describe("toOptions", () => {
   it("разбирает место в два фильтра сервера", () => {
     expect(toOptions({ ...DEFAULT_SETUP, place: "continent:europe" })).toEqual({
       rounds_total: 5,
-      view_extent_km: 15,
       difficulty: "normal",
       continent: "europe",
       country_group: null,

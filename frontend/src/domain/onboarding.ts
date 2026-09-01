@@ -24,7 +24,6 @@ export function isNewPlayer(user: UserProfile | null): boolean {
  */
 export const FIRST_GAME_SETUP: GameSetup = {
   rounds: 5,
-  extent: 40,
   level: "easy",
   place: null,
   timeLimit: null,

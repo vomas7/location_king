@@ -13,7 +13,6 @@ import { placeFilter } from "~/domain/place";
 
 export interface GameSetup {
   rounds: number;
-  extent: number;
   level: string;
   place: PlaceKey;
   timeLimit: number | null;
@@ -63,6 +62,11 @@ export const ROUNDS: Choice<number>[] = [3, 5, 10].map((value) => ({
  *
  * Уровни не вложены друг в друга: выбрав «средне», Манхэттен не получишь.
  * Каждое место в каталоге размечено ровно одним уровнем.
+ *
+ * Ширину кадра уровень задаёт сам, на сервере: она не усиливает сложность, а
+ * выравнивает её — чем меньше в кадре рукотворных ориентиров, тем больше
+ * нужно контекста. Отдельным переключателем она была самым непонятным местом
+ * меню: «сорок километров» ничего не говорит о том, будет ли трудно.
  */
 export const LEVELS: (Choice<string> & { hint: string })[] = [
   { value: "easy", label: "Легко", hint: "Узнают по силуэту: Париж, Венеция, Манхэттен" },
@@ -78,16 +82,6 @@ export const LEVELS: (Choice<string> & { hint: string })[] = [
   },
   { value: "hardcore", label: "Хардкор", hint: "Дикая природа: горы, пустыни, тайга, лёд" },
 ];
-
-/**
- * Сколько земли попадает в кадр. Пять километров плотного города — это одна
- * текстура кварталов без ориентиров, поэтому лестница начинается там, где
- * в кадр уже попадает река, шоссе или берег.
- */
-export const EXTENTS: Choice<number>[] = [5, 15, 40, 100].map((value) => ({
-  value,
-  label: `${String(value)} км`,
-}));
 
 export const TIME_LIMITS: Choice<number | null>[] = [null, 120, 60, 30].map((value) => ({
   value,
@@ -119,7 +113,6 @@ export const PLACES: Choice<PlaceKey>[] = [
 /** Настройки по умолчанию для того, кто уже играл: свои он выставит сам. */
 export const DEFAULT_SETUP: GameSetup = {
   rounds: 5,
-  extent: 15,
   level: "normal",
   place: null,
   timeLimit: null,
@@ -150,7 +143,6 @@ export function describeSetup(setup: GameSetup): string {
   return [
     `${String(setup.rounds)} ${plural(setup.rounds, "раунд", "раунда", "раундов")}`,
     labelOf(LEVELS, setup.level, setup.level),
-    labelOf(EXTENTS, setup.extent, `${String(setup.extent)} км`),
     labelOf(PLACES, setup.place, "Весь мир"),
     labelOf(TIME_LIMITS, setup.timeLimit, formatTimeLimit(setup.timeLimit)).toLowerCase(),
     // Ответ точкой — обычный ход игры, называть его каждый раз незачем.
@@ -164,7 +156,6 @@ export function describeSetup(setup: GameSetup): string {
 export function toOptions(setup: GameSetup): StartSessionOptions {
   return {
     rounds_total: setup.rounds,
-    view_extent_km: setup.extent,
     difficulty: setup.level,
     ...placeFilter(setup.place),
     answer_mode: setup.answerMode,

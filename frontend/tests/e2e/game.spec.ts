@@ -6,12 +6,11 @@
 
 import { expect, test } from "@playwright/test";
 
-import { answerCountryRound, answerRound, open, openSetup, playRounds, register } from "./helpers";
+import { answerCountryRound, answerRound, open, playRounds, register } from "./helpers";
 
 test("партия от регистрации до итогов", async ({ page }) => {
   await register(page);
 
-  await openSetup(page);
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
   await page.getByRole("button", { name: "Начать игру" }).click();
 
@@ -40,7 +39,6 @@ test("партия от регистрации до итогов", async ({ page
 test("новичку объясняют игру в первом раунде и только в нём", async ({ page }) => {
   await register(page);
 
-  await openSetup(page);
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
   await page.getByRole("button", { name: "Начать игру" }).click();
   await expect(page.locator("canvas").first()).toBeVisible();
@@ -59,7 +57,6 @@ test("новичку объясняют игру в первом раунде и
 test("подсказка раскрывает место и стоит очков", async ({ page }) => {
   await register(page);
 
-  await openSetup(page);
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
   await page.getByRole("button", { name: "Начать игру" }).click();
   await expect(page.locator("canvas").first()).toBeVisible();
@@ -84,7 +81,6 @@ test("подсказка раскрывает место и стоит очко�
 test("в итогах партию можно разобрать по карте", async ({ page }) => {
   await register(page);
 
-  await openSetup(page);
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
   await page.getByRole("button", { name: "Начать игру" }).click();
   await expect(page.locator("canvas").first()).toBeVisible();
@@ -134,7 +130,6 @@ test("активный раунд не отдаёт координаты цел�
 test("после партии игрок появляется в таблице лидеров", async ({ page }) => {
   const player = await register(page);
 
-  await openSetup(page);
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
   await page.getByRole("button", { name: "Начать игру" }).click();
   await expect(page.locator("canvas").first()).toBeVisible();
@@ -189,9 +184,8 @@ test("новая партия не бросает незаконченную м�
 test("условия партии переживают саму партию", async ({ page }) => {
   await register(page);
 
-  await openSetup(page);
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
-  await page.getByRole("radio", { name: "100 км" }).click();
+  await page.getByRole("radio", { name: "Хардкор" }).click();
 
   await page.getByRole("button", { name: "Начать игру" }).click();
   await expect(page.locator("canvas").first()).toBeVisible();
@@ -199,9 +193,15 @@ test("условия партии переживают саму партию", a
   await playRounds(page, 3);
   await page.getByRole("button", { name: "В меню" }).click();
 
-  // Меню собирается заново, но выставленные условия должны остаться.
-  // Уровень тут «Легко»: первую партию новичку выставляют за него
-  await expect(page.getByText("3 раунда · Легко · 100 км")).toBeVisible();
+  // Меню собирается заново, но выставленные условия должны остаться
+  await expect(page.getByRole("radio", { name: "3", exact: true }).first()).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await expect(page.getByRole("radio", { name: "Хардкор" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
 });
 
 test("вход отвергает неверный пароль", async ({ page }) => {
@@ -258,7 +258,6 @@ test("результатом можно поделиться", async ({ context,
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await register(page);
 
-  await openSetup(page);
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
   await page.getByRole("button", { name: "Начать игру" }).click();
   await expect(page.locator("canvas").first()).toBeVisible();
@@ -278,7 +277,6 @@ test("результатом можно поделиться", async ({ context,
 test("в режиме на время идёт обратный отсчёт", async ({ page }) => {
   await register(page);
 
-  await openSetup(page);
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
   await page.getByRole("radio", { name: "30 сек" }).click();
   await page.getByRole("button", { name: "Начать игру" }).click();
@@ -300,7 +298,6 @@ test("в режиме на время идёт обратный отсчёт", a
 test("часть света ограничивает выбор зон", async ({ page }) => {
   await register(page);
 
-  await openSetup(page);
   await expect(page.getByText(/Подходящих зон: \d+/)).toBeVisible();
   const worldwide = await page.getByText(/Подходящих зон: \d+/).textContent();
 
@@ -321,12 +318,15 @@ test("часть света ограничивает выбор зон", async (
 test("в режиме стран очки объясняет страна, а не километры", async ({ page }) => {
   await register(page);
 
-  await openSetup(page);
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
   await page.getByRole("radio", { name: "Страной" }).click();
 
-  // Выбор виден и в свёрнутых условиях: играть будут не в то, что обычно
-  await expect(page.getByText(/ответ страной/)).toBeVisible();
+  // Условия лежат открыто, разворачивать их не надо: выбранный режим виден
+  // сразу, и играть будут не в то, что обычно
+  await expect(page.getByRole("radio", { name: "Страной" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
 
   await page.getByRole("button", { name: "Начать игру" }).click();
   await expect(page.locator("canvas").first()).toBeVisible();
@@ -346,7 +346,6 @@ test("в режиме стран очки объясняет страна, а н
 
 test("в режиме стран место в условиях не выбирают", async ({ page }) => {
   await register(page);
-  await openSetup(page);
 
   await expect(page.getByRole("radio", { name: "Океания" })).toBeVisible();
 

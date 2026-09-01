@@ -88,10 +88,6 @@ export function HomeScreen({
   const { menu, change } = useMenuState(newcomer ? FIRST_GAME_SETUP : DEFAULT_SETUP);
   const { setup, mode, section } = menu;
 
-  // Настройки развёрнуты — состояние одного посещения: открывать их при
-  // каждом заходе в меню незачем, а вот прийти в них из комнаты нужно
-  const [setupOpen, setSetupOpen] = useState(false);
-
   // Панель раздела на телефоне лежит ниже экрана: без прокрутки к ней нажатие
   // по вкладке выглядит так, будто ничего не произошло
   const sectionPanel = useRef<HTMLDivElement>(null);
@@ -243,10 +239,6 @@ export function HomeScreen({
           {mode === "solo" && (
             <SoloPanel
               setup={setup}
-              open={setupOpen}
-              onToggle={() => {
-                setSetupOpen(!setupOpen);
-              }}
               onChange={(patch) => {
                 change({ setup: { ...setup, ...patch } });
               }}
@@ -277,7 +269,6 @@ export function HomeScreen({
               refreshKey={refreshKey}
               mayStart={mayReplaceGame}
               onEditSetup={() => {
-                setSetupOpen(true);
                 change({ mode: "solo" });
               }}
               onJoined={onResume}

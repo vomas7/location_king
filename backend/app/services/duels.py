@@ -26,6 +26,7 @@ from app.models.game_session import GameSession
 from app.models.match import Match
 from app.models.user import User
 from app.observability import metrics
+from app.services import difficulty as difficulty_service
 from app.services import matches as matches_service
 from app.services import matchmaking
 from app.utils import elo
@@ -34,8 +35,10 @@ logger = logging.getLogger(__name__)
 
 #: Формат дуэли. Один на всех и неизменяемый: иначе рейтинги несравнимы
 ROUNDS_TOTAL = 5
-VIEW_EXTENT_KM = 15.0
 DIFFICULTY = Difficulty.NORMAL
+#: Кадр берётся из уровня, а не задаётся отдельно: правило про кадр в игре
+#: одно, и дуэль не должна оказаться труднее одиночной партии того же уровня
+VIEW_EXTENT_KM = difficulty_service.view_extent_km(DIFFICULTY)
 TIME_LIMIT_SECONDS = 60
 
 #: Через сколько недоигранная дуэль считается брошенной. Без этого правила

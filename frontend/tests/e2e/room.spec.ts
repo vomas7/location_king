@@ -5,13 +5,12 @@
 
 import { expect, test } from "@playwright/test";
 
-import { open, openSetup, playRounds, register } from "./helpers";
+import { open, playRounds, register } from "./helpers";
 
 test("двое играют одну серию и сравнивают результаты", async ({ browser, page }) => {
   const host = await register(page);
 
   // Условия комнаты берутся из одиночной партии
-  await openSetup(page);
   await page.getByRole("radio", { name: "3", exact: true }).first().click();
 
   await open(page, "Комната");

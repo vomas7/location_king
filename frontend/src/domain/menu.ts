@@ -13,7 +13,7 @@
  */
 
 import type { Choice, GameSetup } from "~/domain/setup";
-import { ANSWER_MODES, EXTENTS, LEVELS, PLACES, ROUNDS, TIME_LIMITS } from "~/domain/setup";
+import { ANSWER_MODES, LEVELS, PLACES, ROUNDS, TIME_LIMITS } from "~/domain/setup";
 
 /** Ключ в localStorage. Он назван в документе про хранилище, и тест это сверяет. */
 export const MENU_STORAGE_KEY = "location-king:menu";
@@ -76,7 +76,6 @@ function parseSetup(stored: unknown, fallback: GameSetup): GameSetup {
 
   return {
     rounds: known(ROUNDS, fields.rounds, fallback.rounds),
-    extent: known(EXTENTS, fields.extent, fallback.extent),
     level: known(LEVELS, fields.level, fallback.level),
     place: known(PLACES, fields.place, fallback.place),
     timeLimit: known(TIME_LIMITS, fields.timeLimit, fallback.timeLimit),
