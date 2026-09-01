@@ -55,6 +55,11 @@ async def create(
     if not MIN_ROUNDS <= rounds_total <= MAX_ROUNDS:
         raise ConflictError(f"Раундов в серии должно быть от {MIN_ROUNDS} до {MAX_ROUNDS}")
 
+    # Зоны, которые в этой серии уже были: одна и та же территория дважды за
+    # партию — самая частая жалоба игроков. Набор общий на всю серию и растёт
+    # по мере её сборки
+    used: set[int] = set()
+
     rounds = [
         await _build_round(
             db,
@@ -66,6 +71,7 @@ async def create(
             difficulty,
             zone_id,
             answer_mode,
+            used,
         )
         for position in range(1, rounds_total + 1)
     ]
@@ -147,6 +153,7 @@ async def _build_round(
     difficulty: str | None = None,
     zone_id: int | None = None,
     answer_mode: str = AnswerMode.POINT,
+    used: set[int] | None = None,
 ) -> SeriesRound:
     """
     Заготовка одного раунда серии.
@@ -154,17 +161,25 @@ async def _build_round(
     Внутри зоны выбирается случайная точка, под неё подбирается тайл нужного
     масштаба, и целью раунда становится центр этого тайла — именно его игрок
     и видит в центре снимка.
+
+    `used` — зоны, уже занятые другими раундами этой серии: собранная зона
+    добавляется туда сама. Зона, которая не подошла — оказалась в воде или
+    разошлась с границами, — тоже перестаёт предлагаться, но только внутри
+    этого раунда: в следующем она может подойти под другую точку.
     """
     borders_loaded = await countries_service.are_loaded(db)
+    taken = set() if used is None else used
+    skip = set(taken)
 
     for _ in range(ZONE_ATTEMPTS):
         zone = (
             await zones_service.get_zone(db, zone_id)
             if zone_id is not None
             else await zones_service.pick_random_zone(
-                db, category, continent, country_group, difficulty=difficulty
+                db, category, continent, country_group, difficulty=difficulty, exclude=skip
             )
         )
+        skip.add(zone.id)
 
         # Точка раунда обязана быть на суше: приморская зона наполовину
         # состоит из моря, и без этого игрок регулярно получал кадр ровной
@@ -228,6 +243,8 @@ async def _build_round(
                     continue
 
                 choices = ",".join(options)
+
+        taken.add(zone.id)
 
         return SeriesRound(
             position=position,

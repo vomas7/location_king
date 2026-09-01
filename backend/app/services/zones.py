@@ -1,6 +1,7 @@
 """Выбор игровых зон и генерация точки внутри полигона."""
 
 import logging
+from collections.abc import Collection
 
 from sqlalchemy import Select, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -69,9 +70,34 @@ async def pick_random_zone(
     continent: str | None = None,
     country_group: str | None = None,
     difficulty: str | None = None,
+    exclude: Collection[int] = (),
 ) -> LocationZone:
-    """Случайная активная зона под заданные фильтры."""
+    """
+    Случайная активная зона под заданные фильтры.
+
+    `exclude` — зоны, которые в этой партии уже были. Игроки жаловались, что
+    одна и та же территория выпадает им дважды за пять раундов: случайный
+    выбор без памяти так и работает, и на каталоге в три сотни зон совпадение
+    в партии из пяти раундов — обычное дело.
+
+    Исключение мягкое. Под узкими условиями — скажем, «Океания, сложный
+    уровень» — зон в каталоге бывает меньше, чем раундов в партии, и жёсткий
+    запрет означал бы, что партия просто не начнётся. Поэтому, когда
+    неиспользованных зон не осталось, отбор идёт по всем: повтор появляется
+    только там, где его нельзя избежать, и не раньше, чем кончится каталог.
+    """
     stmt = _filtered(category, continent, country_group, difficulty)
+
+    if exclude:
+        fresh = (
+            await db.execute(
+                stmt.where(LocationZone.id.notin_(exclude)).order_by(func.random()).limit(1)
+            )
+        ).scalar_one_or_none()
+
+        if fresh is not None:
+            return fresh
+
     zone = (await db.execute(stmt.order_by(func.random()).limit(1))).scalar_one_or_none()
 
     if zone is None:
