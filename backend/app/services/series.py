@@ -20,6 +20,7 @@ from app.models.game_session import GameSession
 from app.models.round import Round
 from app.models.series import RoundSeries, SeriesRound
 from app.services import countries as countries_service
+from app.services import difficulty as difficulty_service
 from app.services import tiles
 from app.services import zones as zones_service
 from app.services.round_timer import deadline_for
@@ -43,7 +44,7 @@ ZONE_ATTEMPTS = 12
 async def create(
     db: AsyncSession,
     rounds_total: int,
-    view_extent_km: float,
+    view_extent_km: float | None = None,
     category: str | None = None,
     continent: str | None = None,
     country_group: str | None = None,
@@ -51,9 +52,18 @@ async def create(
     zone_id: int | None = None,
     answer_mode: str = AnswerMode.POINT,
 ) -> RoundSeries:
-    """Собрать серию раундов и сохранить её."""
+    """
+    Собрать серию раундов и сохранить её.
+
+    Кадр можно не называть: тогда он берётся из уровня. Игрок его больше не
+    выбирает, а внешний вызов API — может, и это единственное место, где
+    решается, чей кадр сильнее.
+    """
     if not MIN_ROUNDS <= rounds_total <= MAX_ROUNDS:
         raise ConflictError(f"Раундов в серии должно быть от {MIN_ROUNDS} до {MAX_ROUNDS}")
+
+    if view_extent_km is None:
+        view_extent_km = difficulty_service.view_extent_km(difficulty)
 
     # Зоны, которые в этой серии уже были: одна и та же территория дважды за
     # партию — самая частая жалоба игроков. Набор общий на всю серию и растёт

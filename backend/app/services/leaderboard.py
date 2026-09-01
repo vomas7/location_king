@@ -9,10 +9,12 @@
 общий зачёт: с каким уровнем их играли, теперь уже не выяснить.
 """
 
+import dataclasses
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, asc, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.enums import RoundStatus, SessionStatus
@@ -68,6 +70,58 @@ class LeaderboardRow:
     total_score: int
     average_distance: float | None
     sharp_rounds: int
+
+
+@dataclass(frozen=True)
+class _Ranking:
+    """
+    Как считается место по одной метрике.
+
+    Метрика встречается в двух видах: столбцом запроса, когда игроков
+    выстраивают по порядку, и полем строки, когда у одного игрока спрашивают
+    его цифру. Здесь оба вида названы рядом, чтобы они не разъезжались.
+    """
+
+    #: Имя столбца в запросе: по нему и сортируем, и считаем, сколько выше
+    column: str
+
+    #: Та же величина в готовой строке
+    of_row: Callable[[LeaderboardRow], float | int | None]
+
+    #: Меньше — лучше. Так устроен только промах
+    ascending: bool = False
+
+    #: Кого метрика вообще берёт в зачёт. Одно правило на двух языках: для
+    #: запроса — условием, для готовой строки — проверкой, и разъехаться им
+    #: нельзя, иначе игрок увидит место, которого нет в таблице
+    gate: Callable[[Select], Select] = lambda stmt: stmt
+    counts: Callable[[LeaderboardRow], bool] = lambda row: True
+
+
+def _accuracy_counts(row: LeaderboardRow) -> bool:
+    return row.total_rounds >= MIN_ROUNDS_FOR_ACCURACY and row.average_distance is not None
+
+
+def _accuracy_gate(stmt: Select) -> Select:
+    return stmt.having(
+        func.sum(GameSession.rounds_done) >= MIN_ROUNDS_FOR_ACCURACY,
+        func.avg(GameSession.average_distance).is_not(None),
+    )
+
+
+RANKINGS: dict[LeaderboardMetric, _Ranking] = {
+    LeaderboardMetric.BEST: _Ranking("best", lambda row: row.best_score),
+    LeaderboardMetric.TOTAL: _Ranking("total", lambda row: row.total_score),
+    LeaderboardMetric.GAMES: _Ranking("games", lambda row: row.games_played),
+    LeaderboardMetric.SHARP: _Ranking("sharp", lambda row: row.sharp_rounds),
+    LeaderboardMetric.ACCURACY: _Ranking(
+        "miss",
+        lambda row: row.average_distance,
+        ascending=True,
+        gate=_accuracy_gate,
+        counts=_accuracy_counts,
+    ),
+}
 
 
 def _aggregated(filters: LeaderboardFilter) -> Select:
@@ -146,25 +200,17 @@ def _sharp_rounds(filters: LeaderboardFilter) -> Select:
 
 
 def _ordered(metric: LeaderboardMetric, filters: LeaderboardFilter) -> Select:
-    """Тот же запрос, отсортированный по выбранной метрике."""
-    stmt = _aggregated(filters)
+    """
+    Тот же запрос, отсортированный по выбранной метрике.
 
-    if metric is LeaderboardMetric.BEST:
-        return stmt.order_by(func.max(GameSession.average_score).desc(), User.id)
+    Сортируем по имени столбца, а не по выражению: подзапрос меткости иначе
+    попал бы в запрос дважды — в список столбцов и в ORDER BY.
+    """
+    ranking = RANKINGS[metric]
+    stmt = ranking.gate(_aggregated(filters))
+    direction = asc if ranking.ascending else desc
 
-    if metric is LeaderboardMetric.TOTAL:
-        return stmt.order_by(func.sum(GameSession.total_score).desc(), User.id)
-
-    if metric is LeaderboardMetric.GAMES:
-        return stmt.order_by(func.count(GameSession.id).desc(), User.id)
-
-    if metric is LeaderboardMetric.SHARP:
-        return stmt.order_by(_sharp_rounds(filters).desc(), User.id)
-
-    return stmt.having(
-        func.sum(GameSession.rounds_done) >= MIN_ROUNDS_FOR_ACCURACY,
-        func.avg(GameSession.average_distance).is_not(None),
-    ).order_by(func.avg(GameSession.average_distance).asc(), User.id)
+    return stmt.order_by(direction(ranking.column), User.id)
 
 
 def _row(rank: int, record: tuple) -> LeaderboardRow:
@@ -213,34 +259,16 @@ async def place_of(
         return None
 
     row = _row(0, mine)
-
-    if metric is LeaderboardMetric.BEST:
-        value, better_than = row.best_score, "best"
-    elif metric is LeaderboardMetric.TOTAL:
-        value, better_than = row.total_score, "total"
-    elif metric is LeaderboardMetric.GAMES:
-        value, better_than = row.games_played, "games"
-    elif metric is LeaderboardMetric.SHARP:
-        value, better_than = row.sharp_rounds, "sharp"
-    else:
-        if row.total_rounds < MIN_ROUNDS_FOR_ACCURACY or row.average_distance is None:
-            return None
-        value, better_than = row.average_distance, "miss"
+    ranking = RANKINGS[metric]
+    if not ranking.counts(row):
+        return None
 
     ranked = _ordered(metric, filters).subquery()
-    column = ranked.c[better_than]
-    condition = column < value if metric is LeaderboardMetric.ACCURACY else column > value
+    column = ranked.c[ranking.column]
+    value = ranking.of_row(row)
+    condition = column < value if ranking.ascending else column > value
 
     better = select(func.count()).select_from(ranked).where(condition)
     rank = int((await db.execute(better)).scalar_one()) + 1
 
-    return LeaderboardRow(
-        rank=rank,
-        user=row.user,
-        games_played=row.games_played,
-        total_rounds=row.total_rounds,
-        best_score=row.best_score,
-        total_score=row.total_score,
-        average_distance=row.average_distance,
-        sharp_rounds=row.sharp_rounds,
-    )
+    return dataclasses.replace(row, rank=rank)

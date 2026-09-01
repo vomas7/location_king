@@ -11,7 +11,6 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.enums import AnswerMode, Continent, CountryGroup, Difficulty
-from app.services import difficulty as difficulty_service
 from app.services.round_timer import ALLOWED_TIME_LIMITS
 from app.services.series import MAX_ROUNDS, MIN_ROUNDS
 
@@ -52,14 +51,6 @@ class RoundsRequest(BaseModel):
             allowed = ", ".join(str(item) for item in ALLOWED_TIME_LIMITS)
             raise ValueError(f"Допустимые значения: {allowed}")
         return value
-
-    @property
-    def frame_km(self) -> float:
-        """Ширина кадра для этих условий: своя или выведенная из уровня."""
-        if self.view_extent_km is not None:
-            return self.view_extent_km
-
-        return difficulty_service.view_extent_km(self.difficulty)
 
     @model_validator(mode="after")
     def check_country_mode(self) -> "RoundsRequest":

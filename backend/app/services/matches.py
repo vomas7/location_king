@@ -36,7 +36,7 @@ async def create(
     db: AsyncSession,
     host: User,
     rounds_total: int,
-    view_extent_km: float,
+    view_extent_km: float | None,
     category: str | None = None,
     continent: str | None = None,
     country_group: str | None = None,

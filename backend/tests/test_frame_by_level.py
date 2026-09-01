@@ -17,6 +17,7 @@ from app.models.location_zone import LocationZone
 from app.models.round import Round
 from app.schemas.game import StartSessionRequest
 from app.services import difficulty as difficulty_service
+from app.services import series as series_service
 
 
 def test_frame_never_shrinks_as_content_gets_harder():
@@ -52,18 +53,36 @@ def test_unknown_level_falls_back_to_the_default():
     )
 
 
-def test_request_without_frame_takes_it_from_the_level():
-    request = StartSessionRequest(difficulty=Difficulty.HARDCORE)
-
-    assert request.view_extent_km is None
-    assert request.frame_km == difficulty_service.view_extent_km(Difficulty.HARDCORE)
+def test_request_without_frame_leaves_it_to_the_level():
+    """Запрос кадра не выдумывает: пустое поле доезжает до серии как пустое."""
+    assert StartSessionRequest(difficulty=Difficulty.HARDCORE).view_extent_km is None
 
 
-def test_explicit_frame_still_wins():
+@pytest.mark.asyncio
+async def test_series_without_frame_takes_it_from_the_level(
+    db: AsyncSession, zone: LocationZone
+) -> None:
+    zone.tier = Difficulty.HARDCORE
+    await db.flush()
+
+    series = await series_service.create(db, rounds_total=1, difficulty=Difficulty.HARDCORE)
+    wanted = difficulty_service.view_extent_km(Difficulty.HARDCORE)
+
+    assert 0.5 < float(series.rounds[0].view_extent_km) / wanted < 2.0
+
+
+@pytest.mark.asyncio
+async def test_explicit_frame_still_wins(db: AsyncSession, zone: LocationZone) -> None:
     """Комната и челлендж задают кадр сами: правило про уровень им не мешает."""
-    request = StartSessionRequest(difficulty=Difficulty.EASY, view_extent_km=12.5)
+    zone.tier = Difficulty.HARDCORE
+    await db.flush()
 
-    assert request.frame_km == 12.5
+    series = await series_service.create(
+        db, rounds_total=1, view_extent_km=12.5, difficulty=Difficulty.HARDCORE
+    )
+    hardcore = difficulty_service.view_extent_km(Difficulty.HARDCORE)
+
+    assert float(series.rounds[0].view_extent_km) < hardcore / 2
 
 
 @pytest.mark.asyncio
