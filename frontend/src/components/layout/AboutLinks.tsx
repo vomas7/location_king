@@ -23,10 +23,17 @@ interface AboutLinksProps {
   onOpen: (document: LegalDocumentId) => void;
 }
 
-/** Документы и обратная связь. */
+/**
+ * Документы, обратная связь и исходники.
+ *
+ * Подписи короткие — те же, что на вкладках самого документа: полное название
+ * стоит в его заголовке, а в сноске из полных названий набиралось пять строк
+ * подряд, и на телефоне подвал занимал половину экрана. Сетка в два столбца
+ * держит их парами независимо от длины подписи и языка.
+ */
 export function LegalLinks({ onOpen }: AboutLinksProps) {
   return (
-    <nav className={styles.links} aria-label="Правовые документы">
+    <nav className={styles.links} aria-label="Об игре и документы">
       {LEGAL_DOCUMENTS.map((document) => (
         <button
           key={document.id}
@@ -36,7 +43,7 @@ export function LegalLinks({ onOpen }: AboutLinksProps) {
             onOpen(document.id);
           }}
         >
-          {document.title}
+          {document.tab}
         </button>
       ))}
 
@@ -45,32 +52,31 @@ export function LegalLinks({ onOpen }: AboutLinksProps) {
           Написать нам
         </a>
       )}
+
+      <a className={styles.link} href={REPOSITORY_URL} target="_blank" rel="noreferrer noopener">
+        Исходный код
+      </a>
     </nav>
   );
 }
 
 /**
- * Подпись к карте и ссылка на исходники. Провайдер снимков подписан прямо на
- * экране игры: его название приходит вместе с раундом.
+ * Подпись к карте. Это условие лицензии, а не ссылка в ряду прочих, поэтому
+ * стоит отдельной строкой и набрана как сноска. Провайдер снимков подписан
+ * прямо на экране игры: его название приходит вместе с раундом.
  */
 export function Credits() {
   return (
-    <div className={styles.meta}>
-      <p className={styles.credits}>
-        Карта и границы стран — © участники{" "}
-        <a
-          className={styles.credit}
-          href="https://www.openstreetmap.org/copyright"
-          target="_blank"
-          rel="noreferrer noopener"
-        >
-          OpenStreetMap
-        </a>
-      </p>
-
-      <a className={styles.link} href={REPOSITORY_URL} target="_blank" rel="noreferrer noopener">
-        Исходный код
+    <p className={styles.credits}>
+      Карта и границы стран — © участники{" "}
+      <a
+        className={styles.credit}
+        href="https://www.openstreetmap.org/copyright"
+        target="_blank"
+        rel="noreferrer noopener"
+      >
+        OpenStreetMap
       </a>
-    </div>
+    </p>
   );
 }

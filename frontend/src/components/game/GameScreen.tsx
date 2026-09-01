@@ -7,6 +7,7 @@ import { ChoicePanel } from "~/components/game/ChoicePanel";
 import { FirstRoundCoach } from "~/components/game/FirstRoundCoach";
 import styles from "~/components/game/GameScreen.module.css";
 import { GuessPanel } from "~/components/game/GuessPanel";
+import { HintControl } from "~/components/game/HintControl";
 import { RoundTimer } from "~/components/game/RoundTimer";
 import { SatelliteView } from "~/components/game/SatelliteView";
 import type { Answer } from "~/api/types";
@@ -41,6 +42,10 @@ export function GameScreen({
 }: GameScreenProps) {
   const [pinned, setPinned] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
+  const [northSignal, setNorthSignal] = useState(0);
+  // Снимок крутится двумя пальцами, и на телефоне это выходит случайно.
+  // Кнопка появляется только у повёрнутого снимка: висеть постоянно ей незачем
+  const [rotated, setRotated] = useState(false);
   // Закрытые подсказки не возвращаются до конца партии: экран игры живёт всю
   // партию, поэтому хранить этот отказ где-то ещё незачем
   const [coachDismissed, setCoachDismissed] = useState(false);
@@ -50,6 +55,13 @@ export function GameScreen({
   // Мышью карта раскрывается подводом курсора, пальцем — нажатием. Знать это
   // нужно и панели, и подсказке новичка, поэтому считается здесь
   const mapOpen = pinned || hoverPointer;
+
+  // На телефоне карточка новичка занимает всю ширину и накрывает собой правый
+  // верхний угол вместе с приборами. Разводить их по экрану некуда: на 390
+  // пикселях места для двух карточек в ряд нет. Поэтому, пока новичку
+  // объясняют правила, подсказку ему не продают — он ещё не знает, что это и
+  // зачем, а после первого раунда карточка не возвращается
+  const coachVisible = coaching && !coachDismissed;
 
   // Время вышло: отправляем поставленную точку, а если её нет — закрываем
   // раунд. Решение всё равно принимает сервер, здесь только повод его позвать.
@@ -67,6 +79,10 @@ export function GameScreen({
     setResetSignal((value) => value + 1);
   }, []);
 
+  const faceNorth = useCallback(() => {
+    setNorthSignal((value) => value + 1);
+  }, []);
+
   // Горячие клавиши: играть одной мышью неудобно, когда карта раскрыта
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -82,6 +98,11 @@ export function GameScreen({
         return;
       }
 
+      if (event.key === "n" || event.key === "N" || event.key === "т") {
+        faceNorth();
+        return;
+      }
+
       if (event.key === "Enter" && guess !== null && !busy) {
         onSubmit();
       }
@@ -91,17 +112,54 @@ export function GameScreen({
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [guess, busy, onSubmit, resetView]);
+  }, [guess, busy, onSubmit, resetView, faceNorth]);
 
   return (
     <div className={styles.screen}>
-      <SatelliteView round={round} resetSignal={resetSignal} onReset={resetView} />
+      <SatelliteView
+        round={round}
+        resetSignal={resetSignal}
+        northSignal={northSignal}
+        onRotated={setRotated}
+      />
 
-      {coaching && !coachDismissed && (
+      {/* Колонка приборов в правом верхнем углу. Плашка подсказки появляется
+          и исчезает, поэтому соседи сдвигаются сами, а не стоят на отступах,
+          посчитанных руками */}
+      <div className={styles.instruments}>
+        {/* Приближение идёт к курсору, поэтому уехать от перекрестия легко.
+            Клавиша R есть только на компьютере, а играют и с телефона */}
+        <button type="button" className={`${styles.glass} ${styles.recenter}`} onClick={resetView}>
+          К цели
+        </button>
+
+        {rotated && (
+          <button
+            type="button"
+            className={`${styles.glass} ${styles.recenter}`}
+            onClick={faceNorth}
+          >
+            На север
+          </button>
+        )}
+
+        {!coachVisible && <HintControl round={round} busy={busy} onHint={onHint} />}
+
+        <div className={`${styles.glass} ${styles.hints}`} aria-hidden="true">
+          <span>
+            <kbd>M</kbd> карта · <kbd>Enter</kbd> ответить
+          </span>
+          <span>
+            <kbd>R</kbd> вернуть масштаб · <kbd>N</kbd> на север
+          </span>
+        </div>
+      </div>
+
+      {coachVisible && (
         <FirstRoundCoach
           mapOpen={pinned}
           hasGuess={guess !== null}
-          byCountry={round.answer_mode !== "point"}
+          mode={round.answer_mode}
           onDismiss={() => {
             setCoachDismissed(true);
           }}
@@ -124,7 +182,6 @@ export function GameScreen({
           open={mapOpen}
           onPin={setPinned}
           onPick={onPick}
-          onHint={onHint}
           onSubmit={onSubmit}
         />
       )}

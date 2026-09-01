@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import type { Answer, RoundView } from "~/api/types";
 import styles from "~/components/game/GameScreen.module.css";
 import { Button } from "~/components/ui/Button";
-import { formatNumber } from "~/domain/format";
 import { createGuessMap, type GuessMap } from "~/map/guess";
 
 /** Что просят сделать и что уже сделано. */
@@ -29,8 +28,6 @@ interface GuessPanelProps {
   open: boolean;
   onPin: (pinned: boolean) => void;
   onPick: (guess: Answer) => void;
-  /** Взять подсказку: чем именно платит игрок, знает сервер. */
-  onHint: () => void;
   onSubmit: () => void;
 }
 
@@ -42,7 +39,6 @@ export function GuessPanel({
   open,
   onPin,
   onPick,
-  onHint,
   onSubmit,
 }: GuessPanelProps) {
   const container = useRef<HTMLDivElement>(null);
@@ -91,43 +87,32 @@ export function GuessPanel({
   }, [round.id, ready]);
 
   return (
-    <div className={[styles.panel, pinned ? styles.panelPinned : ""].filter(Boolean).join(" ")}>
+    <div
+      className={[styles.panel, pinned ? styles.panelPinned : "", open ? "" : styles.panelCompact]
+        .filter(Boolean)
+        .join(" ")}
+    >
       {/* Свёрнутой панелью на телефоне управляет большая кнопка снизу:
-          маленькая стрелка рядом с ней только мешала бы */}
+          вторая кнопка рядом с ней только мешала бы. Раскрытая карта
+          сворачивается подписанной кнопкой, а не голой стрелкой: угадывать,
+          что делает «▾», игрок не должен */}
       {open && (
         <button
           type="button"
-          className={styles.pin}
+          className={`${styles.glass} ${styles.pin}`}
           aria-pressed={pinned}
-          title={pinned ? "Свернуть карту" : "Закрепить карту раскрытой"}
           onClick={() => {
             onPin(!pinned);
           }}
         >
-          <span>{pinned ? "▾" : "▴"}</span>
+          <span aria-hidden="true">{pinned ? "▾" : "▴"}</span>
+          {pinned ? "Свернуть" : "Закрепить"}
         </button>
       )}
 
       <div className={styles.map} ref={container} />
 
       <div className={styles.actions}>
-        {/* Подсказка видна и в свёрнутой панели: на телефоне карта закрыта
-            почти всё время раунда, а решать, платить ли за неё, нужно, глядя
-            на снимок */}
-        {round.hint !== null && (
-          <p className={styles.revealed}>
-            <span>{round.hint.label}</span>
-            <strong>{round.hint.value}</strong>
-          </p>
-        )}
-
-        {round.hint === null && round.hint_cost > 0 && (
-          <button type="button" className={styles.hintButton} disabled={busy} onClick={onHint}>
-            Подсказка
-            <span>−{formatNumber(round.hint_cost)} очков</span>
-          </button>
-        )}
-
         {open ? (
           <>
             <p className={styles.hint}>{promptFor(guess, byCountry, countriesReady)}</p>
@@ -136,9 +121,11 @@ export function GuessPanel({
             </Button>
           </>
         ) : (
+          // Свёрнутая панель — это одна кнопка, и ширину ей задаёт
+          // собственная надпись: на телефоне она стоит в углу под большим
+          // пальцем, а не полосой во всю ширину поверх снимка
           <Button
             variant="primary"
-            block
             onClick={() => {
               onPin(true);
             }}

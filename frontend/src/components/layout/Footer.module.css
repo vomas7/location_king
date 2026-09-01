@@ -1,10 +1,15 @@
+/* Подвал — это сноска, а не раздел. На телефоне он раньше съедал половину
+   экрана: строки стояли в четыре ряда, каждая высотой в палец. Теперь ссылки,
+   подпись к карте и исходники лежат в одном потоке и переносятся вместе, а
+   вертикальные отступы сняты — высоту строке всё равно задаёт её собственная
+   область нажатия */
 .footer {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3) var(--space-5);
-  padding: var(--space-4) var(--space-6);
+  gap: 0 var(--space-5);
+  padding: var(--space-1) var(--space-5) var(--space-3);
   border-top: 1px solid var(--line-soft);
   background: var(--bg-deep);
 }

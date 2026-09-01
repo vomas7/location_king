@@ -37,7 +37,17 @@ export interface SatelliteMap {
   readonly map: OlMap;
   /** Вернуть вид к исходному масштабу, показывающему участок целиком. */
   reset: () => void;
+  /** Вернуть север наверх, не трогая ни центр, ни масштаб. */
+  straighten: () => void;
   destroy: () => void;
+}
+
+/** О чём карта сообщает наружу, пока игрок её крутит и таскает. */
+export interface SatelliteEvents {
+  /** Часть снимка не загрузилась — или, наоборот, догрузилась. */
+  onMissingTiles: (missing: boolean) => void;
+  /** Снимок повёрнут: север больше не наверху. */
+  onRotated: (rotated: boolean) => void;
 }
 
 /** Отметить тайл как загруженный или как не загрузившийся. */
@@ -103,7 +113,7 @@ function loadTile(track: TrackTile) {
 export function createSatelliteMap(
   target: HTMLElement,
   round: RoundView,
-  onMissingTiles: (missing: boolean) => void,
+  { onMissingTiles, onRotated }: SatelliteEvents,
 ): SatelliteMap {
   // Считаем именно текущие дыры в снимке, а не то, была ли ошибка когда-либо:
   // подгрузившийся тайл убирает себя отсюда, и предупреждение исчезает само
@@ -190,10 +200,27 @@ export function createSatelliteMap(
 
   fitToCover();
 
+  /*
+   * Снимок можно повернуть двумя пальцами, и на телефоне это выходит случайно:
+   * щипок с лёгким проворотом браузер считает поворотом. Развёрнутый снимок
+   * читается хуже — привычка «север наверху» никуда не девается, — поэтому о
+   * повороте сообщаем наружу, и игроку показывают кнопку, которая его снимает.
+   */
+  const view = map.getView();
+  const reportRotation = () => {
+    onRotated(view.getRotation() !== 0);
+  };
+
+  view.on("change:rotation", reportRotation);
+
   return {
     map,
     reset: fitToCover,
+    straighten: () => {
+      view.setRotation(0);
+    },
     destroy: () => {
+      view.un("change:rotation", reportRotation);
       map.setTarget(undefined);
       map.dispose();
     },

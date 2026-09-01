@@ -64,6 +64,10 @@ test("подсказка раскрывает место и стоит очко�
   await page.getByRole("button", { name: "Начать игру" }).click();
   await expect(page.locator("canvas").first()).toBeVisible();
 
+  // Пока новичку объясняют правила, подсказку не предлагают: на телефоне
+  // карточка накрывает собой тот угол, где она стоит
+  await page.getByRole("button", { name: "Не показывать" }).click();
+
   const takeHint = page.getByRole("button", { name: /Подсказка/ });
   await expect(takeHint).toBeVisible();
   await takeHint.click();
@@ -378,6 +382,42 @@ test("снимок приближается туда, куда смотрит и
   await page.getByRole("button", { name: "К цели" }).click();
   await page.waitForTimeout(500);
   await expect(page.locator("canvas").first()).toBeVisible();
+});
+
+test("повёрнутый снимок разворачивается обратно на север", async ({ page }) => {
+  await register(page);
+
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+
+  await page.getByRole("button", { name: "Не показывать" }).click();
+
+  // Пока снимок смотрит на север, кнопке взяться неоткуда
+  const north = page.getByRole("button", { name: "На север" });
+  await expect(north).toHaveCount(0);
+
+  // Пальцем снимок крутят щипком, мышью — перетаскиванием с Alt и Shift:
+  // это штатный поворот OpenLayers, и в браузере он воспроизводим
+  const box = await page.locator(".ol-viewport").first().boundingBox();
+  expect(box).not.toBeNull();
+  const middle = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+
+  // Поворот считается от центра карты, поэтому тащим не из самого центра
+  const from = { x: middle.x + 80, y: middle.y };
+
+  await page.keyboard.down("Shift");
+  await page.keyboard.down("Alt");
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(middle.x, middle.y - 80, { steps: 12 });
+  await page.mouse.up();
+  await page.keyboard.up("Alt");
+  await page.keyboard.up("Shift");
+
+  await expect(north).toBeVisible();
+
+  await north.click();
+  await expect(north).toHaveCount(0);
 });
 
 test("аватарка видна в шапке и меняется в профиле", async ({ page }) => {

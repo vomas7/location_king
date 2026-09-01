@@ -26,25 +26,46 @@ const ORDER: CoachStep[] = ["look", "map", "answer"];
  * Тексты шагов. Второй зависит от устройства: на телефоне карта открывается
  * кнопкой, а «подведи курсор» там — совет в пустоту. Второй и третий зависят
  * ещё и от режима: в раунде про страны точку никуда не ставят, и обещать за
- * неё очки было бы враньём.
+ * неё очки было бы враньём, а в простом режиме нет и карты.
  */
-function texts(hoverPointer: boolean, byCountry: boolean): Record<CoachStep, CoachText> {
+function texts(hoverPointer: boolean, mode: string): Record<CoachStep, CoachText> {
+  const look = {
+    order: 1,
+    title: "Осмотрись",
+    text: "Это участок спутниковой съёмки без подписей и указателей. Крестик в центре — то самое место, которое нужно найти. Приближай колесом или щипком, тащи, чтобы осмотреть окрестности.",
+  };
+
+  // В простом режиме карты нет вовсе: объяснять нечего, кроме самого списка
+  if (mode === "choice") {
+    return {
+      look,
+      map: {
+        order: 2,
+        title: "Выбери страну",
+        text: "Под снимком шесть стран, и одна из них та, откуда снимок. Ищи в кадре подсказки: растительность, крыши, разметку, язык вывесок на приближении.",
+      },
+      answer: {
+        order: 3,
+        title: "Отвечай",
+        text: "Передумать можно сколько угодно, пока не нажал «Ответить». Угадал — все пять тысяч очков за раунд, ошибся — тем больше, чем ближе названная страна к настоящей.",
+      },
+    };
+  }
+
+  const byCountry = mode === "country";
+
   return {
-    look: {
-      order: 1,
-      title: "Осмотрись",
-      text: "Это участок спутниковой съёмки без подписей и указателей. Крестик в центре — то самое место, которое нужно найти. Приближай колесом или щипком, тащи, чтобы осмотреть окрестности.",
-    },
+    look,
     map: {
       order: 2,
       title: byCountry ? "Выбери страну" : "Отметь место",
       text: byCountry
         ? hoverPointer
           ? "Подведи курсор к карте мира в правом нижнем углу и нажми на страну, из которой, по-твоему, этот снимок. Страна под курсором подсвечивается."
-          : "Нажми «Выбрать страну» внизу и ткни на карте мира в страну, из которой, по-твоему, этот снимок."
+          : "Нажми «Выбрать страну» в правом нижнем углу и ткни на карте мира в страну, из которой, по-твоему, этот снимок."
         : hoverPointer
           ? "Подведи курсор к карте мира в правом нижнем углу и нажми там, где, по-твоему, снят этот участок."
-          : "Нажми «Открыть карту» внизу и отметь на карте мира место, где, по-твоему, снят этот участок.",
+          : "Нажми «Открыть карту» в правом нижнем углу и отметь на карте мира место, где, по-твоему, снят этот участок.",
     },
     answer: {
       order: 3,
@@ -65,18 +86,18 @@ interface FirstRoundCoachProps {
   mapOpen: boolean;
   /** Поставлена ли точка на карте мира или выбрана страна. */
   hasGuess: boolean;
-  /** Раунд про страны: и просят другое, и очки считаются иначе. */
-  byCountry: boolean;
+  /** Чем отвечают: и просят разное, и очки считаются по-разному. */
+  mode: string;
   /** Закрыть подсказки до конца партии. */
   onDismiss: () => void;
 }
 
-export function FirstRoundCoach({ mapOpen, hasGuess, byCountry, onDismiss }: FirstRoundCoachProps) {
+export function FirstRoundCoach({ mapOpen, hasGuess, mode, onDismiss }: FirstRoundCoachProps) {
   const [acknowledged, setAcknowledged] = useState(false);
   const hoverPointer = useHoverPointer();
 
   const step = coachStep(acknowledged, mapOpen, hasGuess);
-  const { order, title, text } = texts(hoverPointer, byCountry)[step];
+  const { order, title, text } = texts(hoverPointer, mode)[step];
 
   return (
     <aside className={styles.coach} aria-live="polite">

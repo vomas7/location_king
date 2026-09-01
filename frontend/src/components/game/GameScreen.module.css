@@ -28,6 +28,9 @@
   z-index: var(--z-map);
   bottom: var(--space-3);
   left: var(--space-3);
+  /* Не заезжает под кнопку карты в соседнем углу: подпись источника бывает
+     длинной, а перенести строку дешевле, чем спрятать её под кнопкой */
+  max-width: min(320px, 55vw);
   display: flex;
   flex-direction: column;
   gap: var(--space-0);
@@ -65,13 +68,30 @@
   transform: translate(-50%, -50%);
 }
 
-/* Возврат к цели. Справа, потому что слева стоит подсказка новичка и в
-   первом раунде накрывала бы эту кнопку собой */
-.recenter {
+/* ── Приборы поверх снимка ────────────────────────────────────────────
+   Одна колонка в правом верхнем углу: возврат к цели, подсказка, клавиши.
+   Справа, потому что слева сверху стоит подсказка новичка, слева снизу —
+   масштаб, а справа снизу — панель догадки. Колонкой, потому что плашка
+   подсказки появляется и исчезает: соседи обязаны сдвигаться сами. */
+.instruments {
   position: absolute;
   z-index: var(--z-map);
   top: var(--space-3);
   right: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  max-width: min(280px, 62vw);
+  /* Между плашками остаётся снимок, и тащить его нужно и там */
+  pointer-events: none;
+}
+
+.instruments > * {
+  pointer-events: auto;
+}
+
+.recenter {
   min-height: var(--tap);
   padding: var(--space-2) var(--space-4);
   color: var(--text-dim);
@@ -87,10 +107,6 @@
    а появляются они только там, где есть курсор */
 .hints {
   display: none;
-  position: absolute;
-  z-index: var(--z-map);
-  top: var(--space-3);
-  right: var(--space-3);
   flex-direction: column;
   gap: var(--space-1);
   padding: var(--space-2) var(--space-3);
@@ -166,15 +182,14 @@
   align-items: baseline;
   justify-content: center;
   gap: var(--space-2);
-  width: 100%;
   min-height: var(--tap);
   padding: var(--space-2) var(--space-3);
-  border: 1px dashed var(--line);
-  border-radius: var(--radius-sm);
-  background: none;
+  border-color: var(--line);
+  border-style: dashed;
   color: var(--text-dim);
   font-family: inherit;
   font-size: var(--fs-small);
+  text-align: left;
   cursor: pointer;
   transition: border-color var(--motion-base) var(--ease);
 }
@@ -192,15 +207,12 @@
 
 .revealed {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  justify-content: center;
-  gap: var(--space-2);
-  min-height: var(--tap);
+  justify-content: flex-end;
+  gap: var(--space-0) var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  text-align: center;
+  text-align: right;
 }
 
 .revealed span {
@@ -216,37 +228,23 @@
   font-weight: 700;
 }
 
-/* Свернуть карту. Палец попадает по всей площади, глаз видит стрелку */
+/* Свернуть карту. Подписана словом, а не только стрелкой: голая стрелка в
+   углу не говорит, что она сделает, а нажимают её редко и наугад */
 .pin {
   position: absolute;
   z-index: 2;
-  top: var(--space-1);
-  right: var(--space-1);
-  display: grid;
-  place-items: center;
-  width: var(--tap);
-  height: var(--tap);
-  padding: 0;
-  border: 0;
-  background: none;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--tap);
+  padding: var(--space-1) var(--space-3);
   color: var(--text-dim);
-  font-size: var(--fs-control);
+  font-family: inherit;
+  font-size: var(--fs-small);
   line-height: var(--lh-flat);
   cursor: pointer;
-}
-
-.pin::before {
-  content: "";
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-}
-
-.pin span {
-  position: relative;
 }
 
 /* Курсор раскрывает карту наведением: лишний клик каждый раунд не нужен.
@@ -256,8 +254,6 @@
 @media (hover: hover) and (pointer: fine) {
   .hints {
     display: flex;
-    /* Под кнопкой возврата к цели: она в том же углу и всегда на месте */
-    top: 68px;
   }
 
   .map {
@@ -297,6 +293,22 @@
     width: auto;
   }
 
+  /* Свёрнутая карта — не полоса во всю ширину, а одна кнопка в правом нижнем
+     углу, под большим пальцем. Полоса занимала низ экрана весь раунд ради
+     одного нажатия, а смотреть игрок должен на снимок. Своей рамки и фона у
+     неё нет: кнопка сама себе плашка */
+  .panelCompact {
+    left: auto;
+    border-color: transparent;
+    background: none;
+    box-shadow: none;
+  }
+
+  .panelCompact .actions {
+    padding: 0;
+    border-top: 0;
+  }
+
   .panel:hover,
   .panel:focus-within,
   .panelPinned {
@@ -317,6 +329,15 @@
    целиком с самого начала */
 .choicePanel {
   width: auto;
+}
+
+/* Панель выбора не растёт от наведения: у неё нет карты, которую надо было бы
+   разворачивать, а прыгать под курсором список не должен */
+@media (hover: hover) and (pointer: fine) {
+  .choicePanel:hover,
+  .choicePanel:focus-within {
+    width: auto;
+  }
 }
 
 .choices {
