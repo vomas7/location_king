@@ -87,7 +87,7 @@ test("свёрнутая карта не раскрывается от тапа 
   expect(opened!.width / opened!.height).toBeGreaterThan(0.6);
 });
 
-test("подвал посадочной не съедает первый экран", async ({ page }) => {
+test("подвал посадочной не занимает экран", async ({ page }) => {
   await page.goto("/");
 
   // Пять ссылок столбцом по высоте пальца — это четверть экрана телефона,
@@ -95,4 +95,9 @@ test("подвал посадочной не съедает первый экр�
   const footer = await page.locator("footer").boundingBox();
   expect(footer).not.toBeNull();
   expect(footer!.height).toBeLessThan(160);
+
+  // И лежит он в конце страницы, а не у нижнего края экрана: висящий подвал
+  // закрывал форму входа на первом же экране
+  const viewport = page.viewportSize();
+  expect(footer!.y).toBeGreaterThan(viewport!.height);
 });

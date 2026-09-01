@@ -2,17 +2,19 @@
   display: flex;
   overflow-y: auto;
   flex: 1 1 auto;
-  align-items: center;
-  justify-content: center;
   min-height: 0;
   padding: var(--space-8) var(--space-5) var(--space-10);
   background:
     radial-gradient(900px 500px at 50% -10%, var(--glow-warm), transparent 60%), var(--bg);
 }
 
+/* Центрируется полями, а не выравниванием контейнера: у прокручиваемого
+   блока выравнивание по центру срезает верх содержимого, и до начала карточки
+   уже не долистать — на телефоне итоги начинались с середины первой строки */
 .card {
   width: 100%;
   max-width: 560px;
+  margin: auto;
   text-align: center;
 }
 

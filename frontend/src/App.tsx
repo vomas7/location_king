@@ -15,7 +15,6 @@ import { HomeScreen } from "~/components/home/HomeScreen";
 import { LandingScreen } from "~/components/landing/LandingScreen";
 import { LegalDialog } from "~/components/legal/LegalDialog";
 import { StorageNotice } from "~/components/legal/StorageNotice";
-import { Footer } from "~/components/layout/Footer";
 import { TopBar } from "~/components/layout/TopBar";
 import { Loader } from "~/components/ui/Loader";
 import { Toast } from "~/components/ui/Toast";
@@ -87,7 +86,6 @@ export function App() {
             setLegal("storage");
           }}
         />
-        <Footer onOpen={setLegal} />
         <LegalDialog open={legal} onClose={closeLegal} />
       </>
     );

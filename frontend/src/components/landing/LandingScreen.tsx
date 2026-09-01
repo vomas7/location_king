@@ -10,6 +10,7 @@ import { useRef } from "react";
 
 import { AuthCard } from "~/components/auth/AuthCard";
 import { HeroSight } from "~/components/landing/HeroSight";
+import { Footer } from "~/components/layout/Footer";
 import styles from "~/components/landing/LandingScreen.module.css";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useFormats, useText } from "~/state/languageContext";
@@ -139,6 +140,12 @@ export function LandingScreen({ onOpenLegal }: LandingScreenProps) {
           {landing.finishCta}
         </a>
       </section>
+
+      {/* Подвал внутри страницы, а не под ней: прокручивается вся страница
+          целиком, и сноски видно там, где их и ищут — в самом низу. Стоя
+          отдельным блоком под экраном, он занимал нижнюю полосу всегда и
+          закрывал форму входа */}
+      <Footer onOpen={onOpenLegal} />
     </div>
   );
 }
