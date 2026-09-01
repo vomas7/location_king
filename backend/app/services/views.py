@@ -275,6 +275,7 @@ def leaderboard_entry(row: LeaderboardRow) -> LeaderboardEntry:
         best_score=row.best_score,
         total_score=row.total_score,
         average_distance=row.average_distance,
+        sharp_rounds=row.sharp_rounds,
     )
 
 

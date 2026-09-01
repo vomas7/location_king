@@ -19,6 +19,9 @@ class LeaderboardEntry(BaseModel):
     best_score: int
     total_score: int
     average_distance: float | None
+    #: Сколько раундов взято почти в точку. Точность это среднее, и один
+    #: провальный раунд портит её целиком; меткие раунды остаются в зачёте
+    sharp_rounds: int
 
 
 class LeaderboardResponse(BaseModel):

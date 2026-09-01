@@ -192,7 +192,7 @@ export interface SessionHistory {
   total: number;
 }
 
-export type LeaderboardMetric = "best" | "total" | "accuracy";
+export type LeaderboardMetric = "best" | "total" | "accuracy" | "games" | "sharp";
 
 export interface LeaderboardEntry {
   rank: number;
@@ -204,6 +204,8 @@ export interface LeaderboardEntry {
   best_score: number;
   total_score: number;
   average_distance: number | null;
+  /** Раундов, взятых почти в точку: девять десятых максимума и выше. */
+  sharp_rounds: number;
 }
 
 export interface Leaderboard {

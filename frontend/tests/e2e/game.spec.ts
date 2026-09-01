@@ -419,6 +419,37 @@ test("повёрнутый снимок разворачивается обра�
   await expect(north).toHaveCount(0);
 });
 
+test("таблица лидеров считает не только очки", async ({ page }) => {
+  await register(page);
+
+  await page.getByRole("radio", { name: "3", exact: true }).first().click();
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+  await page.getByRole("button", { name: "Не показывать" }).click();
+
+  await playRounds(page, 3);
+  await page.getByRole("button", { name: "В меню" }).click();
+
+  // Имя игрока — то же, что в шапке: под ним он и стоит в таблице
+  const me =
+    (await page
+      .getByRole("banner")
+      .getByText(/Игрок /)
+      .textContent()) ?? "";
+
+  await open(page, "Таблица");
+
+  // Доигранная партия попадает в зачёт по упорству
+  await page.getByRole("radio", { name: "Партий" }).click();
+  await expect(page.getByText("Сколько партий доиграно до конца")).toBeVisible();
+  await expect(page.getByText(me, { exact: true }).last()).toBeVisible();
+
+  // Меткость — про удачные раунды, а не про среднее
+  await page.getByRole("radio", { name: "Меткость" }).click();
+  await expect(page.getByText("Раундов, взятых почти в точку")).toBeVisible();
+  await expect(page.getByText(me, { exact: true }).last()).toBeVisible();
+});
+
 test("аватарка видна в шапке и меняется в профиле", async ({ page }) => {
   await register(page);
 

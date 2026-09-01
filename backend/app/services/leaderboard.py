@@ -15,13 +15,21 @@ from enum import StrEnum
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.enums import SessionStatus
+from app.models.enums import RoundStatus, SessionStatus
 from app.models.game_session import GameSession
+from app.models.round import Round
 from app.models.series import RoundSeries
 from app.models.user import User
 
 # Меньше этого числа раундов статистика по точности ничего не значит
 MIN_ROUNDS_FOR_ACCURACY = 5
+
+#: Какую долю максимума раунда надо взять, чтобы раунд считался метким.
+#: Девять десятых — это попадание в считаные километры: место не просто
+#: узнали, а нашли. Меткость намеренно считается иначе, чем точность: точность
+#: это среднее, и один провальный раунд портит её целиком, а здесь каждый
+#: удачный раунд остаётся в зачёте навсегда
+SHARP_SHARE = 0.9
 
 
 class LeaderboardMetric(StrEnum):
@@ -30,6 +38,8 @@ class LeaderboardMetric(StrEnum):
     BEST = "best"  # лучшая партия, очков за раунд
     TOTAL = "total"  # сумма очков за все партии
     ACCURACY = "accuracy"  # средний промах, меньше — лучше
+    GAMES = "games"  # сколько партий доиграно
+    SHARP = "sharp"  # сколько раундов взято почти в точку
 
 
 @dataclass(frozen=True)
@@ -57,6 +67,7 @@ class LeaderboardRow:
     best_score: int
     total_score: int
     average_distance: float | None
+    sharp_rounds: int
 
 
 def _aggregated(filters: LeaderboardFilter) -> Select:
@@ -78,6 +89,7 @@ def _aggregated(filters: LeaderboardFilter) -> Select:
             func.coalesce(func.max(GameSession.average_score), 0).label("best"),
             func.coalesce(func.sum(GameSession.total_score), 0).label("total"),
             func.avg(GameSession.average_distance).label("miss"),
+            _sharp_rounds(filters).label("sharp"),
         )
         .join(GameSession, GameSession.user_id == User.id)
         # Внешнее соединение: партия могла быть сыграна до того, как условия
@@ -90,6 +102,11 @@ def _aggregated(filters: LeaderboardFilter) -> Select:
         .group_by(User.id)
     )
 
+    return _under(stmt, filters)
+
+
+def _under(stmt: Select, filters: LeaderboardFilter) -> Select:
+    """Дописать к запросу условия зачёта. Одни и те же на всех запросах."""
     for column, value in (
         (RoundSeries.difficulty, filters.difficulty),
         (RoundSeries.continent, filters.continent),
@@ -104,6 +121,30 @@ def _aggregated(filters: LeaderboardFilter) -> Select:
     return stmt
 
 
+def _sharp_rounds(filters: LeaderboardFilter) -> Select:
+    """
+    Сколько раундов игрок взял почти в точку.
+
+    Отдельным подзапросом, а не соединением с раундами: соединение размножило
+    бы строки партий, и «сумма очков» вместе с «партиями» выросли бы во
+    столько раз, сколько в партии раундов.
+    """
+    stmt = (
+        select(func.count())
+        .select_from(Round)
+        .join(GameSession, GameSession.id == Round.session_id)
+        .outerjoin(RoundSeries, GameSession.series_id == RoundSeries.id)
+        .where(
+            GameSession.user_id == User.id,
+            GameSession.status == SessionStatus.FINISHED,
+            Round.status != RoundStatus.ACTIVE,
+            Round.score >= Round.max_score * SHARP_SHARE,
+        )
+    )
+
+    return _under(stmt, filters).correlate(User).scalar_subquery()
+
+
 def _ordered(metric: LeaderboardMetric, filters: LeaderboardFilter) -> Select:
     """Тот же запрос, отсортированный по выбранной метрике."""
     stmt = _aggregated(filters)
@@ -114,6 +155,12 @@ def _ordered(metric: LeaderboardMetric, filters: LeaderboardFilter) -> Select:
     if metric is LeaderboardMetric.TOTAL:
         return stmt.order_by(func.sum(GameSession.total_score).desc(), User.id)
 
+    if metric is LeaderboardMetric.GAMES:
+        return stmt.order_by(func.count(GameSession.id).desc(), User.id)
+
+    if metric is LeaderboardMetric.SHARP:
+        return stmt.order_by(_sharp_rounds(filters).desc(), User.id)
+
     return stmt.having(
         func.sum(GameSession.rounds_done) >= MIN_ROUNDS_FOR_ACCURACY,
         func.avg(GameSession.average_distance).is_not(None),
@@ -121,7 +168,7 @@ def _ordered(metric: LeaderboardMetric, filters: LeaderboardFilter) -> Select:
 
 
 def _row(rank: int, record: tuple) -> LeaderboardRow:
-    user, games, rounds, best, total, distance = record
+    user, games, rounds, best, total, distance, sharp = record
 
     return LeaderboardRow(
         rank=rank,
@@ -131,6 +178,7 @@ def _row(rank: int, record: tuple) -> LeaderboardRow:
         best_score=int(best),
         total_score=int(total),
         average_distance=float(distance) if distance is not None else None,
+        sharp_rounds=int(sharp),
     )
 
 
@@ -170,6 +218,10 @@ async def place_of(
         value, better_than = row.best_score, "best"
     elif metric is LeaderboardMetric.TOTAL:
         value, better_than = row.total_score, "total"
+    elif metric is LeaderboardMetric.GAMES:
+        value, better_than = row.games_played, "games"
+    elif metric is LeaderboardMetric.SHARP:
+        value, better_than = row.sharp_rounds, "sharp"
     else:
         if row.total_rounds < MIN_ROUNDS_FOR_ACCURACY or row.average_distance is None:
             return None
@@ -190,4 +242,5 @@ async def place_of(
         best_score=row.best_score,
         total_score=row.total_score,
         average_distance=row.average_distance,
+        sharp_rounds=row.sharp_rounds,
     )

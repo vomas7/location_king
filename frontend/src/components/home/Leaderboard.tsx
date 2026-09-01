@@ -19,6 +19,8 @@ const METRICS: { value: LeaderboardMetric; label: string }[] = [
   { value: "best", label: "Партия" },
   { value: "total", label: "Сумма" },
   { value: "accuracy", label: "Точность" },
+  { value: "sharp", label: "Меткость" },
+  { value: "games", label: "Партий" },
 ];
 
 /** Подпись под переключателем: что именно означает выбранная метрика. */
@@ -26,6 +28,8 @@ const CAPTIONS: Record<LeaderboardMetric, string> = {
   best: "Очков за раунд в лучшей партии",
   total: "Сумма очков за все партии",
   accuracy: "Средний промах за раунд, от пяти раундов",
+  sharp: "Раундов, взятых почти в точку",
+  games: "Сколько партий доиграно до конца",
 };
 
 /**
@@ -61,6 +65,9 @@ function emptyText(scope: string): string {
 function valueOf(entry: LeaderboardEntry, metric: LeaderboardMetric): string {
   if (metric === "best") return formatNumber(entry.best_score);
   if (metric === "total") return formatNumber(entry.total_score);
+  if (metric === "sharp") return formatNumber(entry.sharp_rounds);
+  if (metric === "games") return formatNumber(entry.games_played);
+
   return formatDistance(entry.average_distance);
 }
 

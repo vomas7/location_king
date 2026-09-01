@@ -3,12 +3,14 @@
 from datetime import UTC, datetime
 
 import pytest
+from geoalchemy2 import WKTElement
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.enums import SessionStatus
+from app.models.enums import RoundStatus, SessionStatus
 from app.models.game_session import GameSession
 from app.models.location_zone import LocationZone
+from app.models.round import Round
 from app.models.series import RoundSeries
 from app.models.user import User
 from app.services.auth import create_token, register
@@ -375,3 +377,96 @@ async def test_current_session_carries_no_target_coordinates(
 
 async def test_current_session_requires_authorization(client: AsyncClient):
     assert (await client.get("/api/sessions/current")).status_code == 401
+
+
+async def add_rounds(
+    db: AsyncSession, user: User, zone: LocationZone, *, sharp: int, weak: int
+) -> None:
+    """
+    Дописать игроку сыгранные раунды: меткие и не очень.
+
+    Меткий — взятый почти в точку: девять десятых максимума и выше. Точность
+    это среднее, и один провальный раунд портит её целиком, а меткие раунды
+    остаются в зачёте навсегда — поэтому метрики и разные.
+    """
+    session = GameSession(
+        user_id=user.id,
+        status=SessionStatus.FINISHED,
+        rounds_total=sharp + weak,
+        rounds_done=sharp + weak,
+        total_score=0,
+        finished_at=datetime.now(UTC),
+    )
+    db.add(session)
+    await db.flush()
+
+    point = WKTElement("POINT(37.6 55.75)", srid=4326)
+
+    for index in range(sharp + weak):
+        db.add(
+            Round(
+                session_id=session.id,
+                zone_id=zone.id,
+                position=index + 1,
+                target_point=point,
+                tile_zoom=10,
+                tile_x=1,
+                tile_y=1,
+                view_extent_km=45,
+                max_score=5000,
+                score=5000 if index < sharp else 1000,
+                status=RoundStatus.GUESSED,
+            )
+        )
+
+    await db.flush()
+
+
+async def test_leaderboard_ranks_by_games_played(client: AsyncClient, db: AsyncSession):
+    """Упорство — тоже результат: кто доиграл больше партий, тот и выше."""
+    await make_player(db, "many@example.com", best_score=100, total_score=100, games=9, rounds=27)
+    await make_player(db, "few@example.com", best_score=5000, total_score=5000, games=2, rounds=6)
+
+    entries = (await client.get("/api/leaderboard?metric=games")).json()["entries"]
+
+    assert [e["display_name"] for e in entries] == ["many", "few"]
+    assert [e["games_played"] for e in entries] == [9, 2]
+
+
+async def test_leaderboard_ranks_by_sharp_rounds(
+    client: AsyncClient, db: AsyncSession, zone: LocationZone
+):
+    """Меткость считает удачные раунды, а не среднее по всем."""
+    sniper = await make_player(db, "sniper@example.com", best_score=100, total_score=100, games=1)
+    steady = await make_player(db, "steady@example.com", best_score=100, total_score=100, games=1)
+
+    await add_rounds(db, sniper, zone, sharp=4, weak=6)
+    await add_rounds(db, steady, zone, sharp=1, weak=1)
+
+    entries = (await client.get("/api/leaderboard?metric=sharp")).json()["entries"]
+
+    assert entries[0]["display_name"] == "sniper"
+    assert entries[0]["sharp_rounds"] == 4
+    assert entries[1]["sharp_rounds"] == 1
+
+
+async def test_sharp_rounds_do_not_inflate_the_other_numbers(
+    client: AsyncClient, db: AsyncSession, zone: LocationZone
+):
+    """
+    Меткость считается подзапросом, а не соединением с раундами.
+
+    Соединение размножило бы строки партий, и «партий» вместе с «суммой очков»
+    выросли бы во столько раз, сколько в партии раундов.
+    """
+    player = await make_player(
+        db, "counted@example.com", best_score=100, total_score=900, games=3, rounds=9
+    )
+    await add_rounds(db, player, zone, sharp=5, weak=0)
+
+    entry = (await client.get("/api/leaderboard?metric=total")).json()["entries"][0]
+
+    # Три партии из make_player плюс одна с раундами — и ни одной лишней
+    assert entry["games_played"] == 4
+    assert entry["total_score"] == 900
+    assert entry["sharp_rounds"] == 5
