@@ -338,3 +338,13 @@ export interface DuelFormat {
   difficulty: string;
   time_limit_seconds: number;
 }
+
+/**
+ * Сколько людей играет.
+ *
+ * Одно число и ничего больше: разбивка по дням или по странам — это уже
+ * выгрузка, а на первом экране нужен ответ на вопрос «тут есть кто-нибудь».
+ */
+export interface CommunityView {
+  players: number;
+}

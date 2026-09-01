@@ -13,3 +13,12 @@
   border-top: 1px solid var(--line-soft);
   background: var(--bg-deep);
 }
+
+/* Сноски правой половины: сколько играет и откуда карта. Обе строки
+   приглушены одинаково — их читают, а не нажимают */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-4);
+}

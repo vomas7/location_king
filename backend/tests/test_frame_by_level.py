@@ -55,6 +55,12 @@ async def test_started_round_uses_the_frame_of_its_level(
     zone: LocationZone,
     auth_headers: dict[str, str],
 ) -> None:
+    """
+    Кадр раунда — ближайший к заказанному тайл, а не ровно заказанное число:
+    участок это один тайл Web Mercator, и его ширина зависит от широты. Поэтому
+    проверяется то, что действительно должно выполняться: из всех уровней
+    полученный кадр ближе всего к своему.
+    """
     zone.tier = Difficulty.HARD
     await db.flush()
 
@@ -66,6 +72,9 @@ async def test_started_round_uses_the_frame_of_its_level(
     assert response.status_code == 201
 
     round_obj = (await db.execute(select(Round))).scalars().one()
-    assert float(round_obj.view_extent_km) == pytest.approx(
-        difficulty_service.view_extent_km(Difficulty.HARD), abs=1.0
+    frame = float(round_obj.view_extent_km)
+
+    closest = min(
+        Difficulty, key=lambda level: abs(difficulty_service.view_extent_km(level) - frame)
     )
+    assert closest == Difficulty.HARD

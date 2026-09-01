@@ -5,6 +5,7 @@ import { setTokens } from "~/api/tokens";
 import type {
   Answer,
   AuthResponse,
+  CommunityView,
   DailyChallenge,
   DuelFormat,
   DuelSearch,
@@ -183,4 +184,9 @@ export const leaderboard = {
 export const zones = {
   /** query — строка вида "continent=europe&country_group=eu". */
   list: (query = "") => request<Zone[]>(`/api/zones${query === "" ? "" : `?${query}`}`),
+};
+
+export const community = {
+  /** Сколько всего игроков. Единственный запрос, который делают до входа. */
+  stats: () => request<CommunityView>("/api/community"),
 };

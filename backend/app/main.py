@@ -13,6 +13,7 @@ from app.observability import ObservabilityMiddleware, configure_logging, metric
 from app.routers import (
     auth,
     avatars,
+    community,
     countries,
     daily,
     duels,
@@ -79,6 +80,7 @@ app.include_router(feedback.router)
 app.include_router(rounds.router)
 app.include_router(zones.router)
 app.include_router(countries.router)
+app.include_router(community.router)
 app.include_router(leaderboard.router)
 
 
