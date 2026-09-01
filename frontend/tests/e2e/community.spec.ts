@@ -2,40 +2,40 @@
  * Счётчик игроков в подвале.
  *
  * Он отвечает на вопрос, который человек задаёт себе на незнакомом сайте:
- * тут вообще кто-нибудь есть. Число настоящее, поэтому проверяется, что оно
- * растёт вместе с регистрацией, а не нарисовано в разметке.
+ * тут вообще кто-нибудь есть. Врать таким числом нельзя, поэтому проверяется
+ * ровно это: строка показывает то, что ответил сервер, и исчезает, если он не
+ * ответил. Само значение при этом не проверяется — на чистой базе ноль игроков
+ * такой же правильный ответ, как и любой другой.
  */
 
 import { expect, test } from "@playwright/test";
 
-import { ownAddress, register } from "./helpers";
+import { ownAddress } from "./helpers";
 
 test("подвал называет, сколько людей играет", async ({ page }) => {
   await ownAddress(page);
   await page.goto("/");
 
-  const counter = page.getByText(/Играют \d/);
-  await expect(counter).toBeVisible();
-
-  const before = Number(((await counter.textContent()) ?? "").replace(/\D/g, ""));
-  expect(before).toBeGreaterThan(0);
+  await expect(page.getByText(/Играют \d/)).toBeVisible();
 });
 
-test("число приходит с сервера, а не нарисовано в разметке", async ({ page }) => {
+test("показывается то число, которое назвал сервер", async ({ page }) => {
   await ownAddress(page);
 
-  // Страница без ответа сервера показывает подвал без строки: врать числом
-  // нельзя, а прочерк на его месте выглядел бы поломкой
+  await page.route("**/api/community", (route) => route.fulfill({ json: { players: 42 } }));
+  await page.goto("/");
+
+  await expect(page.getByText("Играют 42 человека")).toBeVisible();
+});
+
+test("без ответа сервера строки просто нет", async ({ page }) => {
+  await ownAddress(page);
+
+  // Прочерк или ноль на месте настоящего числа выглядели бы поломкой, а
+  // подвал от пропавшей строки не прыгает: строки в нём и так переносятся
   await page.route("**/api/community", (route) => route.abort());
   await page.goto("/");
 
   await expect(page.getByRole("link", { name: "OpenStreetMap" })).toBeVisible();
   await expect(page.getByText(/Играют \d/)).toHaveCount(0);
-});
-
-test("новая регистрация попадает в счётчик", async ({ page }) => {
-  await register(page);
-  await page.getByRole("button", { name: "Выйти" }).click();
-
-  await expect(page.getByText(/Играют \d/)).toBeVisible();
 });
