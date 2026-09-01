@@ -13,7 +13,7 @@
 import { useEffect, useState } from "react";
 
 import { community } from "~/api/endpoints";
-import styles from "~/components/layout/AboutLinks.module.css";
+import styles from "~/components/layout/Footnotes.module.css";
 import { formatNumber, plural } from "~/domain/format";
 
 export function PlayerCount() {

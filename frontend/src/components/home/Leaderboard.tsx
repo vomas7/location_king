@@ -15,22 +15,54 @@ import { Segmented } from "~/components/ui/Segmented";
 import { Skeleton } from "~/components/ui/Skeleton";
 import { formatDistance, formatNumber } from "~/domain/format";
 
-const METRICS: { value: LeaderboardMetric; label: string }[] = [
-  { value: "best", label: "Партия" },
-  { value: "total", label: "Сумма" },
-  { value: "accuracy", label: "Точность" },
-  { value: "sharp", label: "Меткость" },
-  { value: "games", label: "Партий" },
-];
+/**
+ * По чему ранжируем игроков.
+ *
+ * Метрика описана здесь целиком: как называется в переключателе, что значит
+ * и какое число показать в строке. Раньше эти три вещи лежали в трёх
+ * списках, и добавление метрики означало три правки в разных местах.
+ */
+interface Metric {
+  label: string;
+  hint: string;
+  read: (entry: LeaderboardEntry) => string;
+}
 
-/** Подпись под переключателем: что именно означает выбранная метрика. */
-const CAPTIONS: Record<LeaderboardMetric, string> = {
-  best: "Очков за раунд в лучшей партии",
-  total: "Сумма очков за все партии",
-  accuracy: "Средний промах за раунд, от пяти раундов",
-  sharp: "Раундов, взятых почти в точку",
-  games: "Сколько партий доиграно до конца",
+const METRICS: Record<LeaderboardMetric, Metric> = {
+  best: {
+    label: "Партия",
+    hint: "Очков за раунд в лучшей партии",
+    read: (entry) => formatNumber(entry.best_score),
+  },
+  total: {
+    label: "Сумма",
+    hint: "Сумма очков за все партии",
+    read: (entry) => formatNumber(entry.total_score),
+  },
+  accuracy: {
+    label: "Точность",
+    hint: "Средний промах за раунд, от пяти раундов",
+    read: (entry) => formatDistance(entry.average_distance),
+  },
+  sharp: {
+    label: "Меткость",
+    hint: "Раундов, взятых почти в точку",
+    read: (entry) => formatNumber(entry.sharp_rounds),
+  },
+  games: {
+    label: "Партий",
+    hint: "Сколько партий доиграно до конца",
+    read: (entry) => formatNumber(entry.games_played),
+  },
 };
+
+/** Порядок в переключателе: от того, что понятно всем, к тому, что поточнее. */
+const METRIC_ORDER: LeaderboardMetric[] = ["best", "total", "accuracy", "sharp", "games"];
+
+const METRIC_OPTIONS = METRIC_ORDER.map((value) => ({ value, label: METRICS[value].label }));
+
+/** Зачёт среди друзей: он единственный зависит от того, кто спрашивает. */
+const FRIENDS_SCOPE = "among_friends=true";
 
 /**
  * Отдельный зачёт на каждые условия игры.
@@ -39,9 +71,6 @@ const CAPTIONS: Record<LeaderboardMetric, string> = {
  * тайге стоят разного труда, а очки у них одни и те же. Значения ключей — те
  * же, что понимает сервер.
  */
-/** Зачёт среди друзей: он единственный зависит от того, кто спрашивает. */
-const FRIENDS_SCOPE = "among_friends=true";
-
 const SCOPES: { value: string; label: string }[] = [
   { value: "", label: "Все партии" },
   { value: FRIENDS_SCOPE, label: "Друзья" },
@@ -62,15 +91,6 @@ function emptyText(scope: string): string {
   return "На этих условиях ещё никто не играл. Займи первое место";
 }
 
-function valueOf(entry: LeaderboardEntry, metric: LeaderboardMetric): string {
-  if (metric === "best") return formatNumber(entry.best_score);
-  if (metric === "total") return formatNumber(entry.total_score);
-  if (metric === "sharp") return formatNumber(entry.sharp_rounds);
-  if (metric === "games") return formatNumber(entry.games_played);
-
-  return formatDistance(entry.average_distance);
-}
-
 function Row({
   entry,
   metric,
@@ -85,7 +105,7 @@ function Row({
       rank={entry.rank}
       avatar={entry.avatar}
       name={entry.display_name}
-      value={valueOf(entry, metric)}
+      value={METRICS[metric].read(entry)}
       mine={isMe}
       medals
     />
@@ -129,10 +149,10 @@ export function Leaderboard({ refreshKey }: { refreshKey: number }) {
       <div className={styles.metrics}>
         <Segmented
           label="Метрика"
-          options={METRICS}
+          options={METRIC_OPTIONS}
           value={metric}
           onChange={setMetric}
-          hint={CAPTIONS[metric]}
+          hint={METRICS[metric].hint}
         />
       </div>
 

@@ -7,7 +7,7 @@
  * нельзя: указание правообладателей это условие лицензии, а не вежливость.
  */
 
-import styles from "~/components/layout/AboutLinks.module.css";
+import styles from "~/components/layout/Footnotes.module.css";
 import type { LegalDocumentId } from "~/legal/documents";
 import { LEGAL_DOCUMENTS } from "~/legal/documents";
 import { OPERATOR_EMAIL } from "~/legal/operator";
