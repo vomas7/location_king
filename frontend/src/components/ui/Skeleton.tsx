@@ -7,6 +7,7 @@
  */
 
 import styles from "~/components/ui/ui.module.css";
+import { useText } from "~/state/languageContext";
 
 interface SkeletonProps {
   /** Сколько строк занять. По умолчанию три — типичный список. */
@@ -14,8 +15,9 @@ interface SkeletonProps {
 }
 
 export function Skeleton({ rows = 3 }: SkeletonProps) {
+  const text = useText();
   return (
-    <div className={styles.skeleton} role="status" aria-label="Загружаем">
+    <div className={styles.skeleton} role="status" aria-label={text.game.loading}>
       {Array.from({ length: rows }, (_, index) => (
         <span key={index} className={styles.skeletonRow} />
       ))}

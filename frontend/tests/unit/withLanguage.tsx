@@ -6,7 +6,12 @@
  * Тесты проверяют русский интерфейс, он же язык по умолчанию.
  */
 
-import { render, type RenderResult } from "@testing-library/react";
+import {
+  render,
+  renderHook,
+  type RenderHookResult,
+  type RenderResult,
+} from "@testing-library/react";
 import type { ReactElement } from "react";
 
 import { LANGUAGE_STORAGE_KEY } from "~/domain/language";
@@ -21,4 +26,11 @@ export function renderWithLanguage(ui: ReactElement): RenderResult {
   // Через wrapper, а не оборачиванием вручную: тогда и rerender в тесте
   // остаётся внутри провайдера
   return render(ui, { wrapper: LanguageProvider });
+}
+
+/** То же для хука: он тоже может читать словарь. */
+export function renderHookWithLanguage<T>(hook: () => T): RenderHookResult<T, unknown> {
+  localStorage.setItem(LANGUAGE_STORAGE_KEY, "ru");
+
+  return renderHook(hook, { wrapper: LanguageProvider });
 }

@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import type { RoundView } from "~/api/types";
 import styles from "~/components/game/GameScreen.module.css";
 import { createSatelliteMap, type SatelliteMap } from "~/map/satellite";
-import { useFormats } from "~/state/languageContext";
+import { useFormats, useText } from "~/state/languageContext";
 
 interface SatelliteViewProps {
   round: RoundView;
@@ -26,6 +26,7 @@ interface SatelliteViewProps {
 
 export function SatelliteView({ round, resetSignal, northSignal, onRotated }: SatelliteViewProps) {
   const formats = useFormats();
+  const { game: text } = useText();
   const container = useRef<HTMLDivElement>(null);
   const instance = useRef<SatelliteMap | null>(null);
   const [tilesMissing, setTilesMissing] = useState(false);
@@ -71,13 +72,13 @@ export function SatelliteView({ round, resetSignal, northSignal, onRotated }: Sa
       <div className={styles.satellite} ref={container} />
 
       <div className={`${styles.glass} ${styles.badge}`}>
-        <span className={styles.scale}>участок ~{formats.extent(round.view_extent_km)}</span>
+        <span className={styles.scale}>{text.frame(formats.extent(round.view_extent_km))}</span>
         <span className={styles.credit}>{round.attribution}</span>
       </div>
 
       {tilesMissing && (
         <p className={styles.tileError} role="alert">
-          Часть снимка не загрузилась. Подвигай карту — тайлы подгрузятся снова.
+          {text.tilesFailed}
         </p>
       )}
     </>

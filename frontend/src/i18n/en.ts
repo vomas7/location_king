@@ -81,6 +81,117 @@ export const en: Dictionary = {
     mustAccept: "To create an account you need to accept the terms",
   },
 
+  game: {
+    toTarget: "To target",
+    toNorth: "North up",
+    keysMap: "map",
+    keysAnswer: "answer",
+    keysZoom: "reset zoom",
+    keysNorth: "north up",
+    frame: (size) => `about ${size} across`,
+    tilesFailed: "Part of the image did not load. Drag the map and the tiles will load again.",
+    hint: "Hint",
+    hintCost: (points) => `−${points} points`,
+    secondsLeft: (seconds) => `Seconds left: ${String(seconds)}`,
+
+    dropPin: "Mark the place on the world map",
+    pinDropped: "Pin dropped",
+    loadingCountries: "Loading countries…",
+    pickCountry: "Pick the country the image comes from",
+    collapse: "Collapse",
+    pin: "Keep open",
+    answer: "Answer",
+    openCountries: "Pick a country",
+    openMap: "Open the map",
+    changePin: "Move the pin",
+
+    choicesLabel: "Which country the image comes from",
+    whichCountry: "Which country is this image from?",
+    mayChange: "You can change your mind before answering",
+
+    coachStep: (order, total) => `Step ${String(order)} of ${String(total)}`,
+    coachGot: "Got it",
+    coachSkip: "Do not show this",
+    coach: {
+      lookTitle: "Take a look",
+      lookText:
+        "This is a piece of satellite imagery with no labels or signs. The crosshair in the centre marks the place you need to find. Zoom with the wheel or a pinch, drag to look around.",
+      chooseTitle: "Pick a country",
+      chooseText:
+        "Six countries are listed under the image, and one of them is where it was shot. Look for clues: vegetation, roofs, road markings, the language on signs when you zoom in.",
+      chooseAnswer:
+        "You can change your mind as long as you have not pressed Answer. Get it right and you take all five thousand points for the round; miss, and the closer your country is to the real one, the more you keep.",
+      pinTitle: "Mark the place",
+      countryHover:
+        "Move the cursor to the world map in the bottom right corner and click the country you think the image is from. The country under the cursor is highlighted.",
+      countryTap:
+        "Tap “Pick a country” in the bottom right corner and tap the country on the world map you think the image is from.",
+      pinHover:
+        "Move the cursor to the world map in the bottom right corner and click where you think this piece was shot.",
+      pinTap:
+        "Tap “Open the map” in the bottom right corner and mark the place on the world map where you think this piece was shot.",
+      answerTitle: "Answer",
+      answerCountry:
+        "Tap the country on the map the image is from. You can change it as long as you have not pressed Answer: get it right and you take all five thousand points for the round.",
+      answerPin:
+        "Tap the place on the map where you think the piece was shot. You can move the pin until you press Answer: the closer to the target, the more points — up to five thousand per round.",
+    },
+
+    resultLabel: "Round result",
+    outOf: (max) => `of ${max} points`,
+    country: "Country",
+    yourAnswer: "Your answer",
+    missedLand: "missed the land",
+    miss: "Miss",
+    accuracy: "Accuracy",
+    usualMiss: (distance) => `People usually miss this one by ${distance} — `,
+    youCloser: "you are closer",
+    youFurther: "you are further",
+    target: "target",
+    yourPin: "your pin",
+    seeSummary: "See the summary",
+    nextRound: "Next round",
+
+    gameOver: "Game over",
+    points: "points",
+    nothingPlayed: "Not a single round played",
+    summary: (rounds, average) =>
+      `${String(rounds)} ${rounds === 1 ? "round" : "rounds"} · ${average} per round on average`,
+    record: "This is your best result",
+    placeIn: (place) => `place ${String(place)} in`,
+    showWholeGame: "Show the whole game",
+    roundOfZone: (index, zone) => `Round ${String(index)}, ${zone}`,
+    setUpGame: "Set up a game",
+    playAgain: "Play again",
+    toMenu: "To the menu",
+
+    share: "Share the result",
+    shareCopied: "Copied to the clipboard",
+    shareFailed: "Could not copy",
+    shareScore: (score) => `${score} points`,
+    shareBest: (distance) => `Best round: ${distance}`,
+    shareChallenge: (day) => `Location King · challenge of ${day}`,
+
+    loadingRound: "Picking a place…",
+    loadingDistance: "Measuring the distance…",
+    loadingTimeout: "Time is up…",
+    loadingSummary: "Adding it up…",
+    noRound: "The server returned no round",
+
+    tiers: {
+      perfect: "Bullseye",
+      great: "Excellent",
+      good: "Good",
+      fair: "Not bad",
+      poor: "Off",
+      awful: "Nowhere near",
+    },
+
+    avatarOf: (name) => `Avatar of ${name}`,
+    avatar: "Player avatar",
+    loading: "Loading",
+  },
+
   room: {
     title: "Room",
     subtitle:

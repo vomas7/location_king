@@ -8,6 +8,7 @@
 
 import type { RoundResult, SessionView } from "~/api/types";
 import type { Formats } from "~/domain/format";
+import type { Dictionary } from "~/i18n/dictionary";
 import { scoreRatio } from "~/domain/score";
 
 /** Квадратик по доле набранных очков. */
@@ -34,6 +35,8 @@ export interface ShareOptions {
   url?: string;
   /** Числа по правилам выбранного языка. */
   formats: Formats;
+  /** Слова вокруг чисел. */
+  text: Dictionary;
 }
 
 /** Собрать текст для отправки. */
@@ -43,17 +46,15 @@ export function buildShareText({
   challengeDay,
   url,
   formats,
+  text,
 }: ShareOptions): string {
   const title =
     challengeDay === undefined
       ? "Location King"
-      : `Location King · челлендж ${new Date(challengeDay).toLocaleDateString("ru-RU", {
-          day: "numeric",
-          month: "long",
-        })}`;
+      : text.game.shareChallenge(formats.day(challengeDay));
 
   const marks = results.map((result) => roundMark(result.score, result.max_score)).join("");
-  const score = `${formats.number(session.total_score)} очков`;
+  const score = text.game.shareScore(formats.number(session.total_score));
 
   const lines = [title, `${marks} ${score}`];
 
@@ -63,9 +64,7 @@ export function buildShareText({
 
   if (distances.length > 0) {
     const best = Math.min(...distances);
-    lines.push(
-      `Лучший раунд: ${best < 1 ? `${String(Math.round(best * 1000))} м` : `${best.toFixed(1)} км`}`,
-    );
+    lines.push(text.game.shareBest(formats.distance(best)));
   }
 
   if (url !== undefined && url !== "") lines.push(url);

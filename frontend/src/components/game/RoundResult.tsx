@@ -9,7 +9,7 @@ import { useModal } from "~/components/ui/useModal";
 import { scoreRatio, scoreTier, zoneStanding } from "~/domain/score";
 import { COLOR_GUESS, COLOR_TARGET } from "~/map/styles";
 import { createResultMap, type ResultMap } from "~/map/result";
-import { useFormats } from "~/state/languageContext";
+import { useFormats, useText } from "~/state/languageContext";
 
 const TIER_CLASS: Record<string, string | undefined> = {
   perfect: styles.tierPerfect,
@@ -27,6 +27,7 @@ interface RoundResultProps {
 
 export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
   const formats = useFormats();
+  const { game: text } = useText();
   const container = useRef<HTMLDivElement>(null);
   const instance = useRef<ResultMap | null>(null);
   const nextButton = useRef<HTMLButtonElement>(null);
@@ -78,20 +79,20 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
       className={styles.overlay}
       role="dialog"
       aria-modal="true"
-      aria-label="Результат раунда"
+      aria-label={text.resultLabel}
     >
       <div className={styles.sheet}>
         <div className={styles.map} ref={container} />
 
         <div className={styles.panel}>
           <p className={[styles.tier, TIER_CLASS[tier.tone]].filter(Boolean).join(" ")}>
-            {tier.label}
+            {text.tiers[tier.name]}
           </p>
 
           <div aria-live="polite">
             <h2 className={styles.score}>
               {formats.number(result.score)}
-              <small>из {formats.number(result.max_score)} очков</small>
+              <small>{text.outOf(formats.number(result.max_score))}</small>
             </h2>
           </div>
 
@@ -108,24 +109,26 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
             {byCountry ? (
               <>
                 <div className={styles.readout}>
-                  <span className={styles.readoutLabel}>Страна</span>
+                  <span className={styles.readoutLabel}>{text.country}</span>
                   <span className={styles.readoutName}>{result.country}</span>
                 </div>
                 <div className={styles.readout}>
-                  <span className={styles.readoutLabel}>Твой ответ</span>
-                  <span className={styles.readoutName}>{result.guess_country ?? "мимо суши"}</span>
+                  <span className={styles.readoutLabel}>{text.yourAnswer}</span>
+                  <span className={styles.readoutName}>
+                    {result.guess_country ?? text.missedLand}
+                  </span>
                 </div>
               </>
             ) : (
               <>
                 <div className={styles.readout}>
-                  <span className={styles.readoutLabel}>Промах</span>
+                  <span className={styles.readoutLabel}>{text.miss}</span>
                   <span className={styles.readoutValue}>
                     {formats.distance(result.distance_km)}
                   </span>
                 </div>
                 <div className={styles.readout}>
-                  <span className={styles.readoutLabel}>Точность</span>
+                  <span className={styles.readoutLabel}>{text.accuracy}</span>
                   <span className={styles.readoutValue}>{formats.percent(result.accuracy)}</span>
                 </div>
               </>
@@ -138,9 +141,9 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
 
             {!byCountry && standing !== null && (
               <p className={styles.standing}>
-                Здесь обычно промахиваются на {formats.distance(standing.averageKm)} —{" "}
+                {text.usualMiss(formats.distance(standing.averageKm))}
                 <span className={standing.better ? styles.betterThanOthers : undefined}>
-                  {standing.better ? "ты точнее" : "ты дальше"}
+                  {standing.better ? text.youCloser : text.youFurther}
                 </span>
               </p>
             )}
@@ -148,20 +151,20 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
             <div className={styles.legend}>
               <span className={styles.legendItem}>
                 <span className={styles.dot} style={{ background: COLOR_TARGET }} />
-                цель
+                {text.target}
               </span>
               {/* В раунде про страны точки нет вовсе: игрок называл страну */}
               {result.guess !== null && (
                 <span className={styles.legendItem}>
                   <span className={styles.dot} style={{ background: COLOR_GUESS }} />
-                  твоя точка
+                  {text.yourPin}
                 </span>
               )}
             </div>
           </div>
 
           <Button ref={nextButton} variant="primary" size="large" block onClick={onNext}>
-            {isLastRound ? "Посмотреть итоги" : "Следующий раунд"}
+            {isLastRound ? text.seeSummary : text.nextRound}
           </Button>
         </div>
       </div>

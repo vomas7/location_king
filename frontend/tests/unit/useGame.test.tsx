@@ -5,10 +5,12 @@
  * оказывается экран после каждого шага.
  */
 
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { GuessResponse, RoundResult, RoundView, SessionState, SessionView } from "~/api/types";
+
+import { renderHookWithLanguage as renderHook } from "./withLanguage";
 
 const start = vi.fn();
 const guess = vi.fn();

@@ -12,7 +12,7 @@
 
 import type { RoundView } from "~/api/types";
 import styles from "~/components/game/GameScreen.module.css";
-import { useFormats } from "~/state/languageContext";
+import { useFormats, useText } from "~/state/languageContext";
 
 interface HintControlProps {
   round: RoundView;
@@ -23,6 +23,7 @@ interface HintControlProps {
 
 export function HintControl({ round, busy, onHint }: HintControlProps) {
   const formats = useFormats();
+  const { game: text } = useText();
   if (round.hint !== null) {
     return (
       <p className={`${styles.glass} ${styles.revealed}`}>
@@ -42,8 +43,8 @@ export function HintControl({ round, busy, onHint }: HintControlProps) {
       disabled={busy}
       onClick={onHint}
     >
-      Подсказка
-      <span>−{formats.number(round.hint_cost)} очков</span>
+      {text.hint}
+      <span>{text.hintCost(formats.number(round.hint_cost))}</span>
     </button>
   );
 }

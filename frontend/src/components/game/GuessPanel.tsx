@@ -5,18 +5,25 @@ import { useEffect, useRef, useState } from "react";
 import type { Answer, RoundView } from "~/api/types";
 import styles from "~/components/game/GameScreen.module.css";
 import { Button } from "~/components/ui/Button";
+import type { Dictionary } from "~/i18n/dictionary";
 import { createGuessMap, type GuessMap } from "~/map/guess";
+import { useText } from "~/state/languageContext";
 
 /** Что просят сделать и что уже сделано. */
-function promptFor(answer: Answer | null, byCountry: boolean, countriesReady: boolean): string {
+function promptFor(
+  answer: Answer | null,
+  byCountry: boolean,
+  countriesReady: boolean,
+  text: Dictionary,
+): string {
   if (!byCountry) {
-    return answer === null ? "Отметь место на карте мира" : "Точка поставлена";
+    return answer === null ? text.game.dropPin : text.game.pinDropped;
   }
 
-  if (!countriesReady) return "Загружаем страны…";
+  if (!countriesReady) return text.game.loadingCountries;
   if (answer !== null && answer.kind === "country") return answer.name;
 
-  return "Выбери страну, из которой снимок";
+  return text.game.pickCountry;
 }
 
 interface GuessPanelProps {
@@ -41,6 +48,7 @@ export function GuessPanel({
   onPick,
   onSubmit,
 }: GuessPanelProps) {
+  const text = useText();
   const container = useRef<HTMLDivElement>(null);
   const instance = useRef<GuessMap | null>(null);
   const onPickRef = useRef(onPick);
@@ -106,7 +114,7 @@ export function GuessPanel({
           }}
         >
           <span aria-hidden="true">{pinned ? "▾" : "▴"}</span>
-          {pinned ? "Свернуть" : "Закрепить"}
+          {pinned ? text.game.collapse : text.game.pin}
         </button>
       )}
 
@@ -115,9 +123,9 @@ export function GuessPanel({
       <div className={styles.actions}>
         {open ? (
           <>
-            <p className={styles.hint}>{promptFor(guess, byCountry, countriesReady)}</p>
+            <p className={styles.hint}>{promptFor(guess, byCountry, countriesReady, text)}</p>
             <Button variant="primary" block disabled={guess === null || busy} onClick={onSubmit}>
-              Ответить
+              {text.game.answer}
             </Button>
           </>
         ) : (
@@ -132,11 +140,11 @@ export function GuessPanel({
           >
             {guess === null
               ? byCountry
-                ? "Выбрать страну"
-                : "Открыть карту"
+                ? text.game.openCountries
+                : text.game.openMap
               : byCountry && guess.kind === "country"
                 ? guess.name
-                : "Изменить точку"}
+                : text.game.changePin}
           </Button>
         )}
       </div>

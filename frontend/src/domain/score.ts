@@ -6,20 +6,22 @@
  */
 
 export interface ScoreTier {
-  label: string;
+  /** Имя ступени: слово к нему лежит в словаре, оно переводится */
+  name: "perfect" | "great" | "good" | "fair" | "poor" | "awful";
+  /** Цвет ступени. Их пять: «мимо» и «совсем не туда» окрашены одинаково */
   tone: "perfect" | "great" | "good" | "fair" | "poor";
 }
 
 const TIERS: { min: number; tier: ScoreTier }[] = [
-  { min: 0.98, tier: { label: "В яблочко", tone: "perfect" } },
-  { min: 0.85, tier: { label: "Отлично", tone: "great" } },
-  { min: 0.6, tier: { label: "Хорошо", tone: "good" } },
-  { min: 0.35, tier: { label: "Неплохо", tone: "fair" } },
-  { min: 0.1, tier: { label: "Мимо", tone: "poor" } },
-  { min: 0, tier: { label: "Совсем не туда", tone: "poor" } },
+  { min: 0.98, tier: { name: "perfect", tone: "perfect" } },
+  { min: 0.85, tier: { name: "great", tone: "great" } },
+  { min: 0.6, tier: { name: "good", tone: "good" } },
+  { min: 0.35, tier: { name: "fair", tone: "fair" } },
+  { min: 0.1, tier: { name: "poor", tone: "poor" } },
+  { min: 0, tier: { name: "awful", tone: "poor" } },
 ];
 
-const FALLBACK: ScoreTier = { label: "Совсем не туда", tone: "poor" };
+const FALLBACK: ScoreTier = { name: "awful", tone: "poor" };
 
 /** Доля набранных очков от максимума, от нуля до единицы. */
 export function scoreRatio(score: number, maxScore: number): number {

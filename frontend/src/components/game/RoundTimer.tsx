@@ -1,6 +1,7 @@
 /** Обратный отсчёт до конца раунда. */
 
 import styles from "~/components/game/RoundTimer.module.css";
+import { useText } from "~/state/languageContext";
 
 interface RoundTimerProps {
   secondsLeft: number;
@@ -18,17 +19,14 @@ function formatClock(seconds: number): string {
 }
 
 export function RoundTimer({ secondsLeft, totalSeconds }: RoundTimerProps) {
+  const { game: text } = useText();
   const fraction = totalSeconds > 0 ? secondsLeft / totalSeconds : 0;
 
   const tone =
     fraction <= DANGER_FRACTION ? "danger" : fraction <= WARNING_FRACTION ? "warning" : "normal";
 
   return (
-    <div
-      className={styles.timer}
-      role="timer"
-      aria-label={`Осталось секунд: ${String(secondsLeft)}`}
-    >
+    <div className={styles.timer} role="timer" aria-label={text.secondsLeft(secondsLeft)}>
       <span
         className={[
           styles.value,

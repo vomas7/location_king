@@ -17,6 +17,7 @@ import type {
   SessionView,
   StartSessionOptions,
 } from "~/api/types";
+import { useText } from "~/state/languageContext";
 
 /** Что показывает экран игры. */
 export type GamePhase =
@@ -153,15 +154,16 @@ export interface GameController {
 }
 
 export function useGame(onSessionEnd: () => void): GameController {
+  const { game: text } = useText();
   const [state, dispatch] = useReducer(reducer, INITIAL);
 
   const start = useCallback(async (options: StartSessionOptions) => {
-    dispatch({ type: "loading", text: "Выбираем место…" });
+    dispatch({ type: "loading", text: text.loadingRound });
 
     try {
       const opened = await game.start(options);
       if (opened.current_round === null) {
-        dispatch({ type: "failed", error: "Сервер не выдал раунд" });
+        dispatch({ type: "failed", error: text.noRound });
         return;
       }
 
@@ -176,7 +178,7 @@ export function useGame(onSessionEnd: () => void): GameController {
       dispatch({ type: "failed", error: errorMessage(error) });
       throw error;
     }
-  }, []);
+  }, [text.loadingRound, text.noRound]);
 
   const resume = useCallback((session: SessionState) => {
     if (session.current_round === null) return;
@@ -215,7 +217,7 @@ export function useGame(onSessionEnd: () => void): GameController {
     // экране вместо результата появилась бы ошибка.
     if (state.phase !== "playing" || state.round === null || state.guess === null) return;
 
-    dispatch({ type: "loading", text: "Считаем расстояние…" });
+    dispatch({ type: "loading", text: text.loadingDistance });
 
     try {
       const response = await game.guess(state.round.id, state.guess);
@@ -231,12 +233,12 @@ export function useGame(onSessionEnd: () => void): GameController {
     } catch (error) {
       dispatch({ type: "failed", error: errorMessage(error) });
     }
-  }, [state.phase, state.round, state.guess, onSessionEnd]);
+  }, [state.phase, state.round, state.guess, onSessionEnd, text.loadingDistance]);
 
   const timeout = useCallback(async () => {
     if (state.phase !== "playing" || state.round === null) return;
 
-    dispatch({ type: "loading", text: "Время вышло…" });
+    dispatch({ type: "loading", text: text.loadingTimeout });
 
     try {
       const response = await game.timeout(state.round.id);
@@ -252,7 +254,7 @@ export function useGame(onSessionEnd: () => void): GameController {
     } catch (error) {
       dispatch({ type: "failed", error: errorMessage(error) });
     }
-  }, [state.phase, state.round, onSessionEnd]);
+  }, [state.phase, state.round, onSessionEnd, text.loadingTimeout]);
 
   const advance = useCallback(() => {
     dispatch({ type: "advanced" });
@@ -261,7 +263,7 @@ export function useGame(onSessionEnd: () => void): GameController {
   const quit = useCallback(async () => {
     if (state.session === null) return;
 
-    dispatch({ type: "loading", text: "Подводим итоги…" });
+    dispatch({ type: "loading", text: text.loadingSummary });
 
     try {
       const closed = await game.finish(state.session.id);
@@ -270,7 +272,7 @@ export function useGame(onSessionEnd: () => void): GameController {
     } catch (error) {
       dispatch({ type: "failed", error: errorMessage(error) });
     }
-  }, [state.session, onSessionEnd]);
+  }, [state.session, onSessionEnd, text.loadingSummary]);
 
   const reset = useCallback(() => {
     dispatch({ type: "reset" });

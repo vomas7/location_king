@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { image } from "~/api/images";
 import type { AvatarView } from "~/api/types";
 import styles from "~/components/ui/ui.module.css";
+import { useText } from "~/state/languageContext";
 
 /** Сколько форм и цветов знает клиент. Те же числа лежат в utils/avatar.py. */
 const SHAPES = 6;
@@ -72,6 +73,7 @@ function pattern(shape: number, color: string) {
 }
 
 export function Avatar({ avatar, size = 32, name }: AvatarProps) {
+  const text = useText();
   // Незнакомые значения не ломают строку таблицы: сервер может знать больше
   // форм, чем эта страница, — она открыта со вчерашней сборки
   const shape = avatar.shape >= 0 && avatar.shape < SHAPES ? avatar.shape : 0;
@@ -98,7 +100,7 @@ export function Avatar({ avatar, size = 32, name }: AvatarProps) {
     };
   }, [url]);
 
-  const label = name === undefined ? "Аватарка игрока" : `Аватарка игрока ${name}`;
+  const label = name === undefined ? text.game.avatar : text.game.avatarOf(name);
 
   if (source !== null) {
     return (

@@ -8,11 +8,10 @@ import styles from "~/components/game/SummaryScreen.module.css";
 import { ShareButton } from "~/components/game/ShareButton";
 import { Button } from "~/components/ui/Button";
 import { Card, Eyebrow } from "~/components/ui/Card";
-import { plural } from "~/domain/format";
 import { scoreRatio } from "~/domain/score";
 import { scopeLabel, scopeQuery } from "~/domain/scope";
 import { createReviewMap, type ReviewMap, type ReviewRound } from "~/map/review";
-import { useFormats } from "~/state/languageContext";
+import { useFormats, useText } from "~/state/languageContext";
 
 interface SummaryScreenProps {
   session: SessionView;
@@ -40,6 +39,7 @@ export function SummaryScreen({
   onHome,
 }: SummaryScreenProps) {
   const formats = useFormats();
+  const text = useText();
   const played = results.length;
   const average = played === 0 ? 0 : Math.round(session.total_score / played);
   const isRecord = played > 0 && session.total_score > previousBest;
@@ -105,24 +105,24 @@ export function SummaryScreen({
         className={[styles.card, played > 0 ? styles.cardReview : ""].filter(Boolean).join(" ")}
       >
         <div className={styles.head}>
-          <Eyebrow>Партия окончена</Eyebrow>
+          <Eyebrow>{text.game.gameOver}</Eyebrow>
 
           <h2 className={styles.score}>
             {formats.number(session.total_score)}
-            <small>очков</small>
+            <small>{text.game.points}</small>
           </h2>
 
           <p className={styles.subtitle}>
             {played === 0
-              ? "Ни одного раунда не сыграно"
-              : `${String(played)} ${plural(played, "раунд", "раунда", "раундов")} · в среднем ${formats.number(average)} за раунд`}
+              ? text.game.nothingPlayed
+              : text.game.summary(played, formats.number(average))}
           </p>
 
-          {isRecord && <p className={styles.record}>Это твой лучший результат</p>}
+          {isRecord && <p className={styles.record}>{text.game.record}</p>}
 
           {rank !== null && options !== null && (
             <p className={styles.rank}>
-              <strong>{rank}</strong> место в зачёте <span>{scopeLabel(options)}</span>
+              {text.game.placeIn(rank)} <span>{scopeLabel(options, text)}</span>
             </p>
           )}
         </div>
@@ -138,7 +138,7 @@ export function SummaryScreen({
                   setSelected(null);
                 }}
               >
-                Показать всю партию
+                {text.game.showWholeGame}
               </button>
             )}
           </div>
@@ -155,7 +155,7 @@ export function SummaryScreen({
                   .filter(Boolean)
                   .join(" ")}
                 aria-pressed={result.index === selected}
-                aria-label={`Раунд ${String(result.index)}, ${result.zone.name}`}
+                aria-label={text.game.roundOfZone(result.index, result.zone.name)}
                 onClick={() => {
                   setSelected(result.index === selected ? null : result.index);
                 }}
@@ -179,7 +179,7 @@ export function SummaryScreen({
 
         <div className={styles.actions}>
           <Button variant="primary" size="large" block onClick={onPlayAgain}>
-            {options === null ? "Настроить партию" : "Играть снова"}
+            {options === null ? text.game.setUpGame : text.game.playAgain}
           </Button>
           {played > 0 && (
             <ShareButton
@@ -189,7 +189,7 @@ export function SummaryScreen({
             />
           )}
           <Button variant="ghost" block onClick={onHome}>
-            В меню
+            {text.game.toMenu}
           </Button>
         </div>
       </Card>

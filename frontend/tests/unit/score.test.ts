@@ -21,7 +21,7 @@ describe("scoreRatio", () => {
 
 describe("scoreTier", () => {
   it("точное попадание — высшая оценка", () => {
-    expect(scoreTier(5000, 5000)).toEqual({ label: "В яблочко", tone: "perfect" });
+    expect(scoreTier(5000, 5000)).toEqual({ name: "perfect", tone: "perfect" });
   });
 
   it("ноль очков — низшая", () => {

@@ -12,6 +12,7 @@
 import type { Answer, RoundView } from "~/api/types";
 import styles from "~/components/game/GameScreen.module.css";
 import { Button } from "~/components/ui/Button";
+import { useText } from "~/state/languageContext";
 
 interface ChoicePanelProps {
   round: RoundView;
@@ -22,11 +23,12 @@ interface ChoicePanelProps {
 }
 
 export function ChoicePanel({ round, guess, busy, onPick, onSubmit }: ChoicePanelProps) {
+  const { game: text } = useText();
   const chosen = guess !== null && guess.kind === "country" ? guess.code : null;
 
   return (
     <div className={`${styles.panel} ${styles.choicePanel}`}>
-      <div className={styles.choices} role="radiogroup" aria-label="Из какой страны снимок">
+      <div className={styles.choices} role="radiogroup" aria-label={text.choicesLabel}>
         {round.choices.map((choice) => (
           <button
             key={choice.code}
@@ -47,11 +49,9 @@ export function ChoicePanel({ round, guess, busy, onPick, onSubmit }: ChoicePane
       </div>
 
       <div className={styles.actions}>
-        <p className={styles.hint}>
-          {chosen === null ? "Из какой страны этот снимок?" : "Можно передумать до ответа"}
-        </p>
+        <p className={styles.hint}>{chosen === null ? text.whichCountry : text.mayChange}</p>
         <Button variant="primary" block disabled={guess === null || busy} onClick={onSubmit}>
-          Ответить
+          {text.answer}
         </Button>
       </div>
     </div>

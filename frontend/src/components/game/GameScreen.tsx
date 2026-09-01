@@ -13,6 +13,7 @@ import { SatelliteView } from "~/components/game/SatelliteView";
 import type { Answer } from "~/api/types";
 import { useCountdown } from "~/state/useCountdown";
 import { useHoverPointer } from "~/state/usePointer";
+import { useText } from "~/state/languageContext";
 
 interface GameScreenProps {
   round: RoundView;
@@ -40,6 +41,7 @@ export function GameScreen({
   onSubmit,
   onTimeout,
 }: GameScreenProps) {
+  const { game: text } = useText();
   const [pinned, setPinned] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
   const [northSignal, setNorthSignal] = useState(0);
@@ -130,7 +132,7 @@ export function GameScreen({
         {/* Приближение идёт к курсору, поэтому уехать от перекрестия легко.
             Клавиша R есть только на компьютере, а играют и с телефона */}
         <button type="button" className={`${styles.glass} ${styles.recenter}`} onClick={resetView}>
-          К цели
+          {text.toTarget}
         </button>
 
         {rotated && (
@@ -139,7 +141,7 @@ export function GameScreen({
             className={`${styles.glass} ${styles.recenter}`}
             onClick={faceNorth}
           >
-            На север
+            {text.toNorth}
           </button>
         )}
 
@@ -147,10 +149,10 @@ export function GameScreen({
 
         <div className={`${styles.glass} ${styles.hints}`} aria-hidden="true">
           <span>
-            <kbd>M</kbd> карта · <kbd>Enter</kbd> ответить
+            <kbd>M</kbd> {text.keysMap} · <kbd>Enter</kbd> {text.keysAnswer}
           </span>
           <span>
-            <kbd>R</kbd> вернуть масштаб · <kbd>N</kbd> на север
+            <kbd>R</kbd> {text.keysZoom} · <kbd>N</kbd> {text.keysNorth}
           </span>
         </div>
       </div>
