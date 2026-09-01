@@ -191,6 +191,14 @@
   background: var(--bg-deep);
 }
 
+/* Длинный список — сетка: в ряду последняя строка растягивала бы свои
+   два-три пункта по всей ширине, а здесь они стоят в тех же колонках, что и
+   строкой выше */
+.segmentedGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+}
+
 .segmentedItem {
   flex: 1 1 auto;
   min-width: var(--tap);

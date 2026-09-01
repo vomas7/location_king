@@ -1,50 +1,18 @@
-/* Условия и кнопка их развернуть — одна строка: так видно, что строка и есть
-   настройки, просто свёрнутые */
-.setup {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-3);
-  margin-bottom: var(--space-5);
-  padding: var(--space-3) var(--space-3);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
-  background: var(--bg-deep);
-}
-
-.summary {
-  flex: 1 1 auto;
-  color: var(--text-dim);
-  font-size: var(--fs-small);
-  line-height: var(--lh-base);
-  text-wrap: pretty;
-}
-
-.toggle {
-  flex: 0 0 auto;
-  /* Надпись мелкая, а нажимают её пальцем: высоту добавляют отступы */
-  min-height: var(--tap);
-  padding: var(--space-3) 0;
-  border: 0;
-  background: none;
-  color: var(--text-faint);
-  font-family: inherit;
-  font-size: var(--fs-micro);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-}
-
-/* Способ ответа стоит прямо над кнопкой «Начать»: без отступа его подсказка
-   липнет к ней и читается как надпись на кнопке */
-.mode {
-  margin-bottom: var(--space-5);
-}
-
 .options {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
   margin-bottom: var(--space-5);
+}
+
+/* Два коротких переключателя рядом, когда есть куда их поставить. На широком
+   экране условия иначе выстраиваются в колонку в полтысячи пикселей высотой,
+   и кнопка «Начать игру» уходит под нижний край: играть приходится
+   прокрутив страницу, чего на компьютере никто не ждёт */
+.pair {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .warning {
@@ -64,11 +32,4 @@
   font-size: var(--fs-micro);
   line-height: var(--lh-base);
   text-wrap: pretty;
-}
-
-/* Наведение существует только там, где есть курсор */
-@media (hover: hover) and (pointer: fine) {
-  .toggle:hover {
-    color: var(--text);
-  }
 }

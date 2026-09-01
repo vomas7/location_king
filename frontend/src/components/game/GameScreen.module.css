@@ -275,6 +275,22 @@
     color: var(--text);
   }
 
+  /* На большом мониторе раскрытая карта больше: ставить точку по всему миру
+     в окошке 460 на 320 — это игра в игольное ушко, а места на экране вдоволь */
+  @media (min-width: 1280px) {
+    .panel:hover,
+    .panel:focus-within,
+    .panelPinned {
+      width: min(620px, 40vw);
+    }
+
+    .panel:hover .map,
+    .panel:focus-within .map,
+    .panelPinned .map {
+      height: min(440px, 46vh);
+    }
+  }
+
   .hintButton:hover:not(:disabled) {
     border-color: var(--accent);
     color: var(--text);

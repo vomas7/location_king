@@ -101,3 +101,22 @@
     padding: var(--space-5) var(--space-4) var(--space-10);
   }
 }
+
+/*
+ * На большом мониторе колонки шире. Пока они были рассчитаны на ноутбук, меню
+ * занимало восемьсот пикселей посередине двух тысяч и выглядело телефоном,
+ * положенным на стол: половина экрана пустая, а условия партии при этом не
+ * помещались по высоте.
+ */
+@media (min-width: 1280px) {
+  .screen {
+    grid-template-columns: minmax(0, 640px) minmax(0, 420px);
+  }
+}
+
+@media (min-width: 1700px) {
+  .screen {
+    gap: var(--space-6);
+    grid-template-columns: minmax(0, 760px) minmax(0, 460px);
+  }
+}

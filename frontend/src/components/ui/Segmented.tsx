@@ -13,6 +13,16 @@ interface SegmentedProps<T extends string | number | null> {
   hint?: string;
 }
 
+/**
+ * Со скольких значений список перестаёт быть рядом и становится сеткой.
+ *
+ * В ряду значения делят ширину поровну, и последняя строка при переносе
+ * растягивает свои два-три пункта по всей ширине — между «Юж. Америкой» и
+ * «Океанией» получалась дыра в полполя. Сетка ставит их в те же колонки, что
+ * и строкой выше, и список читается как список.
+ */
+const GRID_FROM = 7;
+
 /** Переключатель на несколько взаимоисключающих значений. */
 export function Segmented<T extends string | number | null>({
   label,
@@ -25,7 +35,13 @@ export function Segmented<T extends string | number | null>({
     <fieldset className={styles.group}>
       <legend className={styles.groupLabel}>{label}</legend>
 
-      <div className={styles.segmented} role="radiogroup" aria-label={label}>
+      <div
+        className={[styles.segmented, options.length >= GRID_FROM ? styles.segmentedGrid : ""]
+          .filter(Boolean)
+          .join(" ")}
+        role="radiogroup"
+        aria-label={label}
+      >
         {options.map((option) => (
           <button
             key={String(option.value)}

@@ -103,24 +103,28 @@ export function SoloPanel({
           />
         )}
 
-        <Segmented
-          label="Раундов"
-          options={ROUNDS}
-          value={setup.rounds}
-          onChange={(rounds) => {
-            onChange({ rounds });
-          }}
-        />
+        {/* Сколько играем и как долго — про форму партии, а не про её
+            содержание, поэтому стоят парой и на широком экране делят строку */}
+        <div className={styles.pair}>
+          <Segmented
+            label="Раундов"
+            options={ROUNDS}
+            value={setup.rounds}
+            onChange={(rounds) => {
+              onChange({ rounds });
+            }}
+          />
 
-        <Segmented
-          label="Время на раунд"
-          options={TIME_LIMITS}
-          value={setup.timeLimit}
-          onChange={(timeLimit) => {
-            onChange({ timeLimit });
-          }}
-          hint="Чем быстрее ответ, тем больше очков за раунд"
-        />
+          <Segmented
+            label="Время на раунд"
+            options={TIME_LIMITS}
+            value={setup.timeLimit}
+            onChange={(timeLimit) => {
+              onChange({ timeLimit });
+            }}
+            hint="Чем быстрее ответ, тем больше очков"
+          />
+        </div>
       </div>
 
       {empty && (
