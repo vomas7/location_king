@@ -13,6 +13,21 @@
 (`GRAFANA_ADMIN_PASSWORD`). Логин — `admin`, если не менять
 `GRAFANA_ADMIN_USER`.
 
+## Что игроки делают в игре
+
+Метрики отвечают, жив ли сервер; на вопрос «интересно ли играть» отвечает
+`backend/scripts/stats.py`. Он читает свою же базу и ничего не меняет:
+
+```bash
+docker compose exec -T backend python scripts/stats.py
+docker compose exec -T backend python scripts/stats.py --only scoring
+```
+
+Разделы: `users`, `sessions`, `quit`, `scoring`, `bands`, `extent`, `setup`,
+`timer`, `repeats`, `zones`, `modes`, `hints`, `timeouts`. Отдельного экрана
+администратора нет намеренно: пока вопросов к статистике десяток, скрипт стоит
+дешевле экрана.
+
 ## Из чего собрано
 
 | Служба          | Образ                    | Что делает                                     |
