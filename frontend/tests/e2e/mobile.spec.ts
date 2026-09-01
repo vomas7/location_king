@@ -62,3 +62,37 @@ test("раунд играется пальцем: карта открывает�
   // Результат на узком экране складывается в одну колонку и помещается
   await expect(page.getByRole("button", { name: "Следующий раунд" })).toBeInViewport();
 });
+
+test("свёрнутая карта не раскрывается от тапа по кнопке", async ({ page }) => {
+  await register(page);
+  await page.getByRole("button", { name: "Начать игру" }).click();
+  await expect(page.locator("canvas").first()).toBeVisible();
+  await page.getByRole("button", { name: "Не показывать" }).click();
+
+  // Свёрнутая панель сжата до своей кнопки, и карты в ней быть не должно.
+  // Раньше тап давал :focus-within, и карта раскрывалась на пол-экрана по
+  // высоте внутри панели шириной с кнопку — узкой вертикальной полосой
+  const guessMap = page.locator(".ol-viewport").nth(1);
+  const collapsed = await guessMap.boundingBox();
+  expect(collapsed?.height ?? 0).toBeLessThan(10);
+
+  await page.getByRole("button", { name: "Открыть карту" }).tap();
+  await expect(page.getByRole("button", { name: /Свернуть/ })).toBeVisible();
+
+  const opened = await guessMap.boundingBox();
+  expect(opened).not.toBeNull();
+
+  // Раскрытая карта занимает ширину экрана и близка к квадрату, а не к полосе
+  expect(opened!.width).toBeGreaterThan(300);
+  expect(opened!.width / opened!.height).toBeGreaterThan(0.6);
+});
+
+test("подвал посадочной не съедает первый экран", async ({ page }) => {
+  await page.goto("/");
+
+  // Пять ссылок столбцом по высоте пальца — это четверть экрана телефона,
+  // отданная строкам, которые открывают раз в жизни
+  const footer = await page.locator("footer").boundingBox();
+  expect(footer).not.toBeNull();
+  expect(footer!.height).toBeLessThan(160);
+});
