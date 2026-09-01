@@ -77,7 +77,7 @@ export function ProfilePanel({ onOpenLegal, onError }: ProfilePanelProps) {
       <div className={styles.settings}>
         <Segmented
           label={profile.theme}
-          options={THEMES}
+          options={THEMES.map((value) => ({ value, label: profile.themes[value] }))}
           value={user.theme}
           onChange={(theme) => {
             void chooseTheme(theme);

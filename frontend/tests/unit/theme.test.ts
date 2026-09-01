@@ -50,7 +50,7 @@ afterEach(() => {
 
 describe("выбор темы", () => {
   it("знает ровно три варианта", () => {
-    expect(THEMES.map((choice) => choice.value)).toEqual(["dark", "light", "system"]);
+    expect(THEMES).toEqual(["dark", "light", "system"]);
   });
 
   it("отличает тему от чего угодно другого", () => {

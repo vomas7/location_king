@@ -68,6 +68,7 @@ export function GuessPanel({
 
     const map = createGuessMap(element, {
       byCountry,
+      credit: text.game.mapCredit,
       onPick: (answer) => {
         onPickRef.current(answer);
       },
@@ -88,7 +89,7 @@ export function GuessPanel({
       instance.current = null;
       setReady(false);
     };
-  }, [byCountry]);
+  }, [byCountry, text.game.mapCredit]);
 
   useEffect(() => {
     if (ready) instance.current?.clear();

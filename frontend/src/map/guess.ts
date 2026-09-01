@@ -39,6 +39,8 @@ export interface GuessMap {
 }
 
 interface GuessMapOptions {
+  /** Подпись об источнике карты: она на языке игрока. */
+  credit: string;
   /** Раунд про страны: вместо точки игрок выбирает страну. */
   byCountry: boolean;
   onPick: (answer: Answer) => void;
@@ -69,8 +71,8 @@ export function createGuessMap(target: HTMLElement, options: GuessMapOptions): G
   const map = new MapBrowser({
     target,
     layers: options.byCountry
-      ? [osmLayer(), bordersLayer]
-      : [osmLayer(), new VectorLayer({ source: marks, style: STYLE_GUESS })],
+      ? [osmLayer(options.credit), bordersLayer]
+      : [osmLayer(options.credit), new VectorLayer({ source: marks, style: STYLE_GUESS })],
     controls: osmControls(),
     view: new View({
       center: fromLonLat([20, 30]),

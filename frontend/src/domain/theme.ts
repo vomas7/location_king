@@ -11,12 +11,11 @@ import type { Theme } from "~/api/types";
 
 export type { Theme };
 
-/** Что игрок выбрал; «как в системе» — тоже выбор, а не отсутствие выбора. */
-export const THEMES: { value: Theme; label: string }[] = [
-  { value: "dark", label: "Тёмная" },
-  { value: "light", label: "Светлая" },
-  { value: "system", label: "Как в системе" },
-];
+/**
+ * Что игрок выбрал; «как в системе» — тоже выбор, а не отсутствие выбора.
+ * Подписи к ним лежат в словаре: они переводятся, а значения — нет.
+ */
+export const THEMES: Theme[] = ["dark", "light", "system"];
 
 /** Ключ в localStorage. Он назван в документе про хранилище, и тест это сверяет. */
 export const THEME_STORAGE_KEY = "location-king:theme";

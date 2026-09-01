@@ -194,6 +194,8 @@ export const en: Dictionary = {
     },
 
     avatarOf: (name) => `Avatar of ${name}`,
+    mapCredit:
+      '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer noopener">OpenStreetMap</a> contributors',
     avatar: "Player avatar",
     loading: "Loading",
   },
@@ -265,6 +267,7 @@ export const en: Dictionary = {
     averageMiss: "Average miss",
     rating: "Rating",
     theme: "Appearance",
+    themes: { dark: "Dark", light: "Light", system: "As in the system" },
     themeFailed: "Could not save the appearance",
 
     edit: "Edit",

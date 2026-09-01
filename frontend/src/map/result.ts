@@ -22,13 +22,13 @@ export interface ResultMap {
   destroy: () => void;
 }
 
-export function createResultMap(target: HTMLElement): ResultMap {
+export function createResultMap(target: HTMLElement, credit: string): ResultMap {
   const source = new VectorSource();
 
   const map = new MapBrowser({
     target,
     layers: [
-      osmLayer(),
+      osmLayer(credit),
       new VectorLayer({
         source,
         style: (feature) => {

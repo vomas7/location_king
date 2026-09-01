@@ -55,14 +55,14 @@ export function SummaryScreen({
     const element = container.current;
     if (element === null || played === 0) return;
 
-    const map = createReviewMap(element);
+    const map = createReviewMap(element, text.game.mapCredit);
     review.current = map;
 
     return () => {
       map.destroy();
       review.current = null;
     };
-  }, [played]);
+  }, [played, text.game.mapCredit]);
 
   useEffect(() => {
     review.current?.show(

@@ -11,13 +11,11 @@ import OSM from "ol/source/OSM";
  * Указание правообладателя обязательно по лицензии ODbL, поэтому оно не
  * прячется под кнопку: собственный контрол OpenLayers на маленькой карте
  * схлопывается сам, а спрятанная подпись — это подпись, которой нет.
+ *
+ * Текст приходит снаружи: он на языке игрока, а карта про язык не знает.
  */
-const ATTRIBUTION =
-  '© участники <a href="https://www.openstreetmap.org/copyright" ' +
-  'target="_blank" rel="noreferrer noopener">OpenStreetMap</a>';
-
-export function osmLayer(): TileLayer<OSM> {
-  return new TileLayer({ source: new OSM({ attributions: ATTRIBUTION }) });
+export function osmLayer(credit: string): TileLayer<OSM> {
+  return new TileLayer({ source: new OSM({ attributions: credit }) });
 }
 
 /** Набор контролов карты с всегда видимой подписью об источнике данных. */

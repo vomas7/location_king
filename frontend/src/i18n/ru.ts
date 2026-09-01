@@ -200,6 +200,9 @@ export const ru = {
     },
 
     avatarOf: (name: string) => `Аватарка игрока ${name}`,
+    /** Подпись под картой. Разметкой, потому что такой её принимает OpenLayers */
+    mapCredit:
+      '© участники <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer noopener">OpenStreetMap</a>',
     avatar: "Аватарка игрока",
     loading: "Загружаем",
   },
@@ -271,6 +274,7 @@ export const ru = {
     averageMiss: "Средний промах",
     rating: "Рейтинг",
     theme: "Оформление",
+    themes: { dark: "Тёмная", light: "Светлая", system: "Как в системе" },
     themeFailed: "Не удалось запомнить оформление",
 
     edit: "Изменить",

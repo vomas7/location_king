@@ -39,14 +39,14 @@ export function RoundResult({ result, isLastRound, onNext }: RoundResultProps) {
     const element = container.current;
     if (element === null) return;
 
-    const map = createResultMap(element);
+    const map = createResultMap(element, text.mapCredit);
     instance.current = map;
 
     return () => {
       map.destroy();
       instance.current = null;
     };
-  }, []);
+  }, [text.mapCredit]);
 
   useEffect(() => {
     instance.current?.show(result.target, result.guess);

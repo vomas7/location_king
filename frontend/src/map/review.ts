@@ -66,7 +66,7 @@ function styleOf(feature: FeatureLike): Style {
   return styleNumberedTarget(feature.get("index") as number);
 }
 
-export function createReviewMap(target: HTMLElement): ReviewMap {
+export function createReviewMap(target: HTMLElement, credit: string): ReviewMap {
   // Два слоя вместо прозрачных цветов: приглушить целый слой — это одно
   // свойство, а не пересборка каждого стиля с альфа-каналом
   const dimmed = new VectorSource();
@@ -75,7 +75,7 @@ export function createReviewMap(target: HTMLElement): ReviewMap {
   const map = new MapBrowser({
     target,
     layers: [
-      osmLayer(),
+      osmLayer(credit),
       new VectorLayer({ source: dimmed, opacity: DIMMED, style: styleOf }),
       new VectorLayer({ source: active, style: styleOf }),
     ],
