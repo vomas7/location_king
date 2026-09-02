@@ -24,13 +24,19 @@ function describe(error: unknown): string {
 
 interface AuthCardProps {
   onOpenLegal: (document: LegalDocumentId) => void;
+  /**
+   * С какой вкладки открыться. Регистрация нужна тому, кто пришёл сюда из
+   * знакомства с игрой: аккаунта у него заведомо нет, и вкладка входа была бы
+   * лишним нажатием.
+   */
+  initialMode?: Mode;
 }
 
-export function AuthCard({ onOpenLegal }: AuthCardProps) {
+export function AuthCard({ onOpenLegal, initialMode = "login" }: AuthCardProps) {
   const { login, register } = useAuth();
   const { auth: text } = useText();
 
-  const [mode, setMode] = useState<Mode>("login");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");

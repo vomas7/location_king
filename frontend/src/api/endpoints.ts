@@ -16,6 +16,7 @@ import type {
   LeaderboardMetric,
   MatchList,
   MatchView,
+  RoundResult,
   RoundView,
   SessionHistory,
   SessionState,
@@ -86,6 +87,27 @@ export const countries = {
    * промежуточный JSON.parse тут только лишняя работа над полумегабайтом.
    */
   borders: () => requestText("/api/countries/borders"),
+};
+
+export const demo = {
+  /**
+   * Знакомство с игрой без учётной записи: пять раундов одним запросом.
+   *
+   * Целиком, а не по одному: раунды одни и те же у всех и известны заранее,
+   * поэтому просить сервер о каждом значило бы держать паузу перед каждым
+   * снимком там, где её может не быть.
+   */
+  rounds: () => request<{ rounds: RoundView[] }>("/api/demo/rounds"),
+
+  /** Ответить на раунд знакомства. Правильный ответ знает только сервер. */
+  guess: (index: number, answer: Answer) =>
+    request<RoundResult>(`/api/demo/rounds/${String(index)}/guess`, {
+      method: "POST",
+      body:
+        answer.kind === "point"
+          ? { longitude: answer.longitude, latitude: answer.latitude }
+          : { country: answer.code },
+    }),
 };
 
 export const feedback = {

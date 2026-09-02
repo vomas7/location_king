@@ -8,6 +8,7 @@
 import { useCallback, useState } from "react";
 
 import type { SessionState, StartSessionOptions } from "~/api/types";
+import { DemoScreen } from "~/components/demo/DemoScreen";
 import { GameScreen } from "~/components/game/GameScreen";
 import { RoundResult } from "~/components/game/RoundResult";
 import { SummaryScreen } from "~/components/game/SummaryScreen";
@@ -36,6 +37,10 @@ export function App() {
   // Таблица лидеров и история перечитываются после каждой партии
   const [refreshKey, setRefreshKey] = useState(0);
   const [legal, setLegal] = useState<LegalDocumentId | null>(null);
+  // Знакомство с игрой: гость его открывает с посадочной страницы, и после
+  // него страница показывается уже с открытой вкладкой регистрации
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [cameFromDemo, setCameFromDemo] = useState(false);
   const [bestBeforeGame, setBestBeforeGame] = useState(0);
 
   const onSessionEnd = useCallback(() => {
@@ -78,9 +83,31 @@ export function App() {
   };
 
   if (status === "anonymous" || user === null) {
+    if (demoOpen) {
+      return (
+        <main id="main" className="main">
+          <DemoScreen
+            onLeave={() => {
+              setDemoOpen(false);
+            }}
+            onSignUp={() => {
+              setDemoOpen(false);
+              setCameFromDemo(true);
+            }}
+          />
+        </main>
+      );
+    }
+
     return (
       <>
-        <LandingScreen onOpenLegal={setLegal} />
+        <LandingScreen
+          onOpenLegal={setLegal}
+          signUpFirst={cameFromDemo}
+          onPlayDemo={() => {
+            setDemoOpen(true);
+          }}
+        />
         <StorageNotice
           onDetails={() => {
             setLegal("storage");

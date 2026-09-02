@@ -14,6 +14,7 @@
 import asyncio
 import hashlib
 import logging
+from typing import Protocol
 
 import httpx
 from redis.exceptions import RedisError
@@ -22,10 +23,30 @@ from app import messages
 from app.cache import close_redis, redis_client
 from app.config import settings
 from app.exceptions import NotFoundError, UpstreamError
-from app.models.round import Round
 from app.observability import metrics
 
 logger = logging.getLogger(__name__)
+
+
+class TileRoot(Protocol):
+    """
+    Корень локальной сетки: тайл, который показывают, и его потомки.
+
+    Протоколом, а не моделью раунда: снимок отдаётся ещё и в демонстрации без
+    регистрации, а у неё строки в базе нет вовсе. Прокси при этом обязан
+    оставаться один — переводить локальные координаты в глобальные дважды
+    значило бы однажды поправить только одно из двух мест.
+    """
+
+    @property
+    def tile_zoom(self) -> int: ...
+
+    @property
+    def tile_x(self) -> int: ...
+
+    @property
+    def tile_y(self) -> int: ...
+
 
 TILE_CONTENT_TYPE = "image/jpeg"
 
@@ -51,12 +72,12 @@ def _get_http_client() -> httpx.AsyncClient:
     return _http_client
 
 
-def max_local_zoom(round_obj: Round) -> int:
+def max_local_zoom(round_obj: TileRoot) -> int:
     """До какого локального зума игрок может приблизить снимок."""
     return max(0, min(MAX_LOCAL_ZOOM, settings.satellite_max_zoom - round_obj.tile_zoom))
 
 
-def local_to_source_tile(round_obj: Round, z: int, x: int, y: int) -> tuple[int, int, int]:
+def local_to_source_tile(round_obj: TileRoot, z: int, x: int, y: int) -> tuple[int, int, int]:
     """Перевести локальные координаты тайла раунда в координаты провайдера."""
     limit = max_local_zoom(round_obj)
 
@@ -74,7 +95,7 @@ def local_to_source_tile(round_obj: Round, z: int, x: int, y: int) -> tuple[int,
     )
 
 
-async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
+async def get_tile(round_obj: TileRoot, z: int, x: int, y: int) -> bytes:
     """Вернуть тайл раунда: из кэша, иначе от провайдера."""
     source_z, source_x, source_y = local_to_source_tile(round_obj, z, x, y)
     cache_key = f"tile:{_provider_key}:{source_z}:{source_x}:{source_y}"
@@ -110,7 +131,7 @@ async def get_tile(round_obj: Round, z: int, x: int, y: int) -> bytes:
     return tile
 
 
-async def prewarm(round_obj: Round) -> None:
+async def prewarm(round_obj: TileRoot) -> None:
     """
     Заранее сходить за верхними тайлами раунда.
 
@@ -134,7 +155,7 @@ async def prewarm(round_obj: Round) -> None:
     await asyncio.gather(*(fetch(z, x, y) for z, x, y in coordinates))
 
 
-def schedule_prewarm(round_obj: Round) -> None:
+def schedule_prewarm(round_obj: TileRoot) -> None:
     """Запустить прогрев в фоне, не задерживая ответ игроку."""
     if not settings.tile_prewarm:
         return

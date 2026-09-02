@@ -30,7 +30,8 @@ test("посадочная страница помещается в экран �
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expectNoSideScroll(page);
 
-  await page.getByRole("link", { name: "Играть", exact: true }).click();
+  // Форму входа открывает кнопка в конце страницы: наверху зовут сыграть
+  await page.getByRole("link", { name: "Начать игру" }).click();
   await expect(page.getByRole("tab", { name: "Регистрация" })).toBeInViewport();
 });
 

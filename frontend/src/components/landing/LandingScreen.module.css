@@ -78,14 +78,21 @@
   gap: var(--space-3) var(--space-6);
 }
 
+/* Главное действие бывает и ссылкой на форму входа, и кнопкой, которая
+   начинает знакомство: выглядят они одинаково, потому что это одно и то же
+   место в глазах пришедшего */
 .cta {
+  border: 0;
   padding: var(--space-4) var(--space-8);
   border-radius: var(--radius-sm);
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
   color: var(--accent-ink);
+  font-family: inherit;
   font-size: var(--fs-body);
   font-weight: 650;
+  text-align: center;
   text-decoration: none;
+  cursor: pointer;
   transition:
     background var(--motion-base) var(--ease),
     transform var(--motion-press) var(--ease);
@@ -102,8 +109,14 @@
   text-underline-offset: 4px;
 }
 
+.tryNote {
+  margin-top: var(--space-3);
+  color: var(--text-dim);
+  font-size: var(--fs-small);
+}
+
 .honest {
-  margin-top: var(--space-6);
+  margin-top: var(--space-5);
   color: var(--text-faint);
   font-size: var(--fs-small);
 }

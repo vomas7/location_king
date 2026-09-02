@@ -1,0 +1,191 @@
+/* Сцена знакомства: экран игры и плашка режима поверх него */
+
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Левый верхний угол — единственный свободный над снимком: справа сверху
+   приборы, слева снизу масштаб и подпись источника */
+.mode {
+  position: absolute;
+  z-index: var(--z-map);
+  top: var(--space-3);
+  left: var(--space-3);
+  max-width: min(280px, 62vw);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-deep) 78%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.counter {
+  margin: 0;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: var(--lh-flat);
+  text-transform: uppercase;
+}
+
+.modeTitle {
+  margin: 0;
+  color: var(--accent);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+}
+
+.modeNote {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--fs-micro);
+  line-height: var(--lh-tight);
+}
+
+.leave {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.leave:hover,
+.leave:focus-visible {
+  color: var(--text);
+}
+
+/* ── Итоги знакомства ─────────────────────────────────────────────── */
+
+.finish {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+}
+
+.card {
+  /* Центрируют поля, а не выравнивание контейнера: align-items срезает
+     переполнение сверху, и до заголовка потом не долистать */
+  margin: auto;
+  width: min(560px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-screen);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: var(--lh-tight);
+}
+
+.score {
+  margin: 0;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.marks {
+  margin: 0;
+  font-size: var(--fs-title);
+  letter-spacing: 0.12em;
+  line-height: var(--lh-flat);
+}
+
+.lead {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--fs-small);
+  line-height: var(--lh-base);
+}
+
+.perksBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.perksTitle {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: var(--lh-flat);
+  text-transform: uppercase;
+}
+
+.perks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.perk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0);
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--accent);
+}
+
+.perkTitle {
+  margin: 0;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+}
+
+.perkText {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--fs-micro);
+  line-height: var(--lh-base);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.note {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: var(--fs-micro);
+  line-height: var(--lh-tight);
+  text-align: center;
+}

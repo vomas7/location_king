@@ -46,7 +46,10 @@ class Limit(StrEnum):
     """Что именно ограничиваем. Значение попадает в ключ Redis."""
 
     AVATAR = "avatar"
+    BORDERS = "borders"
     DELETE_ACCOUNT = "delete-account"
+    DEMO = "demo"
+    DEMO_TILES = "demo-tiles"
     DUEL_POLL = "duel-poll"
     DUEL_QUEUE = "duel-queue"
     FEEDBACK = "feedback"
@@ -104,6 +107,20 @@ RULES: dict[Limit, RateLimit] = {
     # Двадцати в час хватает, чтобы выбрать из нескольких фотографий
     Limit.AVATAR: RateLimit(limit=20, window_seconds=60 * 60),
     Limit.TILES: RateLimit(limit=3000, window_seconds=60 * 60),
+    # Знакомство без учётной записи считается по адресу: игрока здесь ещё
+    # нет. Одно прохождение — это шесть запросов: раунды и пять ответов, — а
+    # за одним адресом сидит целый офис или общежитие. Сто двадцать в час это
+    # два десятка прохождений оттуда и всё равно на порядки меньше скрипта.
+    # В базу знакомство не пишет вовсе, поэтому дороже этого лимита ничего
+    # не стоит
+    Limit.DEMO: RateLimit(limit=120, window_seconds=60 * 60),
+    # Снимок знакомства — те же пять пирамид тайлов у всех, они всегда лежат
+    # в кэше и наружу почти не ходят. Лимит здесь от долбёжки по прокси
+    Limit.DEMO_TILES: RateLimit(limit=1500, window_seconds=60 * 60),
+    # Контуры стран весят полмегабайта и нужны гостю в четвёртом раунде
+    # знакомства. Ответ кэшируется и браузером, и nginx, поэтому лимит бьёт
+    # только по тому, кто качает их подряд мимо кэша
+    Limit.BORDERS: RateLimit(limit=60, window_seconds=60 * 60),
 }
 
 

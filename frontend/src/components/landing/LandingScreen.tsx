@@ -6,7 +6,7 @@
  * поисковик видит в разметке JSON-LD в index.html.
  */
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { AuthCard } from "~/components/auth/AuthCard";
 import { HeroSight } from "~/components/landing/HeroSight";
@@ -29,12 +29,28 @@ const ZOOM_LEVELS = 4;
 
 interface LandingScreenProps {
   onOpenLegal: (document: LegalDocumentId) => void;
+  /** Начать знакомство с игрой без учётной записи. */
+  onPlayDemo: () => void;
+  /** Открыть карточку сразу на регистрации: пришли из знакомства. */
+  signUpFirst?: boolean;
 }
 
-export function LandingScreen({ onOpenLegal }: LandingScreenProps) {
+export function LandingScreen({
+  onOpenLegal,
+  onPlayDemo,
+  signUpFirst = false,
+}: LandingScreenProps) {
   const hero = useRef<HTMLElement>(null);
-  const { landing } = useText();
+  const { landing, demo } = useText();
   const formats = useFormats();
+
+  // Пришли из знакомства ради учётной записи: форма уже открыта на нужной
+  // вкладке, но на телефоне она лежит ниже первого экрана — без прокрутки
+  // человек упёрся бы в ту же посадочную страницу, с которой ушёл
+  useEffect(() => {
+    if (!signUpFirst) return;
+    document.getElementById("play")?.scrollIntoView({ block: "center" });
+  }, [signUpFirst]);
 
   return (
     <div className={styles.screen}>
@@ -56,20 +72,28 @@ export function LandingScreen({ onOpenLegal }: LandingScreenProps) {
 
           <p className={styles.lead}>{landing.lead}</p>
 
+          {/* Главное действие — сыграть, а не завести учётную запись:
+              форма входа стоит рядом и никуда не денется, а человек с улицы
+              соглашается на неё охотнее, попробовав игру */}
           <div className={styles.actions}>
-            <a className={styles.cta} href="#play">
-              {landing.play}
-            </a>
+            <button type="button" className={styles.cta} onClick={onPlayDemo}>
+              {demo.invite}
+            </button>
             <a className={styles.secondary} href="#how">
               {landing.how}
             </a>
           </div>
 
+          <p className={styles.tryNote}>{demo.inviteNote}</p>
+
           <p className={styles.honest}>{landing.honest}</p>
         </div>
 
         <div className={styles.card}>
-          <AuthCard onOpenLegal={onOpenLegal} />
+          <AuthCard
+            onOpenLegal={onOpenLegal}
+            {...(signUpFirst ? { initialMode: "register" as const } : {})}
+          />
         </div>
 
         <HeroSight hero={hero} />

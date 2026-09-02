@@ -491,6 +491,53 @@ export const en: Dictionary = {
       `The unfinished game (round ${String(index)} of ${String(total)}) will be dropped, and its points will not count. Start a new one?`,
   },
 
+  demo: {
+    invite: "Play five rounds, no account",
+    inviteNote: "Nothing to sign up for: five famous places, about three minutes",
+
+    loading: "Getting the places ready…",
+    leave: "Leave",
+    leaveConfirm: "Leave the tour? Nothing here is saved.",
+    roundOf: (index: number, total: number) => `Place ${String(index)} of ${String(total)}`,
+
+    modeChoice: "Answer from a list",
+    modeChoiceNote: "Six countries under the image, one of them right. No map needed",
+    modeCountry: "Now on the map",
+    modeCountryNote: "The list is gone: tap the country you think the image is from",
+    modePoint: "And this is the real game",
+    modePointNote: "Not a country but a place: drop a pin, and the kilometres are counted",
+
+    finishTitle: "Five places done",
+    finishScore: (score: string) => `${score} points on the tour`,
+    finishLead:
+      "You have just been through all three ways to play: from a list, on the map of " +
+      "countries, and with a pin. That is where the game itself starts.",
+
+    perksTitle: "What an account gives you",
+    perks: [
+      {
+        title: "297 places instead of five",
+        text: "Cities, coastlines, mountains and deserts on every continent — and four difficulty levels, from Venice to taiga without a single road.",
+      },
+      {
+        title: "Daily challenge",
+        text: "Five places, the same for everyone, one attempt a day. By the evening you can see who was closest.",
+      },
+      {
+        title: "A room for your friends",
+        text: "Send them the code and everyone plays the same rounds. Nobody gets to blame an easier draw.",
+      },
+      {
+        title: "History and the leaderboard",
+        text: "Games are kept, misses are counted, and five standings show what you are better at — holding a level or hitting the spot.",
+      },
+    ],
+
+    signUp: "Create an account",
+    signUpNote: "An email and a password, half a minute. We send no letters",
+    again: "Take the tour again",
+  },
+
   landing: {
     eyebrow: "A game on satellite imagery",
     titleTop: "From above.",
@@ -499,7 +546,6 @@ export const en: Dictionary = {
       "Labels, road signs, coordinates — none of it is there. Find that place on the world map. " +
       "The arithmetic is simple: a miss of one kilometre is worth almost five thousand points, " +
       "a miss of five hundred is worth about a thousand.",
-    play: "Play",
     how: "How it works",
     honest:
       "No ads, no trackers, no cookies. The page never calls out to another site — " +

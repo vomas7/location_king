@@ -117,6 +117,36 @@ async def pick_random_zone(
     return zone
 
 
+async def get_zone_by_name(db: AsyncSession, name: str) -> LocationZone | None:
+    """
+    Зона по русскому имени из каталога.
+
+    Русское имя первично: по нему каталог сходится с границами и с таблицей
+    переводов. Ищет это только демонстрация без регистрации — её места
+    названы в коде, а не выбраны случайно.
+    """
+    stmt = select(LocationZone).where(LocationZone.name == name, LocationZone.is_active == True)
+    return (await db.execute(stmt)).scalars().first()
+
+
+async def zone_center(db: AsyncSession, zone: LocationZone) -> tuple[float, float]:
+    """
+    Центр полигона зоны.
+
+    В обычной партии точка внутри зоны случайна: один и тот же город должен
+    каждый раз выглядеть по-новому. Там, где место обязано попасть в кадр у
+    всех одинаково, нужен именно центр.
+    """
+    point = func.ST_Centroid(LocationZone.polygon)
+    stmt = select(func.ST_X(point), func.ST_Y(point)).where(LocationZone.id == zone.id)
+
+    row = (await db.execute(stmt)).first()
+    if row is None or row[0] is None or row[1] is None:
+        raise NotFoundError(messages.ZONE_EMPTY_POLYGON.format(id=zone.id))
+
+    return float(row[0]), float(row[1])
+
+
 async def random_point_in_zone(db: AsyncSession, zone: LocationZone) -> tuple[float, float]:
     """
     Случайная точка внутри полигона зоны.

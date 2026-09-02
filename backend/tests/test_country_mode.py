@@ -340,8 +340,13 @@ async def test_borders_come_as_geojson_with_codes(
         assert feature["geometry"]["type"] in {"Polygon", "MultiPolygon"}
 
 
-async def test_borders_need_authorization(client: AsyncClient):
-    assert (await client.get("/api/countries/borders")).status_code == 401
+async def test_borders_are_open_to_guests(client: AsyncClient, borders: None):
+    """
+    Токен для контуров не нужен: те же границы нужны гостю в знакомстве с
+    игрой, а к разгадке они никого не приближают — на карте лежат границы всех
+    стран сразу, и какая из них правильная, по ним не узнать.
+    """
+    assert (await client.get("/api/countries/borders")).status_code == 200
 
 
 async def test_borders_are_cacheable(client: AsyncClient, auth_headers: dict, borders: None):

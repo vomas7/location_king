@@ -22,6 +22,7 @@ from app.database import get_db
 from app.main import app
 from app.models.location_zone import LocationZone
 from app.models.user import User
+from app.services import demo as demo_service
 from app.services.auth import create_token, register
 from app.services.tiles import close_clients, redis_client
 
@@ -61,7 +62,13 @@ async def isolate_shared_state() -> AsyncGenerator[None, None]:
     тесту свой цикл событий: соединение, открытое в одном, ломается в
     следующем. Счётчики лимитов и очередь подбора тоже общие и переживают
     откат транзакции, поэтому чистятся перед каждым тестом.
+
+    Знакомство с игрой собирается один раз на процесс и запоминается. Каталог
+    у каждого теста свой и откатывается вместе с транзакцией, поэтому
+    запомненное нужно забывать — иначе следующий тест получил бы раунды по
+    зонам, которых уже нет.
     """
+    demo_service.forget()
     await _drop_shared_keys()
     yield
     await close_clients()
@@ -72,7 +79,9 @@ async def _drop_shared_keys() -> None:
     client = redis_client()
 
     try:
-        for pattern in ("ratelimit:*", "duel:*"):
+        # Контуры стран тоже кэшируются и переживают откат транзакции:
+        # каталог у теста свой, а в кэше лежал бы чужой
+        for pattern in ("ratelimit:*", "duel:*", "countries:outlines:*"):
             keys = [key async for key in client.scan_iter(match=pattern)]
             if keys:
                 await client.delete(*keys)

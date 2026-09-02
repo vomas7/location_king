@@ -134,6 +134,16 @@ CHOICE_NOT_OFFERED = Message(
 )
 NO_SUCH_COUNTRY = Message("Такой страны нет", "There is no such country")
 
+# Знакомство с игрой без учётной записи
+DEMO_ROUND_NOT_FOUND = Message("Такого раунда в знакомстве нет", "No such round in the demo")
+DEMO_PLACE_MISSING = Message(
+    "Места {place} нет в каталоге", "The place {place} is missing from the catalogue"
+)
+DEMO_PLACE_NOT_FOR_COUNTRIES = Message(
+    "Место {place} разошлось с границами стран",
+    "The place {place} does not line up with country borders",
+)
+
 # Подсказка
 HINT_ALREADY_TAKEN = Message(
     "Подсказка по этому раунду уже взята", "The hint for this round is already taken"

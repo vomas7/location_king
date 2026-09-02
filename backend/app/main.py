@@ -17,6 +17,7 @@ from app.routers import (
     community,
     countries,
     daily,
+    demo,
     duels,
     feedback,
     friends,
@@ -71,6 +72,7 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
 
 
 app.include_router(auth.router)
+app.include_router(demo.router)
 app.include_router(avatars.router)
 app.include_router(sessions.router)
 app.include_router(daily.router)

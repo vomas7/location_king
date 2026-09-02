@@ -14,8 +14,11 @@ test("рассказывает про игру и ведёт к регистра
   await page.getByRole("link", { name: "Как это устроено" }).click();
   await expect(page.getByText("Смотришь на квадрат съёмки")).toBeInViewport();
 
-  // Главная кнопка возвращает к форме входа
-  await page.getByRole("link", { name: "Играть", exact: true }).click();
+  // Сыграть можно, ничего не заводя: это главное действие первого экрана
+  await expect(page.getByRole("button", { name: /Сыграть пять раундов/ })).toBeVisible();
+
+  // А к форме входа ведёт кнопка в самом низу страницы
+  await page.getByRole("link", { name: "Начать игру" }).click();
   await expect(page.getByRole("tab", { name: "Регистрация" })).toBeInViewport();
 
   // В подвале — ссылка на исходники: игра открыта, и это видно со страницы
