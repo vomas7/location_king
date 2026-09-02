@@ -67,6 +67,8 @@ export const en: Dictionary = {
     register: "Sign up",
     email: "Email",
     password: "Password",
+    showPassword: "Show the password",
+    hidePassword: "Hide the password",
     passwordPlaceholder: (min) => `At least ${String(min)} characters`,
     displayName: "Name on the leaderboard",
     displayNameHint: "optional",
@@ -490,7 +492,7 @@ export const en: Dictionary = {
   },
 
   landing: {
-    eyebrow: "A geoguesser on satellite imagery",
+    eyebrow: "A game on satellite imagery",
     titleTop: "Find the spot",
     titleBottom: "on the planet",
     lead:
@@ -566,7 +568,7 @@ export const en: Dictionary = {
           "From a list of places around the world: cities, coastlines, mountains, deserts and islands — almost three hundred areas on every continent. The point inside an area is picked at random, so the same city looks different every time.",
       },
       {
-        question: "How is this different from other geoguessers?",
+        question: "How is this different from similar games?",
         answer:
           "Here you get a satellite image from above, not a street panorama: no shop signs, no licence plates, no language on the road signs. You have to read the shape of the buildings, the relief, the rivers and the shadows.",
       },

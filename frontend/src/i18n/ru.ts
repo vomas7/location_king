@@ -72,6 +72,8 @@ export const ru = {
     register: "Регистрация",
     email: "Email",
     password: "Пароль",
+    showPassword: "Показать пароль",
+    hidePassword: "Скрыть пароль",
     passwordPlaceholder: (min: number) => `Не короче ${String(min)} символов`,
     displayName: "Имя в таблице лидеров",
     displayNameHint: "необязательно",
@@ -499,7 +501,7 @@ export const ru = {
   },
 
   landing: {
-    eyebrow: "Геогессер по спутниковым снимкам",
+    eyebrow: "Игра по спутниковым снимкам",
     titleTop: "Найди точку",
     titleBottom: "на планете",
     lead:

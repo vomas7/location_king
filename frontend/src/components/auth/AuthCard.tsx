@@ -9,6 +9,7 @@ import { Button } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import { Checkbox } from "~/components/ui/Checkbox";
 import { Field } from "~/components/ui/Field";
+import { PasswordField } from "~/components/ui/PasswordField";
 import type { LegalDocumentId } from "~/legal/documents";
 import { useAuth } from "~/state/authContext";
 import { useText } from "~/state/languageContext";
@@ -116,9 +117,8 @@ export function AuthCard({ onOpenLegal }: AuthCardProps) {
           }}
         />
 
-        <Field
+        <PasswordField
           label={text.password}
-          type="password"
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           placeholder={text.passwordPlaceholder(MIN_PASSWORD_LENGTH)}
           value={password}

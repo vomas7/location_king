@@ -13,7 +13,7 @@ import { auth } from "~/api/endpoints";
 import styles from "~/components/home/DeleteAccount.module.css";
 import { Alert } from "~/components/ui/Alert";
 import { Button } from "~/components/ui/Button";
-import { Field } from "~/components/ui/Field";
+import { PasswordField } from "~/components/ui/PasswordField";
 import { useModal } from "~/components/ui/useModal";
 import { useText } from "~/state/languageContext";
 import { useAuth } from "~/state/authContext";
@@ -87,9 +87,8 @@ export function DeleteAccount() {
             <p className={styles.text}>{text.warning}</p>
 
             <form className={styles.form} onSubmit={(event) => void submit(event)} noValidate>
-              <Field
+              <PasswordField
                 label={text.password}
-                type="password"
                 autoComplete="current-password"
                 placeholder={text.passwordPlaceholder}
                 value={password}

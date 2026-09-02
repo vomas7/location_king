@@ -62,3 +62,19 @@ test("страница описана для поисковика", async ({ pag
     "summary_large_image",
   );
 });
+
+test("пароль можно посмотреть глазом", async ({ page }) => {
+  await page.goto("/");
+
+  const password = page.getByPlaceholder(/Не короче/);
+  await password.fill("моё-секретное-слово");
+  await expect(password).toHaveAttribute("type", "password");
+
+  // Пароль набирают вслепую, и на телефоне это главный повод бросить
+  // регистрацию: увидеть, где опечатка, нечем
+  await page.getByRole("button", { name: "Показать пароль" }).click();
+  await expect(password).toHaveAttribute("type", "text");
+
+  await page.getByRole("button", { name: "Скрыть пароль" }).click();
+  await expect(password).toHaveAttribute("type", "password");
+});

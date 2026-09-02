@@ -139,6 +139,40 @@
   resize: vertical;
 }
 
+/* Поле с кнопкой внутри: кнопка стоит поверх правого края, а сам ввод
+   отступает от неё, чтобы длинный пароль не уезжал под глаз */
+.password {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.password .input {
+  padding-right: calc(var(--tap) + var(--space-1));
+}
+
+.reveal {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color var(--motion-base) var(--ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .reveal:hover {
+    color: var(--text);
+  }
+}
+
 .input::placeholder {
   color: var(--text-faint);
 }
