@@ -493,28 +493,31 @@ export const en: Dictionary = {
 
   landing: {
     eyebrow: "A game on satellite imagery",
-    titleTop: "Find the spot",
-    titleBottom: "on the planet",
+    titleTop: "From above.",
+    titleBottom: "Where is it?",
     lead:
-      "You get a square of satellite imagery — no labels, no signs, no coordinates. Find that " +
-      "place on the world map. The closer to the centre of the square, the more points.",
-    play: "Play for free",
+      "Labels, road signs, coordinates — none of it is there. Find that place on the world map. " +
+      "The arithmetic is simple: a miss of one kilometre is worth almost five thousand points, " +
+      "a miss of five hundred is worth about a thousand.",
+    play: "Play",
     how: "How it works",
-    honest: "No ads, no trackers, no cookies. Seriously.",
+    honest:
+      "No ads, no trackers, no cookies. The page never calls out to another site — " +
+      "even the fonts are its own.",
 
     howTitle: "How a round goes",
     steps: [
       {
-        title: "You look at the image",
-        text: "A square of satellite imagery with no labels, road signs or coordinates. You can zoom in four levels — down to roofs and cars in the yard.",
+        title: "You look at the square",
+        text: "You can zoom in four steps — down to the cars in the yard. What you cannot do is leave the square: whatever got into the frame is all the evidence there is.",
       },
       {
         title: "You drop a pin",
-        text: "Open the world map and mark the place where you think the square was shot. Missing by a continent is fine: there is another round.",
+        text: "The world map is an ordinary one, with names and borders. Move the pin as much as you like until you press “Answer”.",
       },
       {
-        title: "You get points",
-        text: "The closer your pin is to the real centre of the square, the more points — up to five thousand per round.",
+        title: "You find out how far off you were",
+        text: "The map shows your pin, the real one and the line between them. Scoring nothing is hard: you have to miss by eight thousand kilometres.",
       },
     ],
 
@@ -522,15 +525,15 @@ export const en: Dictionary = {
     modes: [
       {
         title: "Daily challenge",
-        text: "Five rounds, the same for everyone, one attempt a day. By the evening you can see who was closest.",
+        text: "Five rounds, the same for everyone, one attempt a day. Played badly — there is nothing to replay, come back tomorrow.",
       },
       {
         title: "Rooms for friends",
-        text: "Create a room and send the link around. Everyone plays the same rounds and compares results in one table.",
+        text: "Create a room and send the link around. Everyone gets the same rounds, so nobody gets to blame an easier draw.",
       },
       {
         title: "Leaderboard",
-        text: "Five separate standings: best game, total points, average miss, sharp rounds and games played.",
+        text: "Five standings instead of one: in a single table the top always goes to whoever played the most. Best game, average miss and sharp rounds are counted separately.",
       },
     ],
 
@@ -539,8 +542,9 @@ export const en: Dictionary = {
     fairText:
       "Easy gives you places you know by their outline — Paris, Venice, Manhattan. Normal is " +
       "large cities of familiar countries: Hamburg, Kazan, Seattle. Then come cities few people " +
-      "know, and fields without a single sign. Hardcore leaves mountains, deserts and taiga: no " +
-      "roads, no houses, only relief and the colour of the ground.",
+      "know, and fields without a single sign. Hardcore leaves mountains, deserts and taiga. The " +
+      "frame there is actually wider than on easy: in the taiga a city block tells you nothing, " +
+      "you need the whole landform.",
     scorePerRound: "Points per round",
     placesInGame: "Places in the game",
     zoomLevels: "Zoom levels",
@@ -550,31 +554,31 @@ export const en: Dictionary = {
       {
         question: "What does it cost?",
         answer:
-          "Nothing. There are no paid features, no ads, and we do not sell player data. The game is a pet project and it is open source.",
+          "Nothing. There is nothing paid here at all: no subscription, no ads, no selling data on the side. It is a pet project, and the source is open — the link is at the very bottom of the page.",
       },
       {
         question: "Do I have to sign up?",
         answer:
-          "Yes, an email and a password. Without an account there is nowhere to keep your game history and no point in a leaderboard. We send no letters; the address is only for logging in.",
+          "Yes, an email and a password. Without an account there is nowhere to keep your game history and no point in a leaderboard. We send no letters: the address is only there to log you in.",
       },
       {
         question: "What do you do with my data?",
         answer:
-          "We keep the email, a password hash, the name for the table and your game results. There is no analytics and no trackers on the page, and we set no cookies. The account is deleted by one button along with all of it.",
+          "We keep the email, a password hash, the name for the table and your game results. That is all we have on you: there are no trackers on the page and we set no cookies. One button deletes the account along with everything listed here.",
       },
       {
         question: "Where do the places come from?",
         answer:
-          "From a list of places around the world: cities, coastlines, mountains, deserts and islands — almost three hundred areas on every continent. The point inside an area is picked at random, so the same city looks different every time.",
+          "From our own catalogue: almost three hundred areas on every continent — cities, coastlines, mountains, deserts. The point inside an area is picked afresh every time, so the same Barcelona shows you the port once and an unfamiliar hillside suburb the next.",
       },
       {
-        question: "How is this different from similar games?",
+        question: "How is this different from street panorama games?",
         answer:
-          "Here you get a satellite image from above, not a street panorama: no shop signs, no licence plates, no language on the road signs. You have to read the shape of the buildings, the relief, the rivers and the shadows.",
+          "You are looking from above. No shop signs, no licence plates, no language on the road signs: what you read instead is the shape of the blocks, the relief, the rivers and the colour of the fields. That makes the first rounds harder — and then you start noticing that every part of the world builds differently.",
       },
     ],
 
-    finishTitle: "Shall we see how well you know the Earth?",
+    finishTitle: "Five rounds. About ten minutes.",
     finishCta: "Start playing",
   },
 };

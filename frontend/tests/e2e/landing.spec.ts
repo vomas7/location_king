@@ -5,17 +5,17 @@ import { expect, test } from "@playwright/test";
 test("рассказывает про игру и ведёт к регистрации", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Найди точку");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Земля сверху");
   await expect(page.getByRole("heading", { name: "Как проходит раунд" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Во что играть" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Частые вопросы" })).toBeVisible();
 
-  // Ссылка «как это работает» доводит до раздела с шагами
-  await page.getByRole("link", { name: "Как это работает" }).click();
-  await expect(page.getByText("Смотришь на снимок")).toBeInViewport();
+  // Ссылка «как это устроено» доводит до раздела с шагами
+  await page.getByRole("link", { name: "Как это устроено" }).click();
+  await expect(page.getByText("Смотришь на квадрат съёмки")).toBeInViewport();
 
   // Главная кнопка возвращает к форме входа
-  await page.getByRole("link", { name: "Играть бесплатно" }).click();
+  await page.getByRole("link", { name: "Играть", exact: true }).click();
   await expect(page.getByRole("tab", { name: "Регистрация" })).toBeInViewport();
 
   // В подвале — ссылка на исходники: игра открыта, и это видно со страницы

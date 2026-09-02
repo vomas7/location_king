@@ -30,7 +30,7 @@ test("посадочная страница помещается в экран �
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expectNoSideScroll(page);
 
-  await page.getByRole("link", { name: "Играть бесплатно" }).click();
+  await page.getByRole("link", { name: "Играть", exact: true }).click();
   await expect(page.getByRole("tab", { name: "Регистрация" })).toBeInViewport();
 });
 
