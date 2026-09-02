@@ -42,11 +42,23 @@ if ! flock --nonblock 9; then
     exit 0
 fi
 
-git fetch --prune --quiet origin
-
-if ! target="$(git rev-parse --verify --quiet "origin/$BRANCH")"; then
+# Ветки может не быть вовсе — на новом сервере, пока CI не собрал первую
+# зелёную версию. Это не ошибка, а нормальное начало жизни
+if ! git ls-remote --exit-code --heads --quiet origin "$BRANCH" > /dev/null; then
     log "ветки origin/${BRANCH} ещё нет: CI создаст её после первых зелёных проверок"
     exit 0
+fi
+
+# Ветка забирается поимённо, а не общим fetch: репозиторий на сервере мог
+# быть склонирован одной веткой (git clone --single-branch), и тогда правило
+# выборки тянет только main. Общий fetch в таком репозитории отрабатывает
+# успешно и молча — а origin/deploy не появляется никогда, и развёртывание
+# останавливается, повторяя «ветки ещё нет» при живой ветке на GitHub
+git fetch --prune --quiet origin "+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}"
+
+if ! target="$(git rev-parse --verify --quiet "origin/$BRANCH")"; then
+    log "ветка origin/${BRANCH} есть на GitHub, но не забралась — смотрите настройку remote.origin.fetch"
+    exit 1
 fi
 
 current="$(git rev-parse HEAD)"
