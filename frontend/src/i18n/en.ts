@@ -540,12 +540,12 @@ export const en: Dictionary = {
 
   landing: {
     eyebrow: "A game on satellite imagery",
-    titleTop: "From above.",
-    titleBottom: "Where is it?",
+    titleTop: "Find the place",
+    titleBottom: "from one image",
     lead:
-      "Labels, road signs, coordinates — none of it is there. Find that place on the world map. " +
-      "The arithmetic is simple: a miss of one kilometre is worth almost five thousand points, " +
-      "a miss of five hundred is worth about a thousand.",
+      "Labels, road signs, coordinates — none of it is there. Drop a pin on the world map and " +
+      "see how far off you were: one kilometre is worth almost five thousand points, " +
+      "five hundred is worth about a thousand.",
     how: "How it works",
     honest:
       "No ads, no trackers, no cookies. The page never calls out to another site — " +

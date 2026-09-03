@@ -16,7 +16,7 @@ test.describe("английский браузер", () => {
   test("сразу видит английскую страницу", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByRole("heading", { name: /From above/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Find the place/ })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
   });
 
@@ -24,18 +24,18 @@ test.describe("английский браузер", () => {
     await page.goto("/");
     await page.getByRole("button", { name: "Русский" }).click();
 
-    await expect(page.getByRole("heading", { name: /Земля сверху/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Найди место/ })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "ru");
 
     await page.reload();
-    await expect(page.getByRole("heading", { name: /Земля сверху/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Найди место/ })).toBeVisible();
   });
 });
 
 test("русский браузер видит русскую страницу", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: /Земля сверху/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Найди место/ })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
 });
 

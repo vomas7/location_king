@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 test("рассказывает про игру и ведёт к регистрации", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Земля сверху");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Найди место");
   await expect(page.getByRole("heading", { name: "Как проходит раунд" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Во что играть" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Частые вопросы" })).toBeVisible();
