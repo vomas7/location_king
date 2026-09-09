@@ -184,10 +184,10 @@ async def test_alone_in_the_queue_you_just_wait(
 ):
     entered = await client.post("/api/duels/queue", headers=auth_headers)
     assert entered.status_code == 201
-    assert entered.json() == {"searching": 1, "code": None}
+    assert entered.json() == {"searching": 1, "code": None, "bots": 0}
 
     polled = await client.post("/api/duels/queue/poll", headers=auth_headers)
-    assert polled.json() == {"searching": 1, "code": None}
+    assert polled.json() == {"searching": 1, "code": None, "bots": 0}
 
 
 async def test_two_players_are_paired(

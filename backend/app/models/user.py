@@ -41,6 +41,12 @@ class User(Base):
 
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
 
+    # Соперник-бот. Обычная учётная запись с поднятым флагом: он входит в
+    # комнату и играет серию тем же кодом, что и человек. По флагу его
+    # видно в интерфейсе и не считают за человека — ни в счётчике игроков,
+    # ни в таблице лидеров, ни в поиске друзей
+    is_bot: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
+
     # Статистика — пересчитывается сервисом после каждой завершённой сессии
     total_score: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     games_played: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

@@ -105,6 +105,7 @@ services:
       SATELLITE_TILE_URL: ${SATELLITE_TILE_URL:-https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}}
       SATELLITE_ATTRIBUTION: ${SATELLITE_ATTRIBUTION:-Esri, Maxar, Earthstar Geographics}
       TILE_PREWARM: ${TILE_PREWARM:-true}
+      DUEL_BOTS_ENABLED: ${DUEL_BOTS_ENABLED:-true}
       # Строка лога объектом JSON: так её разбирает сборщик логов
       LOG_FORMAT: json
       DEBUG: "false"

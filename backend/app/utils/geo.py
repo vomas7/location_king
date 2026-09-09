@@ -29,6 +29,39 @@ def haversine_km(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
     return 2 * EARTH_RADIUS_KM * math.asin(math.sqrt(a))
 
 
+def point_at_distance(
+    lon: float, lat: float, distance_km: float, bearing_degrees: float
+) -> tuple[float, float]:
+    """
+    Точка на заданном расстоянии и азимуте от исходной.
+
+    Обратная к haversine_km: та говорит, насколько далеко две точки, эта —
+    где окажешься, если уйти в такую-то сторону. Нужна соперникам-ботам,
+    чтобы поставить догадку с заданным промахом.
+
+    Долгота приводится к диапазону от -180 до 180: уход за антимеридиан —
+    это нормальная точка, а не ошибка, и обрезать её было бы враньём про
+    промах.
+    """
+    angular = distance_km / EARTH_RADIUS_KM
+    bearing = math.radians(bearing_degrees)
+    lat_rad, lon_rad = math.radians(lat), math.radians(lon)
+
+    sin_lat = math.sin(lat_rad) * math.cos(angular) + math.cos(lat_rad) * math.sin(
+        angular
+    ) * math.cos(bearing)
+    result_lat = math.asin(max(-1.0, min(1.0, sin_lat)))
+
+    result_lon = lon_rad + math.atan2(
+        math.sin(bearing) * math.sin(angular) * math.cos(lat_rad),
+        math.cos(angular) - math.sin(lat_rad) * math.sin(result_lat),
+    )
+
+    degrees_lon = (math.degrees(result_lon) + 540) % 360 - 180
+
+    return degrees_lon, math.degrees(result_lat)
+
+
 def lonlat_to_tile(lon: float, lat: float, zoom: int) -> tuple[int, int]:
     """Номер тайла Web Mercator (XYZ), в котором лежит точка."""
     lat = max(min(lat, MAX_MERCATOR_LAT), -MAX_MERCATOR_LAT)

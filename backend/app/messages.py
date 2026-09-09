@@ -168,6 +168,11 @@ ROOM_NOT_HOST = Message(
 )
 DUEL_NOT_FOUND = Message("Дуэль {code} не найдена", "Duel {code} not found")
 DUEL_UNFINISHED = Message("Сначала доиграй начатую дуэль", "Finish the duel you started first")
+DUEL_BOTS_OFF = Message(
+    "Соперники-боты выключены — ищи живого игрока",
+    "Bot opponents are off — look for a live player",
+)
+DUEL_NO_BOT = Message("Свободных соперников-ботов нет", "There are no bot opponents available")
 
 # Друзья
 FRIEND_CODE_UNKNOWN = Message("Игрока с таким кодом нет", "There is no player with this code")

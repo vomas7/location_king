@@ -151,6 +151,8 @@ def _aggregated(filters: LeaderboardFilter) -> Select:
         .outerjoin(RoundSeries, GameSession.series_id == RoundSeries.id)
         .where(
             User.is_active.is_(True),
+            # Боты играют настоящие партии, но соревнуются здесь люди
+            User.is_bot.is_(False),
             GameSession.status == SessionStatus.FINISHED,
         )
         .group_by(User.id)

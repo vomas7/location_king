@@ -50,6 +50,7 @@ class Limit(StrEnum):
     DELETE_ACCOUNT = "delete-account"
     DEMO = "demo"
     DEMO_TILES = "demo-tiles"
+    DUEL_BOT = "duel-bot"
     DUEL_POLL = "duel-poll"
     DUEL_QUEUE = "duel-queue"
     FEEDBACK = "feedback"
@@ -95,6 +96,11 @@ RULES: dict[Limit, RateLimit] = {
     # того, кто ищет непрерывно. Лимит выше с запасом, но не бесконечный
     Limit.DUEL_QUEUE: RateLimit(limit=120, window_seconds=60 * 60),
     Limit.DUEL_POLL: RateLimit(limit=2000, window_seconds=60 * 60),
+    # Дуэль с ботом — самый дорогой запрос игрока: комната, две партии,
+    # десять раундов и поход за снимками наружу, и всё это до того, как
+    # игрок увидел первый кадр. Тридцать в час — это тридцать партий,
+    # больше человеку не отыграть
+    Limit.DUEL_BOT: RateLimit(limit=30, window_seconds=60 * 60),
     Limit.START_SESSION: RateLimit(limit=60, window_seconds=60 * 60),
     # Отзыв пишет в базу и читается человеком. Десяти в час хватает любому,
     # кому есть что сказать, и не хватает тому, кто решил залить туда мусор

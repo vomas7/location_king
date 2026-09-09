@@ -27,6 +27,7 @@ from app.models.game_session import GameSession
 from app.models.match import Match
 from app.models.user import User
 from app.observability import metrics
+from app.services import bots as bots_service
 from app.services import difficulty as difficulty_service
 from app.services import matches as matches_service
 from app.services import matchmaking
@@ -55,14 +56,21 @@ class SearchState:
     searching: int
     #: Код дуэли, если пара нашлась
     code: str | None
+    #: Сколько соперников-ботов готовы сыграть. Ноль — либо выключены, либо
+    #: не заведены: тогда предлагать их незачем
+    bots: int = 0
 
 
-async def enter(user: User) -> SearchState:
+async def enter(db: AsyncSession, user: User) -> SearchState:
     """Встать в очередь."""
     await matchmaking.join(user.id, user.rating)
     await metrics.count("duel_search_started")
 
-    return SearchState(searching=len(await matchmaking.searching()), code=None)
+    return SearchState(
+        searching=len(await matchmaking.searching()),
+        code=None,
+        bots=await bots_service.available(db),
+    )
 
 
 async def count() -> int:
@@ -95,7 +103,11 @@ async def look(db: AsyncSession, user: User) -> SearchState:
     if code is not None:
         return SearchState(searching=0, code=code)
 
-    return SearchState(searching=len(await matchmaking.searching()), code=None)
+    return SearchState(
+        searching=len(await matchmaking.searching()),
+        code=None,
+        bots=await bots_service.available(db),
+    )
 
 
 async def _try_to_pair(db: AsyncSession, user: User) -> str | None:
@@ -148,6 +160,45 @@ async def _try_to_pair(db: AsyncSession, user: User) -> str | None:
         await matchmaking.unlock()
 
 
+async def against_bot(db: AsyncSession, user: User) -> str:
+    """
+    Дуэль с ботом: та же комната на двоих, только второй — бот.
+
+    Игрок выходит из очереди сам: он уже нашёл, с кем играть, и оставаться
+    в поиске значило бы получить второго соперника посреди партии.
+
+    Бот отыгрывает серию сразу же, до того как игрок увидит первый раунд.
+    Ждать его незачем — он не думает, — а результат соперника, готовый
+    заранее, ещё и не даёт дуэли зависнуть, если игрок бросит партию.
+    """
+    if not bots_service.enabled():
+        raise ConflictError(messages.DUEL_BOTS_OFF)
+
+    bot = await bots_service.pick(db, user.rating)
+    if bot is None:
+        raise NotFoundError(messages.DUEL_NO_BOT)
+
+    await matchmaking.leave(user.id)
+
+    match = await matches_service.create(
+        db,
+        host=user,
+        rounds_total=ROUNDS_TOTAL,
+        view_extent_km=VIEW_EXTENT_KM,
+        difficulty=DIFFICULTY,
+        time_limit_seconds=TIME_LIMIT_SECONDS,
+        kind=MatchKind.DUEL,
+    )
+
+    await bots_service.play(db, match, bot)
+    await db.flush()
+
+    await metrics.count("duel_bot_started")
+    logger.info("Дуэль %s: игрок %s против бота %s", match.code, user.id, bot.username)
+
+    return match.code
+
+
 async def get_duel(db: AsyncSession, code: str) -> Match:
     """Дуэль по коду. Обычная комната по этому пути не проходит."""
     match = await matches_service.get(db, code)
@@ -193,11 +244,20 @@ async def settle(db: AsyncSession, match: Match) -> bool:
     if len(sessions) != 2:
         return False
 
+    first, second = (session.user for session in sessions)
+
+    # Дуэль с ботом не двигает рейтинг. Рейтинг сравнивает людей между собой,
+    # и накрутить его прогонами против слабого бота не должно быть можно.
+    # Сама дуэль от этого не перестаёт быть настоящей: та же серия, тот же
+    # подсчёт очков, тот же экран результата
+    if first.is_bot or second.is_bot:
+        locked.rated_at = datetime.now(UTC)
+        await db.flush()
+        return False
+
     outcomes = _outcomes(locked, sessions)
     if outcomes is None:
         return False
-
-    first, second = (session.user for session in sessions)
 
     # Оба рейтинга считаются от того, что было до дуэли. Обновить первого, а
     # второго посчитать против нового значения — значит нарушить главное

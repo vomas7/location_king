@@ -205,7 +205,7 @@ async def register(db: AsyncSession, email: str, password: str, display_name: st
         email=email,
         password_hash=hash_password(password),
         display_name=(display_name or "").strip() or default_display_name(),
-        friend_code=await _unique_friend_code(db),
+        friend_code=await unique_friend_code(db),
         last_login_at=datetime.now(UTC),
     )
     db.add(user)
@@ -272,7 +272,7 @@ async def delete_account(db: AsyncSession, user: User, password: str) -> None:
     logger.info("Учётная запись %s удалена по просьбе владельца", user_id)
 
 
-async def _unique_friend_code(db: AsyncSession) -> str:
+async def unique_friend_code(db: AsyncSession) -> str:
     """
     Свободный код игрока: по нему его добавляют в друзья.
 

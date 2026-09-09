@@ -310,6 +310,7 @@ def match_standing(rank: int, session: GameSession, viewer: User) -> MatchStandi
         rounds_done=session.rounds_done,
         is_finished=session.status == SessionStatus.FINISHED,
         is_you=session.user_id == viewer.id,
+        is_bot=session.user.is_bot,
         finished_at=session.finished_at,
     )
 

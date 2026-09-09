@@ -7,6 +7,7 @@ from app.database import get_db
 from app.dependencies import get_current_user, limit_by_user
 from app.models.user import User
 from app.schemas.duel import DuelFormatView, DuelSearchView
+from app.services import bots as bots_service
 from app.services import duels as duels_service
 from app.services.rate_limit import Limit
 
@@ -36,9 +37,9 @@ async def enter_queue(
 ) -> DuelSearchView:
     """Встать в очередь на соперника."""
     await duels_service.require_not_playing(db, user)
-    state = await duels_service.enter(user)
+    state = await duels_service.enter(db, user)
 
-    return DuelSearchView(searching=state.searching, code=state.code)
+    return DuelSearchView(searching=state.searching, code=state.code, bots=state.bots)
 
 
 @router.post(
@@ -59,18 +60,47 @@ async def poll_queue(
     """
     state = await duels_service.look(db, user)
 
-    return DuelSearchView(searching=state.searching, code=state.code)
+    return DuelSearchView(searching=state.searching, code=state.code, bots=state.bots)
 
 
 @router.get("/searching", response_model=DuelSearchView)
-async def count_searching(user: User = Depends(get_current_user)) -> DuelSearchView:
+async def count_searching(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> DuelSearchView:
     """
-    Сколько человек ищет соперника. Ничего не меняет.
+    Сколько человек ищет соперника и сколько ботов свободно. Ничего не меняет.
 
     Нужно кнопке на главном экране: решать, вставать ли в очередь, игрок
     должен до того, как встал.
     """
-    return DuelSearchView(searching=await duels_service.count(), code=None)
+    return DuelSearchView(
+        searching=await duels_service.count(),
+        code=None,
+        bots=await bots_service.available(db),
+    )
+
+
+@router.post(
+    "/bot",
+    response_model=DuelSearchView,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(limit_by_user(Limit.DUEL_BOT))],
+)
+async def duel_with_bot(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> DuelSearchView:
+    """
+    Сыграть с соперником-ботом.
+
+    Отдельным запросом, а не подстановкой бота в очередь: играть с ботом —
+    это решение игрока, и принимать его за него нельзя.
+    """
+    await duels_service.require_not_playing(db, user)
+    code = await duels_service.against_bot(db, user)
+
+    return DuelSearchView(searching=0, code=code, bots=await bots_service.available(db))
 
 
 @router.delete(

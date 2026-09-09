@@ -19,6 +19,8 @@ class MatchStanding(BaseModel):
     is_finished: bool
     #: Чтобы клиент подсветил строку игрока, не зная чужих идентификаторов
     is_you: bool
+    #: Соперник-бот назван ботом: значок рядом с именем ставится по этому полю
+    is_bot: bool
     finished_at: datetime | None
 
 

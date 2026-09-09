@@ -39,10 +39,16 @@ class Connection:
 
 
 async def by_code(db: AsyncSession, code: str) -> User:
-    """Игрок по коду. Регистр не важен."""
+    """
+    Игрок по коду. Регистр не важен.
+
+    Бот по коду не находится: дружить с ним не с кем, а в списке друзей он
+    занимал бы место живого человека.
+    """
     stmt = select(User).where(
         User.friend_code == code.strip().upper(),
         User.is_active.is_(True),
+        User.is_bot.is_(False),
     )
     user = (await db.execute(stmt)).scalar_one_or_none()
 

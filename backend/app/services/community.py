@@ -26,12 +26,19 @@ CACHE_TTL_SECONDS = 300
 
 
 async def players(db: AsyncSession) -> int:
-    """Сколько всего игроков завело учётную запись."""
+    """
+    Сколько всего живых игроков завело учётную запись.
+
+    Соперники-боты — тоже строки в users, но людьми они не являются, и в
+    числе, которое игра показывает о себе, им делать нечего.
+    """
     cached = await _cached()
     if cached is not None:
         return cached
 
-    total = (await db.execute(select(func.count()).select_from(User))).scalar_one()
+    total = (
+        await db.execute(select(func.count()).select_from(User).where(User.is_bot.is_(False)))
+    ).scalar_one()
     await _remember(total)
 
     return total

@@ -16,6 +16,9 @@ class DuelSearchView(BaseModel):
     searching: int
     #: Код дуэли, если пара нашлась. Дальше игрок входит в неё как в комнату
     code: str | None
+    #: Сколько соперников-ботов готовы сыграть. Ноль — предлагать нечего:
+    #: либо выключены, либо не заведены
+    bots: int = 0
 
 
 class DuelFormatView(BaseModel):

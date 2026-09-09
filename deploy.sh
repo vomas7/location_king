@@ -486,6 +486,9 @@ docker compose exec -T backend alembic upgrade head
 step "Загружаю игровые зоны"
 docker compose exec -T backend python scripts/seed.py
 
+step "Завожу соперников-ботов"
+docker compose exec -T backend python scripts/seed_bots.py
+
 # Границы качаются из сети и весят двадцать мегабайт, поэтому только один раз.
 # Не скачались — режим стран просто не включится, остальная игра работает
 step "Загружаю границы стран"

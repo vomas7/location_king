@@ -565,14 +565,29 @@ async def _update_user_statistics(db: AsyncSession, user_id: int) -> None:
 
 
 async def _update_zone_statistics(db: AsyncSession, zone_id: int) -> None:
-    """Пересчитать среднее по зоне после завершённого раунда."""
+    """
+    Пересчитать среднее по зоне после завершённого раунда.
+
+    Считаются только раунды людей. Соперники-боты отталкиваются от этого
+    самого среднего, и, попади их ответы в него, получилась бы обратная
+    связь: боты подтягивали бы статистику к себе, а следующие боты — к
+    подтянутой. Заодно строчка «здесь обычно промахиваются на столько-то»
+    осталась бы неправдой для живого игрока.
+    """
     stats = (
         await db.execute(
             select(
                 func.count(Round.id),
                 func.avg(Round.score),
                 func.avg(Round.distance_km),
-            ).where(Round.zone_id == zone_id, Round.status == RoundStatus.GUESSED)
+            )
+            .join(GameSession, Round.session_id == GameSession.id)
+            .join(User, GameSession.user_id == User.id)
+            .where(
+                Round.zone_id == zone_id,
+                Round.status == RoundStatus.GUESSED,
+                User.is_bot.is_(False),
+            )
         )
     ).one()
 
