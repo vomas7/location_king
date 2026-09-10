@@ -221,6 +221,7 @@ export const en: Dictionary = {
     linkCopied: "Link copied",
     copyFailed: "Could not copy",
     nobodyYet: "Nobody has joined yet. Send the link to your friends.",
+    bot: "bot",
     play: "Play",
     signupsClosed: "The room is closed — joining is no longer possible.",
     resume: "Continue the game",
@@ -374,6 +375,13 @@ export const en: Dictionary = {
     onlyYou: "So far it is only you",
     searching: (others) =>
       `${String(others)} ${others === 1 ? "player is" : "players are"} looking for an opponent`,
+
+    nobodyButBot: "Nobody is searching — but a bot is here",
+    playBot: "Play against a bot",
+    botStarting: "Setting up the duel…",
+    botNote: "The bot answers like a player of its level. A duel with it leaves your rating alone",
+    playingNow: (count) =>
+      `${String(count)} ${count === 1 ? "person is" : "people are"} playing right now`,
   },
 
   daily: {

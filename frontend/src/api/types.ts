@@ -302,6 +302,8 @@ export interface MatchStanding {
   is_finished: boolean;
   /** Своя строка — её и подсвечиваем. */
   is_you: boolean;
+  /** Соперник-бот: рядом с именем стоит значок. */
+  is_bot: boolean;
   finished_at: string | null;
 }
 
@@ -337,6 +339,8 @@ export interface DuelSearch {
   searching: number;
   /** Код дуэли, если пара нашлась. Дальше в неё входят как в комнату. */
   code: string | null;
+  /** Сколько соперников-ботов готовы сыграть. Ноль — предлагать нечего. */
+  bots: number;
 }
 
 /** Условия дуэли: одни и те же для всех, их решает сервер. */
@@ -355,4 +359,6 @@ export interface DuelFormat {
  */
 export interface CommunityView {
   players: number;
+  /** Сколько человек играет прямо сейчас. Ноль — строку не показываем. */
+  playing: number;
 }

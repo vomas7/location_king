@@ -453,11 +453,33 @@
   font-weight: 700;
 }
 
+/* Имя и значок в одной ячейке: колонок в строке ровно столько же, а
+   длинное имя по-прежнему обрезается многоточием, не съедая значок */
+.playerCell {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .playerName {
   overflow: hidden;
   font-size: var(--fs-control);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Соперник-бот назван ботом. Не украшение, а подпись: тон приглушённый,
+   чтобы значок читался как пометка, а не как достижение */
+.playerBadge {
+  flex: none;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--text-faint);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
 }
 
 .playerValue {

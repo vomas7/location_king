@@ -18,6 +18,8 @@ interface PlayerRowProps {
   value: string;
   /** Строка самого игрока: её подсвечиваем. */
   mine?: boolean;
+  /** Подпись рядом с именем: соперник-бот назван ботом, а не человеком. */
+  badge?: string;
   /** Отмечать ли первую тройку. В комнате мест нет, там просто порядок входа. */
   medals?: boolean;
 }
@@ -29,6 +31,7 @@ export function PlayerRow({
   value,
   mine = false,
   medals = false,
+  badge,
 }: PlayerRowProps) {
   return (
     <div className={[styles.playerRow, mine ? styles.playerRowMine : ""].filter(Boolean).join(" ")}>
@@ -42,7 +45,10 @@ export function PlayerRow({
 
       <Avatar avatar={avatar} size={24} name={name} />
 
-      <span className={styles.playerName}>{name}</span>
+      <span className={styles.playerCell}>
+        <span className={styles.playerName}>{name}</span>
+        {badge !== undefined && <span className={styles.playerBadge}>{badge}</span>}
+      </span>
       <span className={styles.playerValue}>{value}</span>
     </div>
   );

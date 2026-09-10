@@ -199,7 +199,7 @@ export function HomeScreen({
     {
       key: "duel",
       name: menuText.duel,
-      status: searchingText(duel.searching, duel.phase !== "idle", text),
+      status: searchingText(duel.searching, duel.phase !== "idle", text, duel.bots),
       live: duel.phase !== "idle" || duel.searching > 0,
     },
     {

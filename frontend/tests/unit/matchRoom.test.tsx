@@ -168,6 +168,7 @@ describe("MatchRoom", () => {
             rounds_done: 5,
             is_finished: true,
             is_you: false,
+            is_bot: false,
             finished_at: "2026-08-27T10:20:00Z",
           },
           {
@@ -178,6 +179,7 @@ describe("MatchRoom", () => {
             rounds_done: 2,
             is_finished: false,
             is_you: true,
+            is_bot: false,
             finished_at: null,
           },
         ],
@@ -191,6 +193,36 @@ describe("MatchRoom", () => {
       expect(screen.getByText("Другой")).toBeTruthy();
     });
     expect(screen.getByText("2/5")).toBeTruthy();
+  });
+
+  it("соперник-бот назван ботом", async () => {
+    create.mockResolvedValue(
+      room({
+        players: 1,
+        standings: [
+          {
+            rank: 1,
+            display_name: "Меридиан",
+            avatar: { shape: 0, color: 0, image_url: null },
+            total_score: 3800,
+            rounds_done: 5,
+            is_finished: true,
+            is_you: false,
+            is_bot: true,
+            finished_at: "2026-08-27T10:20:00Z",
+          },
+        ],
+      }),
+    );
+    await renderRoom();
+
+    fireEvent.click(screen.getByRole("button", { name: "Создать комнату" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Меридиан")).toBeTruthy();
+    });
+    // Выдавать бота за человека нельзя: значок стоит рядом с именем
+    expect(screen.getByText("бот")).toBeTruthy();
   });
 
   it("вход в комнату отдаёт партию наверх", async () => {

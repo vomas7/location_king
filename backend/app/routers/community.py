@@ -16,4 +16,7 @@ async def community(db: AsyncSession = Depends(get_db)) -> CommunityView:
     Сколько людей играет. Единственный публичный запрос без авторизации:
     первый экран показывает это число ещё до того, как игрок вошёл.
     """
-    return CommunityView(players=await community_service.players(db))
+    return CommunityView(
+        players=await community_service.players(db),
+        playing=await community_service.playing(db),
+    )

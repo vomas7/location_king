@@ -79,9 +79,9 @@ async def _drop_shared_keys() -> None:
     client = redis_client()
 
     try:
-        # Контуры стран тоже кэшируются и переживают откат транзакции:
-        # каталог у теста свой, а в кэше лежал бы чужой
-        for pattern in ("ratelimit:*", "duel:*", "countries:outlines:*"):
+        # Контуры стран и счётчики игроков тоже кэшируются и переживают
+        # откат транзакции: игроки у теста свои, а в кэше лежали бы чужие
+        for pattern in ("ratelimit:*", "duel:*", "countries:outlines:*", "community:*"):
             keys = [key async for key in client.scan_iter(match=pattern)]
             if keys:
                 await client.delete(*keys)

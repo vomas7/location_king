@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from "react";
 
-import { duels as duelsApi } from "~/api/endpoints";
+import { community, duels as duelsApi } from "~/api/endpoints";
 import type { DuelFormat } from "~/api/types";
 import type { Dictionary } from "~/i18n/dictionary";
 import styles from "~/components/home/DuelSearch.module.css";
@@ -45,6 +45,7 @@ export function DuelSearch({ search, mayStart }: DuelSearchProps) {
   const { duel } = text;
   const { user } = useAuth();
   const [format, setFormat] = useState<DuelFormat | null>(null);
+  const [playing, setPlaying] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +56,26 @@ export function DuelSearch({ search, mayStart }: DuelSearchProps) {
         if (!cancelled) setFormat(loaded);
       } catch {
         // Условия — подпись под кнопкой. Не приехали — играть это не мешает
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Сколько человек в игре прямо сейчас. Это не очередь дуэлей: очередь
+  // бывает пустой и у живой игры, а вопрос у того, кто открыл этот экран,
+  // один — есть ли тут вообще кто-то, кроме него
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const stats = await community.stats();
+        if (!cancelled) setPlaying(stats.playing);
+      } catch {
+        // Не пришло — строки просто нет, как и в подвале
       }
     })();
 
@@ -82,6 +103,8 @@ export function DuelSearch({ search, mayStart }: DuelSearchProps) {
       </div>
 
       <p className={styles.rules}>{rules}</p>
+
+      {playing > 0 && <p className={styles.playing}>{duel.playingNow(playing)}</p>}
 
       {search.phase === "idle" ? (
         <Button
@@ -112,6 +135,23 @@ export function DuelSearch({ search, mayStart }: DuelSearchProps) {
         {search.phase === "searching" && <span className={styles.pulse} aria-hidden="true" />}
         {queueText(search.phase, text)}
       </p>
+
+      {/* Соперник-бот. Кнопка стоит и в поиске тоже: очередь бывает пустой
+          подолгу, и уйти из неё к боту — это то же решение, только позже */}
+      {search.bots > 0 && search.phase !== "joining" && (
+        <div className={styles.bot}>
+          <Button
+            variant="ghost"
+            block
+            onClick={() => {
+              if (mayStart()) search.playBot();
+            }}
+          >
+            {duel.playBot}
+          </Button>
+          <p className={styles.botNote}>{duel.botNote}</p>
+        </div>
+      )}
     </section>
   );
 }

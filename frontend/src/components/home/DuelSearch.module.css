@@ -29,6 +29,44 @@
   text-wrap: pretty;
 }
 
+/* Сколько человек в игре прямо сейчас. Строка тихая: это ответ на вопрос
+   «есть ли тут кто-то», а не заголовок */
+.playing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  color: var(--text-dim);
+  font-size: var(--fs-small);
+}
+
+/* Точка янтарная, а не мятная: мятный в игре означает хороший результат, и
+   тратить кодировку на украшение нельзя */
+.playing::before {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  content: "";
+}
+
+/* Бот — второй путь, а не второй такой же: отделён чертой и стоит ниже
+   кнопки очереди, чтобы не спорить с ней за первый взгляд */
+.bot {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.botNote {
+  margin-top: var(--space-2);
+  color: var(--text-faint);
+  font-size: var(--fs-small);
+  text-align: center;
+  text-wrap: pretty;
+}
+
 .queue {
   display: flex;
   align-items: center;

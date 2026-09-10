@@ -177,6 +177,9 @@ export const duels = {
   poll: () => request<DuelSearch>("/api/duels/queue/poll", { method: "POST" }),
 
   stop: () => request<void>("/api/duels/queue", { method: "DELETE" }),
+
+  /** Собрать дуэль с соперником-ботом. Возвращает её код. */
+  playBot: () => request<DuelSearch>("/api/duels/bot", { method: "POST" }),
 };
 
 export const matches = {

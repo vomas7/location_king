@@ -28,14 +28,19 @@ export interface DuelSearchController {
   phase: DuelPhase;
   /** Сколько человек ищет соперника прямо сейчас. */
   searching: number;
+  /** Сколько соперников-ботов готовы сыграть. Ноль — кнопки нет. */
+  bots: number;
   error: string | null;
   start: () => void;
   stop: () => void;
+  /** Сыграть с ботом: дуэль собирается сразу, очередь не нужна. */
+  playBot: () => void;
 }
 
 export function useDuelSearch(onFound: (session: SessionState) => void): DuelSearchController {
   const [phase, setPhase] = useState<DuelPhase>("idle");
   const [searching, setSearching] = useState(0);
+  const [bots, setBots] = useState(0);
   const [found, setFound] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +61,10 @@ export function useDuelSearch(onFound: (session: SessionState) => void): DuelSea
     const tick = async () => {
       try {
         const state = await duels.searching();
-        if (!cancelled) setSearching(state.searching);
+        if (cancelled) return;
+
+        setSearching(state.searching);
+        setBots(state.bots);
       } catch {
         // Счётчик — подпись у кнопки, а не условие игры: без него кнопка
         // работает, и разговаривать с игроком об этом незачем
@@ -84,6 +92,7 @@ export function useDuelSearch(onFound: (session: SessionState) => void): DuelSea
         if (cancelled) return;
 
         setSearching(state.searching);
+        setBots(state.bots);
         if (state.code !== null) setFound(state.code);
       } catch (error) {
         if (cancelled) return;
@@ -148,7 +157,26 @@ export function useDuelSearch(onFound: (session: SessionState) => void): DuelSea
       try {
         const state = await duels.start();
         setSearching(state.searching);
+        setBots(state.bots);
         setPhase("searching");
+      } catch (error) {
+        setError(errorMessage(error));
+      }
+    })();
+  }, []);
+
+  const playBot = useCallback(() => {
+    setError(null);
+
+    void (async () => {
+      try {
+        // Игрок мог стоять в очереди: соперник у него уже есть, и оставаться
+        // в поиске значило бы получить второго посреди партии. Очередь
+        // покидается на сервере, здесь остаётся только перестать её опрашивать
+        const state = await duels.playBot();
+        setPhase("idle");
+
+        if (state.code !== null) setFound(state.code);
       } catch (error) {
         setError(errorMessage(error));
       }
@@ -163,5 +191,5 @@ export function useDuelSearch(onFound: (session: SessionState) => void): DuelSea
     });
   }, []);
 
-  return { phase, searching, error, start, stop };
+  return { phase, searching, bots, error, start, stop, playBot };
 }

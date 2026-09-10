@@ -302,6 +302,7 @@ export function MatchRoom({
                   : `${String(entry.rounds_done)}/${String(room.rounds_total)}`
               }
               mine={entry.is_you}
+              {...(entry.is_bot ? { badge: text.room.bot } : {})}
             />
           ))}
         </div>
